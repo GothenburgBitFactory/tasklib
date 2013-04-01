@@ -1,0 +1,5 @@
+*.pyc
+*~
+tasklib.egg-info
+/dist
+/build
