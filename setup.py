@@ -4,7 +4,7 @@ setup(
     name='tasklib',
     version='0.1',
     description='Python Task Warrior library',
-    long_description=open('README.md').read(),
+    long_description=open('README.rst').read(),
     author='Rob Golding',
     author_email='rob@robgolding.com',
     license='BSD',
