@@ -47,6 +47,9 @@ class Task(object):
 
 
 class TaskWarrior(object):
+    DEFAULT_FILTERS = {
+        'status': 'pending',
+    }
 
     def __init__(self, data_location='~/.task', create=True):
         if not os.path.exists(data_location):
@@ -70,10 +73,19 @@ class TaskWarrior(object):
             raise TaskWarriorException(stderr.strip())
         return stdout.strip().split('\n')
 
-    def get_tasks(self, project=None, status=PENDING):
-        command = 'export status:{0}'.format(status)
-        if project is not None:
-            command += ' project:{0}'.format(project)
+    def _format_filter_kwarg(self, kwarg):
+        key, val = kwarg[0], kwarg[1]
+        if key in ['tag', 'tags']:
+            key = 'tags.equal'
+        key = key.replace('__', '.')
+        return '{0}:{1}'.format(key, val)
+
+    def get_tasks(self, **filter_kwargs):
+        filters = self.DEFAULT_FILTERS
+        filters.update(filter_kwargs)
+        filter_commands = ' '.join(map(self._format_filter_kwarg,
+                                       filters.items()))
+        command = '{0} export'.format(filter_commands)
         tasks = []
         for line in self._execute(command):
             if line:
