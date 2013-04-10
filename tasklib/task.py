@@ -81,7 +81,7 @@ class TaskWarrior(object):
         return '{0}:{1}'.format(key, val)
 
     def get_tasks(self, **filter_kwargs):
-        filters = self.DEFAULT_FILTERS
+        filters = dict(self.DEFAULT_FILTERS)
         filters.update(filter_kwargs)
         filter_commands = ' '.join(map(self._format_filter_kwarg,
                                        filters.items()))
