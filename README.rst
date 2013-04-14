@@ -20,15 +20,30 @@ Usage
 
 .. source-code:
 
-    >>> from tasklib.task import TaskWarrior, PENDING
+    >>> from tasklib.task import TaskWarrior
 
     >>> tw = TaskWarrior('/home/rob/.task')
-    >>> tasks = tw.get_tasks(status=PENDING)
+    >>> tasks = tw.tasks.pending()
     >>> tasks
     ['Tidy the house', 'Learn German']
+    >>> tasks.filter(tags__contain='chores')
+    ['Tidy the house']
     >>> type(tasks[0])
     <class 'tasklib.task.Task'>
     >>> task[0].done()
 
+Filtering Tasks
+---------------
+
+Tasks can be filtered using the ``TaskQuerySet`` API which emulates the
+Django ORM::
+
+    >>> tw.tasks.filter(status='pending', tags__contain='work')
+    ['Upgrade Ubuntu Server']
+
+Filter arguments are passed to the ``task`` command (``__`` is replaced by
+a period); so the above example is equivalent to the following command::
+
+    $ task status:pending tags.contain=work
 
 .. _taskwarrior: http://taskwarrior.org
