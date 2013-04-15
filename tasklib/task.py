@@ -1,4 +1,5 @@
 import copy
+import datetime
 import json
 import os
 import subprocess
@@ -6,7 +7,10 @@ import tempfile
 import uuid
 
 
+DATE_FORMAT = '%Y%m%dT%H%M%SZ'
+
 REPR_OUTPUT_SIZE = 10
+
 PENDING = 'pending'
 
 
@@ -24,13 +28,29 @@ class Task(object):
         self._data = data
 
     def __getitem__(self, key):
-        return self._data.get(key)
+        return self._get_field(key)
 
     def __setitem__(self, key, val):
         self._data[key] = val
 
     def __unicode__(self):
         return self._data.get('description')
+
+    def _get_field(self, key):
+        hydrate_func = getattr(self, 'deserialize_{0}'.format(key), lambda x:x)
+        return hydrate_func(self._data.get(key))
+
+    def _set_field(self, key, value):
+        dehydrate_func = getattr(self, 'serialize_{0}'.format(key), lambda x:x)
+        self._data[key] = dehydrate_func(value)
+
+    def serialize_due(self, date):
+        return date.strftime(DATE_FORMAT)
+
+    def deserialize_due(self, date_str):
+        if not date_str:
+            return None
+        return datetime.datetime.strptime(date_str, DATE_FORMAT)
 
     def regenerate_uuid(self):
         self['uuid'] = str(uuid.uuid4())
