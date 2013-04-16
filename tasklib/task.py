@@ -76,18 +76,22 @@ class TaskFilter(object):
     A set of parameters to filter the task list with.
     """
 
-    def __init__(self, filter_params=()):
+    def __init__(self, filter_params=[]):
         self.filter_params = filter_params
 
-    def add_filter(self, param, value):
-        self.filter_params += ((param, value),)
+    def add_filter(self, filter_str):
+        self.filter_params.append(filter_str)
+
+    def add_filter_param(self, key, value):
+        key = key.replace('__', '.')
+        self.filter_params.append('{0}:{1}'.format(key, value))
 
     def get_filter_params(self):
-        return self.filter_params
+        return ['({})'.format(f) for f in self.filter_params if f]
 
     def clone(self):
         c = self.__class__()
-        c.filter_params = tuple(self.filter_params)
+        c.filter_params = list(self.filter_params)
         return c
 
 
@@ -169,13 +173,15 @@ class TaskQuerySet(object):
     def pending(self):
         return self.filter(status=PENDING)
 
-    def filter(self, **kwargs):
+    def filter(self, *args, **kwargs):
         """
         Returns a new TaskQuerySet with the given filters added.
         """
         clone = self._clone()
-        for param, value in kwargs.items():
-            clone.filter_obj.add_filter(param, value)
+        for f in args:
+            clone.filter_obj.add_filter(f)
+        for key, value in kwargs.items():
+            clone.filter_obj.add_filter_param(key, value)
         return clone
 
     def get(self, **kwargs):
@@ -209,32 +215,25 @@ class TaskWarrior(object):
         }
         self.tasks = TaskQuerySet(self)
 
-    def _generate_command(self, command):
-        args = ['task', 'rc:/']
+    def _get_command_args(self, args):
+        command_args = ['task', 'rc:/']
         for item in self.config.items():
-            args.append('rc.{0}={1}'.format(*item))
-        args.append(command)
-        return ' '.join(args)
+            command_args.append('rc.{0}={1}'.format(*item))
+        command_args.extend(args)
+        return command_args
 
-    def _execute_command(self, command):
-        p = subprocess.Popen(self._generate_command(command), shell=True,
+    def _execute_command(self, args):
+        p = subprocess.Popen(self._get_command_args(args),
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
         if p.returncode:
             raise TaskWarriorException(stderr.strip())
         return stdout.strip().split('\n')
 
-    def _format_filter_kwarg(self, kwarg):
-        key, val = kwarg[0], kwarg[1]
-        key = key.replace('__', '.')
-        return '{0}:{1}'.format(key, val)
-
     def _execute_filter(self, filter_obj):
-        filter_commands = ' '.join(map(self._format_filter_kwarg,
-                                       filter_obj.get_filter_params()))
-        command = '{0} export'.format(filter_commands)
+        args = filter_obj.get_filter_params() + ['export']
         tasks = []
-        for line in self._execute_command(command):
+        for line in self._execute_command(args):
             if line:
                 tasks.append(Task(self, json.loads(line.strip(','))))
         return tasks
@@ -243,16 +242,19 @@ class TaskWarrior(object):
         args = ['add', description]
         if project is not None:
             args.append('project:{0}'.format(project))
-        self._execute_command(' '.join(args))
+        self._execute_command(args)
 
     def delete_task(self, task_id):
-        self._execute_command('{0} rc.confirmation:no delete'.format(task_id))
+        args = [task_id, 'rc.confirmation:no', 'delete']
+        self._execute_command(args)
 
     def complete_task(self, task_id):
-        self._execute_command('{0} done'.format(task_id))
+        args = [task_id, 'done']
+        self._execute_command(args)
 
     def import_tasks(self, tasks):
         fd, path = tempfile.mkstemp()
         with open(path, 'w') as f:
             f.write(json.dumps(tasks))
-        self._execute_command('import {0}'.format(path))
+        args = ['import', path]
+        self._execute_command(args)
