@@ -52,6 +52,19 @@ class Task(object):
             return None
         return datetime.datetime.strptime(date_str, DATE_FORMAT)
 
+    def serialize_annotations(self, annotations):
+        ann_list = list(annotations)
+        for ann in ann_list:
+            ann['entry'] = ann['entry'].strftime(DATE_FORMAT)
+        return ann_list
+
+    def deserialize_annotations(self, annotations):
+        ann_list = list(annotations)
+        for ann in ann_list:
+            ann['entry'] = datetime.datetime.strptime(
+                ann['entry'], DATE_FORMAT)
+        return ann_list
+
     def regenerate_uuid(self):
         self['uuid'] = str(uuid.uuid4())
 
