@@ -100,7 +100,7 @@ class TaskFilter(object):
         self.filter_params.append('{0}:{1}'.format(key, value))
 
     def get_filter_params(self):
-        return ['({})'.format(f) for f in self.filter_params if f]
+        return [f for f in self.filter_params if f]
 
     def clone(self):
         c = self.__class__()
@@ -175,7 +175,7 @@ class TaskQuerySet(object):
         """
         Fetch the tasks which match the current filters.
         """
-        return self.warrior._execute_filter(self.filter_obj)
+        return self.warrior.filter_tasks(self.filter_obj)
 
     def all(self):
         """
@@ -243,8 +243,8 @@ class TaskWarrior(object):
             raise TaskWarriorException(stderr.strip())
         return stdout.strip().split('\n')
 
-    def _execute_filter(self, filter_obj):
-        args = filter_obj.get_filter_params() + ['export']
+    def filter_tasks(self, filter_obj):
+        args = ['export', '--'] + filter_obj.get_filter_params()
         tasks = []
         for line in self._execute_command(args):
             if line:
