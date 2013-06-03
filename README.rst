@@ -47,3 +47,8 @@ a period); so the above example is equivalent to the following command::
     $ task status:pending tags.contain=work
 
 .. _taskwarrior: http://taskwarrior.org
+
+Tasks can also be filtered using raw commands, like so::
+
+    >>> tw.tasks.filter('status:pending +work')
+    ['Upgrade Ubuntu Server']
