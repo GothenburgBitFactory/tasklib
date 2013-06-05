@@ -234,8 +234,10 @@ class TaskWarrior(object):
         return command_args
 
     def execute_command(self, args, config_override={}):
-        p = subprocess.Popen(self._get_command_args(args),
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        command_args = self._get_command_args(
+            args, config_override=config_override)
+        p = subprocess.Popen(command_args, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
         if p.returncode:
             error_msg = stderr.strip().splitlines()[-1]
