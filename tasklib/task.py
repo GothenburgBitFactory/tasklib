@@ -279,3 +279,9 @@ class TaskWarrior(object):
         self.execute_command(args, config_override={
             'merge.autopush': 'yes' if push else 'no',
         })
+
+    def undo(self):
+        args = ['undo']
+        self.execute_command(args, config_override={
+            'confirmation': 'no',
+        })
