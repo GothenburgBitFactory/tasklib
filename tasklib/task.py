@@ -1,17 +1,15 @@
 import copy
 import datetime
 import json
+import logging
 import os
 import subprocess
-import tempfile
-import uuid
-
 
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
-
 REPR_OUTPUT_SIZE = 10
-
 PENDING = 'pending'
+
+logger = logging.getLogger(__name__)
 
 
 class TaskWarriorException(Exception):
@@ -26,23 +24,22 @@ class Task(object):
     def __init__(self, warrior, data={}):
         self.warrior = warrior
         self._data = data
-
-    def __getitem__(self, key):
-        return self._get_field(key)
-
-    def __setitem__(self, key, val):
-        self._data[key] = val
+        print data
+        self._modified_fields = set()
 
     def __unicode__(self):
-        return self._data.get('description')
+        return self['description']
 
-    def _get_field(self, key):
-        hydrate_func = getattr(self, 'deserialize_{0}'.format(key), lambda x:x)
+    def __getitem__(self, key):
+        hydrate_func = getattr(self, 'deserialize_{0}'.format(key),
+                               lambda x: x)
         return hydrate_func(self._data.get(key))
 
-    def _set_field(self, key, value):
-        dehydrate_func = getattr(self, 'serialize_{0}'.format(key), lambda x:x)
+    def __setitem__(self, key, value):
+        dehydrate_func = getattr(self, 'serialize_{0}'.format(key),
+                                 lambda x: x)
         self._data[key] = dehydrate_func(value)
+        self._modified_fields.add(key)
 
     def serialize_due(self, date):
         return date.strftime(DATE_FORMAT)
@@ -65,21 +62,33 @@ class Task(object):
                 ann['entry'], DATE_FORMAT)
         return ann_list
 
-    def regenerate_uuid(self):
-        self['uuid'] = str(uuid.uuid4())
+    def deserialize_tags(self, tags):
+        if isinstance(tags, basestring):
+            return tags.split(',') if tags else []
+        return tags
+
+    def serialize_tags(self, tags):
+        return ','.join(tags) if tags else ''
 
     def delete(self):
-        self.warrior.delete_task(self['uuid'])
+        self.warrior.execute_command([self['id'], 'delete'], config_override={
+            'confirmation': 'no',
+        })
 
     def done(self):
-        self.warrior.complete_task(self['uuid'])
+        self.warrior.execute_comamnd([self['id'], 'done'])
 
-    def save(self, delete_first=True):
-        if self['uuid'] and delete_first:
-            self.delete()
-        if not self['uuid'] or delete_first:
-            self.regenerate_uuid()
-        self.warrior.import_tasks([self._data])
+    def save(self):
+        args = [self['id'], 'modify'] if self['id'] else ['add']
+        args.extend(self._get_modified_fields_as_args())
+        self.warrior.execute_command(args)
+        self._modified_fields.clear()
+
+    def _get_modified_fields_as_args(self):
+        args = []
+        for field in self._modified_fields:
+            args.append('{}:{}'.format(field, self._data[field]))
+        return args
 
     __repr__ = __unicode__
 
@@ -123,8 +132,8 @@ class TaskQuerySet(object):
         Deep copy of a QuerySet doesn't populate the cache
         """
         obj = self.__class__()
-        for k,v in self.__dict__.items():
-            if k in ('_iter','_result_cache'):
+        for k, v in self.__dict__.items():
+            if k in ('_iter', '_result_cache'):
                 obj.__dict__[k] = None
             else:
                 obj.__dict__[k] = copy.deepcopy(v, memo)
@@ -217,6 +226,7 @@ class TaskQuerySet(object):
 
 class TaskWarrior(object):
     def __init__(self, data_location='~/.task', create=True):
+        data_location = os.path.expanduser(data_location)
         if not os.path.exists(data_location):
             os.makedirs(data_location)
         self.config = {
@@ -230,12 +240,13 @@ class TaskWarrior(object):
         config.update(config_override)
         for item in config.items():
             command_args.append('rc.{0}={1}'.format(*item))
-        command_args.extend(args)
+        command_args.extend(map(str, args))
         return command_args
 
     def execute_command(self, args, config_override={}):
         command_args = self._get_command_args(
             args, config_override=config_override)
+        logger.debug(' '.join(command_args))
         p = subprocess.Popen(command_args, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
@@ -252,36 +263,13 @@ class TaskWarrior(object):
                 tasks.append(Task(self, json.loads(line.strip(','))))
         return tasks
 
-    def add_task(self, description, project=None):
-        args = ['add', description]
-        if project is not None:
-            args.append('project:{0}'.format(project))
-        self.execute_command(args)
-
-    def delete_task(self, task_id):
-        args = [task_id, 'rc.confirmation:no', 'delete']
-        self.execute_command(args)
-
-    def complete_task(self, task_id):
-        args = [task_id, 'done']
-        self.execute_command(args)
-
-    def import_tasks(self, tasks):
-        fd, path = tempfile.mkstemp()
-        with open(path, 'w') as f:
-            f.write(json.dumps(tasks))
-        args = ['import', path]
-        self.execute_command(args)
-
     def merge_with(self, path, push=False):
         path = path.rstrip('/') + '/'
-        args = ['merge', path]
-        self.execute_command(args, config_override={
+        self.execute_command(['merge', path], config_override={
             'merge.autopush': 'yes' if push else 'no',
         })
 
     def undo(self):
-        args = ['undo']
-        self.execute_command(args, config_override={
+        self.execute_command(['undo'], config_override={
             'confirmation': 'no',
         })
