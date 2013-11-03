@@ -36,3 +36,9 @@ class TaskFilterTest(TasklibTest):
     def test_completed_empty(self):
         self.tw.execute_command(['add', 'test task'])
         self.assertEqual(len(self.tw.tasks.completed()), 0)
+
+    def test_completed_non_empty(self):
+        self.tw.execute_command(['add', 'test task'])
+        self.assertEqual(len(self.tw.tasks.completed()), 0)
+        self.tw.tasks.all()[0].done()
+        self.assertEqual(len(self.tw.tasks.completed()), 1)
