@@ -76,7 +76,7 @@ class Task(object):
         })
 
     def done(self):
-        self.warrior.execute_comamnd([self['id'], 'done'])
+        self.warrior.execute_command([self['id'], 'done'])
 
     def save(self):
         args = [self['id'], 'modify'] if self['id'] else ['add']
