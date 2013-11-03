@@ -8,7 +8,7 @@ from .task import TaskWarrior
 class TasklibTest(unittest.TestCase):
 
     def setUp(self):
-        self.tmp = tempfile.mkdtemp()
+        self.tmp = tempfile.mkdtemp(dir='.')
         self.tw = TaskWarrior(data_location=self.tmp)
 
     def tearDown(self):
