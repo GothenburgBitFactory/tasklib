@@ -25,3 +25,14 @@ class TaskFilterTest(TasklibTest):
         self.assertEqual(len(self.tw.tasks.all()), 1)
         self.assertEqual(self.tw.tasks.all()[0]['description'], 'test task')
         self.assertEqual(self.tw.tasks.all()[0]['status'], 'pending')
+
+    def test_pending_non_empty(self):
+        self.tw.execute_command(['add', 'test task'])
+        self.assertEqual(len(self.tw.tasks.pending()), 1)
+        self.assertEqual(self.tw.tasks.pending()[0]['description'],
+                         'test task')
+        self.assertEqual(self.tw.tasks.pending()[0]['status'], 'pending')
+
+    def test_completed_empty(self):
+        self.tw.execute_command(['add', 'test task'])
+        self.assertEqual(len(self.tw.tasks.completed()), 0)

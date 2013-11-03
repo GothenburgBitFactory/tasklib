@@ -8,6 +8,7 @@ import subprocess
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
 REPR_OUTPUT_SIZE = 10
 PENDING = 'pending'
+COMPLETED = 'completed'
 
 logger = logging.getLogger(__name__)
 
@@ -194,6 +195,9 @@ class TaskQuerySet(object):
 
     def pending(self):
         return self.filter(status=PENDING)
+
+    def completed(self):
+        return self.filter(status=COMPLETED)
 
     def filter(self, *args, **kwargs):
         """
