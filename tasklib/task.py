@@ -25,7 +25,6 @@ class Task(object):
     def __init__(self, warrior, data={}):
         self.warrior = warrior
         self._data = data
-        print data
         self._modified_fields = set()
 
     def __unicode__(self):
