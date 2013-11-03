@@ -12,6 +12,7 @@ setup(
     download_url='https://github.com/robgolding63/tasklib/downloads',
     packages=find_packages(),
     include_package_data=True,
+    test_suite='tasklib.tests',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: BSD License',
