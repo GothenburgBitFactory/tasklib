@@ -10,4 +10,5 @@ install:
   - "pip install -e ."
 before_script:
   - sudo apt-get install -qq task
+  - task --version
 script: "python setup.py test"
