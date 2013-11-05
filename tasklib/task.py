@@ -254,7 +254,10 @@ class TaskWarrior(object):
                              stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
         if p.returncode:
-            error_msg = stderr.strip().splitlines()[-1]
+            if stderr.strip():
+                error_msg = stderr.strip().splitlines()[-1]
+            else:
+                error_msg = stdout.strip()
             raise TaskWarriorException(error_msg)
         return stdout.strip().split('\n')
 
