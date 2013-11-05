@@ -266,7 +266,11 @@ class TaskWarrior(object):
         tasks = []
         for line in self.execute_command(args):
             if line:
-                tasks.append(Task(self, json.loads(line.strip(','))))
+                data = line.strip(',')
+                try:
+                    tasks.append(Task(self, json.loads(data)))
+                except ValueError:
+                    raise TaskWarriorException('Invalid JSON: %s' % data)
         return tasks
 
     def merge_with(self, path, push=False):
