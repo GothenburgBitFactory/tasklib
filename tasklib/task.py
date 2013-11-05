@@ -230,7 +230,7 @@ class TaskQuerySet(object):
 class TaskWarrior(object):
     def __init__(self, data_location='~/.task', create=True):
         data_location = os.path.expanduser(data_location)
-        if not os.path.exists(data_location):
+        if create and not os.path.exists(data_location):
             os.makedirs(data_location)
         self.config = {
             'data.location': os.path.expanduser(data_location),
