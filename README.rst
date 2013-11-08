@@ -1,6 +1,9 @@
 tasklib
 =======
 
+.. image:: https://travis-ci.org/robgolding63/tasklib.png
+    :target: http://travis-ci.org/robgolding63/tasklib
+
 A Python library for interacting with taskwarrior_ databases.
 
 Requirements
