@@ -252,7 +252,7 @@ class TaskWarrior(object):
         logger.debug(' '.join(command_args))
         p = subprocess.Popen(command_args, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
-        stdout, stderr = p.communicate()
+        stdout, stderr = [x.decode() for x in p.communicate()]
         if p.returncode:
             if stderr.strip():
                 error_msg = stderr.strip().splitlines()[-1]
