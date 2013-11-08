@@ -6,11 +6,8 @@ python:
   - "2.7"
   - "3.2"
   - "3.3"
-before_install:
-  - sudo apt-get update -qq
 install:
-  - "pip install -e ."
-before_script:
+  - pip install -e .
   - sudo apt-get install -qq build-essential cmake
   - wget http://www.taskwarrior.org/download/task-$TASK_VERSION.tar.gz
   - tar -zxvf task-$TASK_VERSION.tar.gz
@@ -19,4 +16,7 @@ before_script:
   - make
   - sudo make install
   - task --version
-script: "python setup.py test"
+before_script:
+  - cd $TRAVIS_BUILD_DIR
+script:
+  - python setup.py test
