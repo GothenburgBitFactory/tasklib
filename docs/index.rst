@@ -122,3 +122,5 @@ To mark a task as complete, use ``done()``::
     >>> task.done()
     >>> len(tw.tasks.pending().filter(tags__contain='work'))
     0
+
+.. _taskwarrior: http://taskwarrior.org
