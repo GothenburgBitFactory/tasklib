@@ -44,4 +44,7 @@ tasklib has a similar API to that of Django's ORM::
     >>> tasks[0]['tags'] = ['languages']
     >>> tasks[0].save()
 
+For more advanced usage, see the documentation_.
+
 .. _taskwarrior: http://taskwarrior.org
+.. _documentation: http://tasklib.readthedocs.org/en/latest/
