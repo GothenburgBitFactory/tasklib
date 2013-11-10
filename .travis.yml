@@ -9,7 +9,7 @@ python:
   - "3.3"
 install:
   - pip install -e .
-  - sudo apt-get install -qq build-essential cmake
+  - sudo apt-get install -qq build-essential cmake uuid-dev
   - wget http://www.taskwarrior.org/download/task-$TASK_VERSION.tar.gz
   - tar -zxvf task-$TASK_VERSION.tar.gz
   - cd task-$TASK_VERSION
