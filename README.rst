@@ -25,7 +25,7 @@ Install via pip::
 Usage
 -----
 
-.. source-code:
+tasklib has a similar API to that of Django's ORM::
 
     >>> from tasklib.task import TaskWarrior
 
@@ -38,24 +38,10 @@ Usage
     >>> type(tasks[0])
     <class 'tasklib.task.Task'>
     >>> task[0].done()
-
-Filtering Tasks
----------------
-
-Tasks can be filtered using the ``TaskQuerySet`` API which emulates the
-Django ORM::
-
-    >>> tw.tasks.filter(status='pending', tags__contain='work')
-    ['Upgrade Ubuntu Server']
-
-Filter arguments are passed to the ``task`` command (``__`` is replaced by
-a period); so the above example is equivalent to the following command::
-
-    $ task status:pending tags.contain=work
+    >>> tasks = tw.tasks.pending()
+    >>> tasks
+    ['Learn German']
+    >>> tasks[0]['tags'] = ['languages']
+    >>> tasks[0].save()
 
 .. _taskwarrior: http://taskwarrior.org
-
-Tasks can also be filtered using raw commands, like so::
-
-    >>> tw.tasks.filter('status:pending +work')
-    ['Upgrade Ubuntu Server']
