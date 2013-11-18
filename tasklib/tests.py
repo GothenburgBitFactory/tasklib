@@ -42,3 +42,37 @@ class TaskFilterTest(TasklibTest):
         self.assertEqual(len(self.tw.tasks.completed()), 0)
         self.tw.tasks.all()[0].done()
         self.assertEqual(len(self.tw.tasks.completed()), 1)
+
+
+class AnnotationTest(TasklibTest):
+
+    def setUp(self):
+        super(AnnotationTest, self).setUp()
+        self.tw.execute_command(['add', 'test task'])
+
+    def test_adding_annotation(self):
+        task = self.tw.tasks.get()
+        task.add_annotation('test annotation')
+        self.assertEqual(len(task['annotations']), 1)
+        ann = task['annotations'][0]
+        self.assertEqual(ann['description'], 'test annotation')
+
+    def test_removing_annotation(self):
+        task = self.tw.tasks.get()
+        task.add_annotation('test annotation')
+        ann = task['annotations'][0]
+        ann.remove()
+        self.assertEqual(len(task['annotations']), 0)
+
+    def test_removing_annotation_by_description(self):
+        task = self.tw.tasks.get()
+        task.add_annotation('test annotation')
+        task.remove_annotation('test annotation')
+        self.assertEqual(len(task['annotations']), 0)
+
+    def test_removing_annotation_by_obj(self):
+        task = self.tw.tasks.get()
+        task.add_annotation('test annotation')
+        ann = task['annotations'][0]
+        task.remove_annotation(ann)
+        self.assertEqual(len(task['annotations']), 0)

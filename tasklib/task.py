@@ -17,18 +17,11 @@ class TaskWarriorException(Exception):
     pass
 
 
-class Task(object):
+class TaskResource(object):
+    read_only_fields = []
 
-    class DoesNotExist(Exception):
-        pass
-
-    def __init__(self, warrior, data={}):
-        self.warrior = warrior
+    def _load_data(self, data):
         self._data = data
-        self._modified_fields = set()
-
-    def __unicode__(self):
-        return self['description']
 
     def __getitem__(self, key):
         hydrate_func = getattr(self, 'deserialize_{0}'.format(key),
@@ -36,10 +29,52 @@ class Task(object):
         return hydrate_func(self._data.get(key))
 
     def __setitem__(self, key, value):
+        if key in self.read_only_fields:
+            raise RuntimeError('Field \'%s\' is read-only' % key)
         dehydrate_func = getattr(self, 'serialize_{0}'.format(key),
                                  lambda x: x)
         self._data[key] = dehydrate_func(value)
         self._modified_fields.add(key)
+
+    def __repr__(self):
+        return self.__unicode__()
+
+
+class TaskAnnotation(TaskResource):
+    read_only_fields = ['entry', 'description']
+
+    def __init__(self, task, data={}):
+        self.task = task
+        self._load_data(data)
+
+    def deserialize_entry(self, data):
+        return datetime.datetime.strptime(data, DATE_FORMAT) if data else None
+
+    def serialize_entry(self, date):
+        return date.strftime(DATE_FORMAT) if date else ''
+
+    def remove(self):
+        self.task.remove_annotation(self)
+
+    def __unicode__(self):
+        return self['description']
+
+    __repr__ = __unicode__
+
+
+class Task(TaskResource):
+    read_only_fields = ['id', 'entry', 'urgency']
+
+    class DoesNotExist(Exception):
+        pass
+
+    def __init__(self, warrior, data={}):
+        self.warrior = warrior
+        self._load_data(data)
+        self._modified_fields = set()
+
+    def __unicode__(self):
+        return self['description']
 
     def serialize_due(self, date):
         return date.strftime(DATE_FORMAT)
@@ -49,18 +84,8 @@ class Task(object):
             return None
         return datetime.datetime.strptime(date_str, DATE_FORMAT)
 
-    def serialize_annotations(self, annotations):
-        ann_list = list(annotations)
-        for ann in ann_list:
-            ann['entry'] = ann['entry'].strftime(DATE_FORMAT)
-        return ann_list
-
-    def deserialize_annotations(self, annotations):
-        ann_list = list(annotations)
-        for ann in ann_list:
-            ann['entry'] = datetime.datetime.strptime(
-                ann['entry'], DATE_FORMAT)
-        return ann_list
+    def deserialize_annotations(self, data):
+        return [TaskAnnotation(self, d) for d in data] if data else []
 
     def deserialize_tags(self, tags):
         if isinstance(tags, basestring):
@@ -84,13 +109,33 @@ class Task(object):
         self.warrior.execute_command(args)
         self._modified_fields.clear()
 
+    def add_annotation(self, annotation):
+        args = [self['id'], 'annotate', annotation]
+        self.warrior.execute_command(args)
+        self.refresh(only_fields=['annotations'])
+
+    def remove_annotation(self, annotation):
+        if isinstance(annotation, TaskAnnotation):
+            annotation = annotation['description']
+        args = [self['id'], 'denotate', annotation]
+        self.warrior.execute_command(args)
+        self.refresh(only_fields=['annotations'])
+
     def _get_modified_fields_as_args(self):
         args = []
         for field in self._modified_fields:
             args.append('{}:{}'.format(field, self._data[field]))
         return args
 
-    __repr__ = __unicode__
+    def refresh(self, only_fields=[]):
+        args = [self['uuid'], 'export']
+        new_data = json.loads(self.warrior.execute_command(args)[0])
+        if only_fields:
+            to_update = dict(
+                [(k, new_data.get(k)) for k in only_fields])
+            self._data.update(to_update)
+        else:
+            self._data = new_data
 
 
 class TaskFilter(object):
