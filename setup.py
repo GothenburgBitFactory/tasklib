@@ -1,8 +1,10 @@
 from setuptools import setup, find_packages
 
+version = '0.3.1-dev'
+
 setup(
     name='tasklib',
-    version='0.2',
+    version=version,
     description='Python Task Warrior library',
     long_description=open('README.rst').read(),
     author='Rob Golding',
@@ -15,9 +17,15 @@ setup(
     test_suite='tasklib.tests',
     classifiers=[
         'Development Status :: 4 - Beta',
+        'Programming Language :: Python',
+        "Programming Language :: Python :: 2",
+        "Programming Language :: Python :: 2.6",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.2",
+        "Programming Language :: Python :: 3.3",
         'License :: OSI Approved :: BSD License',
         'Topic :: Software Development :: Libraries :: Python Modules',
-        'Programming Language :: Python',
         'Intended Audience :: Developers',
     ],
 )
