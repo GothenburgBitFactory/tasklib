@@ -265,11 +265,15 @@ class TaskQuerySet(object):
             return clone._result_cache[0]
         if not num:
             raise Task.DoesNotExist(
-                'Task matching query does not exist. '
-                'Lookup parameters were {0}'.format(kwargs))
+                'Task matching query does not exist.\n'
+                'Lookup parameters were {0}'.format(
+                    clone.filter_obj.get_filter_params()
+                ))
         raise ValueError(
-            'get() returned more than one Task -- it returned {0}! '
-            'Lookup parameters were {1}'.format(num, kwargs))
+            'get() returned more than one Task -- it returned {0}!\n'
+            'Lookup parameters were {1}'.format(
+                num, clone.filter_obj.get_filter_params()
+            ))
 
 
 class TaskWarrior(object):

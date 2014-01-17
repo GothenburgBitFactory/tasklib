@@ -78,14 +78,16 @@ exception::
     Traceback (most recent call last):
       File "<stdin>", line 1, in <module>
       File "tasklib/task.py", line 224, in get
-        'Lookup parameters were {0}'.format(kwargs))
-    tasklib.task.DoesNotExist: Task matching query does not exist. Lookup parameters were {'status': 'completed'}
+        clone.filter_obj.get_filter_params()
+    tasklib.task.DoesNotExist: Task matching query does not exist.
+    Lookup parameters were ['status:pending', 'tags.contain:work', 'status:completed']
     >>> tw.tasks.filter(status='pending', tags__contain='home').get()
     Traceback (most recent call last):
       File "<stdin>", line 1, in <module>
       File "tasklib/task.py", line 227, in get
-        'Lookup parameters were {1}'.format(num, kwargs))
-    ValueError: get() returned more than one Task -- it returned 2! Lookup parameters were {}
+        num, clone.filter_obj.get_filter_params()
+    ValueError: get() returned more than one Task -- it returned 2!
+    Lookup parameters were ['status:pending', 'tags.contain:home']
 
 Task Attributes
 ---------------
