@@ -1,7 +1,6 @@
 language: python
 env:
-  - TASK_VERSION=2.2.0
-  - TASK_VERSION=2.3.0.beta2
+  - TASK_VERSION=2.3.0
 python:
   - "2.6"
   - "2.7"
