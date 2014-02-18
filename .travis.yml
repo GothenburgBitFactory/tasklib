@@ -1,20 +1,14 @@
 language: python
 env:
-  - TASK_VERSION=2.3.0
+  - BUILD_FROM_SOURCE=true TASK_VERSION=2.3.0
+  - TASK_VERSION=2.2.0-3
 python:
   - "2.6"
   - "2.7"
   - "3.2"
   - "3.3"
 install:
-  - pip install -e .
-  - sudo apt-get install -qq build-essential cmake uuid-dev
-  - wget http://www.taskwarrior.org/download/task-$TASK_VERSION.tar.gz
-  - tar -zxvf task-$TASK_VERSION.tar.gz
-  - cd task-$TASK_VERSION
-  - cmake .
-  - make
-  - sudo make install
+  - ./builddep.sh
   - task --version
 before_script:
   - cd $TRAVIS_BUILD_DIR
