@@ -9,5 +9,5 @@ if [[ $BUILD_FROM_SOURCE ]]; then
     make
     sudo make install
 else
-    sudo apt-get install task=$TASK_VERSION
+    sudo apt-get install task=$TASK_VERSION*
 fi
