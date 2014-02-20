@@ -1,14 +1,23 @@
 language: python
 env:
-  - BUILD_FROM_SOURCE=true TASK_VERSION=2.3.0
-  - TASK_VERSION=2.2.0
+  - RELEASE=precise TASK_VERSION=2.0.0
+  - RELEASE=quantal TASK_VERSION=2.1.1
+  - RELEASE=raring TASK_VERSION=2.1.2
+  - RELEASE=saucy TASK_VERSION=2.2.0
 python:
   - "2.6"
   - "2.7"
   - "3.2"
   - "3.3"
 install:
-  - ./builddep.sh
+  - pip install -e .
+  - sudo apt-get install -qq build-essential cmake uuid-dev
+  - wget http://archive.ubuntu.com/ubuntu/pool/$RELEASE/t/task/task_$TASK_VERSION.orig.tar.gz
+  - tar -zxvf task_$TASK_VERSION.orig.tar.gz
+  - cd task-$TASK_VERSION
+  - cmake .
+  - make
+  - sudo make install
   - task --version
 before_script:
   - cd $TRAVIS_BUILD_DIR
