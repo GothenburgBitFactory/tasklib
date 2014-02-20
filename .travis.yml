@@ -1,6 +1,5 @@
 language: python
 env:
-  - TASK_VERSION=2.0.0
   - TASK_VERSION=2.1.1
   - TASK_VERSION=2.1.2
   - TASK_VERSION=2.2.0
