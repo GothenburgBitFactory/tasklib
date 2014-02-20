@@ -1,9 +1,9 @@
 language: python
 env:
-  - RELEASE=precise TASK_VERSION=2.0.0
-  - RELEASE=quantal TASK_VERSION=2.1.1
-  - RELEASE=raring TASK_VERSION=2.1.2
-  - RELEASE=saucy TASK_VERSION=2.2.0
+  - TASK_VERSION=2.0.0
+  - TASK_VERSION=2.1.1
+  - TASK_VERSION=2.1.2
+  - TASK_VERSION=2.2.0
 python:
   - "2.6"
   - "2.7"
@@ -12,7 +12,7 @@ python:
 install:
   - pip install -e .
   - sudo apt-get install -qq build-essential cmake uuid-dev
-  - wget http://archive.ubuntu.com/ubuntu/pool/$RELEASE/t/task/task_$TASK_VERSION.orig.tar.gz
+  - wget http://archive.ubuntu.com/ubuntu/pool/universe/t/task/task_$TASK_VERSION.orig.tar.gz
   - tar -zxvf task_$TASK_VERSION.orig.tar.gz
   - cd task-$TASK_VERSION
   - cmake .
