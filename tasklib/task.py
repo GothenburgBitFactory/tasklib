@@ -1,8 +1,10 @@
+from __future__ import print_function
 import copy
 import datetime
 import json
 import logging
 import os
+import six
 import subprocess
 
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
@@ -36,8 +38,11 @@ class TaskResource(object):
         self._data[key] = dehydrate_func(value)
         self._modified_fields.add(key)
 
-    def __repr__(self):
-        return self.__unicode__()
+    def __str__(self):
+        s = six.text_type(self.__unicode__())
+        if not six.PY3:
+            s = s.encode('utf-8')
+        return s
 
 
 class TaskAnnotation(TaskResource):
@@ -297,7 +302,7 @@ class TaskWarrior(object):
         logger.debug(' '.join(command_args))
         p = subprocess.Popen(command_args, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
-        stdout, stderr = [x.decode() for x in p.communicate()]
+        stdout, stderr = [x.decode('utf-8') for x in p.communicate()]
         if p.returncode:
             if stderr.strip():
                 error_msg = stderr.strip().splitlines()[-1]

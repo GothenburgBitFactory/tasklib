@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '0.3.1'
+version = '0.4.0'
 
 setup(
     name='tasklib',
@@ -15,6 +15,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     test_suite='tasklib.tests',
+    install_requires=['six==1.5.2'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Programming Language :: Python',

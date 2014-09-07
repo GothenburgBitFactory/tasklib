@@ -1,17 +1,19 @@
 language: python
 env:
+  - TASK_VERSION=2.1.1
+  - TASK_VERSION=2.1.2
   - TASK_VERSION=2.2.0
-  - TASK_VERSION=2.3.0.beta2
 python:
   - "2.6"
   - "2.7"
   - "3.2"
   - "3.3"
+  - "3.4"
 install:
   - pip install -e .
   - sudo apt-get install -qq build-essential cmake uuid-dev
-  - wget http://www.taskwarrior.org/download/task-$TASK_VERSION.tar.gz
-  - tar -zxvf task-$TASK_VERSION.tar.gz
+  - wget http://archive.ubuntu.com/ubuntu/pool/universe/t/task/task_$TASK_VERSION.orig.tar.gz
+  - tar -zxvf task_$TASK_VERSION.orig.tar.gz
   - cd task-$TASK_VERSION
   - cmake .
   - make
