@@ -44,6 +44,9 @@ class TaskResource(object):
             s = s.encode('utf-8')
         return s
 
+    def __repr__(self):
+        return str(self)
+
 
 class TaskAnnotation(TaskResource):
     read_only_fields = ['entry', 'description']
