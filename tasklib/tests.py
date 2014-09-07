@@ -1,3 +1,5 @@
+# coding=utf-8
+
 import shutil
 import tempfile
 import unittest
@@ -76,3 +78,14 @@ class AnnotationTest(TasklibTest):
         ann = task['annotations'][0]
         task.remove_annotation(ann)
         self.assertEqual(len(task['annotations']), 0)
+
+
+class UnicodeTest(TasklibTest):
+
+    def test_unicode_task(self):
+        self.tw.execute_command(['add', '†åßk'])
+        self.tw.tasks.get()
+
+    def test_non_unicode_task(self):
+        self.tw.execute_command(['add', 'task'])
+        self.tw.tasks.get()
