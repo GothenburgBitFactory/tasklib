@@ -159,6 +159,10 @@ class TaskFilter(object):
 
     def add_filter_param(self, key, value):
         key = key.replace('__', '.')
+
+        # Replace the value with empty string, since that is the
+        # convention in TW for empty values
+        value = value if value is not None else ''
         self.filter_params.append('{0}:{1}'.format(key, value))
 
     def get_filter_params(self):
