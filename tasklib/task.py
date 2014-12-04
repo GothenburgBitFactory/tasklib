@@ -163,7 +163,13 @@ class TaskFilter(object):
         # Replace the value with empty string, since that is the
         # convention in TW for empty values
         value = value if value is not None else ''
-        self.filter_params.append('{0}:{1}'.format(key, value))
+
+        # If we are filtering by uuid:, do not use uuid keyword
+        # due to TW-1452 bug
+        if key == 'uuid':
+            self.filter_params.insert(0, value)
+        else:
+            self.filter_params.append('{0}:{1}'.format(key, value))
 
     def get_filter_params(self):
         return [f for f in self.filter_params if f]
