@@ -84,6 +84,14 @@ class Task(TaskResource):
     def __unicode__(self):
         return self['description']
 
+    @property
+    def completed(self):
+        """
+        Returns true if task has been completed, false otherwise.
+        """
+
+        return self['id'] == 0
+
     def serialize_due(self, date):
         return date.strftime(DATE_FORMAT)
 
