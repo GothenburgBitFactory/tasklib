@@ -95,9 +95,13 @@ class Task(TaskResource):
         """
         pass
 
-    def __init__(self, warrior, data={}):
+    def __init__(self, warrior, data={}, **kwargs):
         self.warrior = warrior
-        self._load_data(data)
+
+        # We keep data for backwards compatibility
+        kwargs.update(data)
+
+        self._load_data(kwargs)
         self._modified_fields = set()
 
     def __unicode__(self):
