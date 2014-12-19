@@ -71,7 +71,7 @@ class TaskAnnotation(TaskResource):
 
 
 class Task(TaskResource):
-    read_only_fields = ['id', 'entry', 'urgency']
+    read_only_fields = ['id', 'entry', 'urgency', 'uuid']
 
     class DoesNotExist(Exception):
         pass
@@ -138,7 +138,7 @@ class Task(TaskResource):
         if self.deleted:
             raise self.DeletedTask("Task was already deleted")
 
-        self.warrior.execute_command([self['id'], 'delete'], config_override={
+        self.warrior.execute_command([self['uuid'], 'delete'], config_override={
             'confirmation': 'no',
         })
 
@@ -155,26 +155,26 @@ class Task(TaskResource):
         elif self.deleted:
             raise self.DeletedTask("Deleted task cannot be completed")
 
-        self.warrior.execute_command([self['id'], 'done'])
+        self.warrior.execute_command([self['uuid'], 'done'])
 
         # Refresh the status again, so that we have updated info stored
         self.refresh(only_fields=['status'])
 
     def save(self):
-        args = [self['id'], 'modify'] if self['id'] else ['add']
+        args = [self['uuid'], 'modify'] if self['uuid'] else ['add']
         args.extend(self._get_modified_fields_as_args())
         self.warrior.execute_command(args)
         self._modified_fields.clear()
 
     def add_annotation(self, annotation):
-        args = [self['id'], 'annotate', annotation]
+        args = [self['uuid'], 'annotate', annotation]
         self.warrior.execute_command(args)
         self.refresh(only_fields=['annotations'])
 
     def remove_annotation(self, annotation):
         if isinstance(annotation, TaskAnnotation):
             annotation = annotation['description']
-        args = [self['id'], 'denotate', annotation]
+        args = [self['uuid'], 'denotate', annotation]
         self.warrior.execute_command(args)
         self.refresh(only_fields=['annotations'])
 
