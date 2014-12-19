@@ -148,13 +148,13 @@ class Task(TaskResource):
 
     def delete(self):
         if not self.saved:
-            raise self.NotSaved("Task needs to be saved before it can be deleted")
+            raise Task.NotSaved("Task needs to be saved before it can be deleted")
 
         # Refresh the status, and raise exception if the task is deleted
         self.refresh(only_fields=['status'])
 
         if self.deleted:
-            raise self.DeletedTask("Task was already deleted")
+            raise Task.DeletedTask("Task was already deleted")
 
         self.warrior.execute_command([self['uuid'], 'delete'], config_override={
             'confirmation': 'no',
@@ -166,15 +166,15 @@ class Task(TaskResource):
 
     def done(self):
         if not self.saved:
-            raise self.NotSaved("Task needs to be saved before it can be completed")
+            raise Task.NotSaved("Task needs to be saved before it can be completed")
 
         # Refresh, and raise exception if task is already completed/deleted
         self.refresh(only_fields=['status'])
 
         if self.completed:
-            raise self.CompletedTask("Cannot complete a completed task")
+            raise Task.CompletedTask("Cannot complete a completed task")
         elif self.deleted:
-            raise self.DeletedTask("Deleted task cannot be completed")
+            raise Task.DeletedTask("Deleted task cannot be completed")
 
         self.warrior.execute_command([self['uuid'], 'done'])
 
@@ -204,7 +204,7 @@ class Task(TaskResource):
 
     def add_annotation(self, annotation):
         if not self.saved:
-            raise self.NotSaved("Task needs to be saved to add annotation")
+            raise Task.NotSaved("Task needs to be saved to add annotation")
 
         args = [self['uuid'], 'annotate', annotation]
         self.warrior.execute_command(args)
@@ -212,7 +212,7 @@ class Task(TaskResource):
 
     def remove_annotation(self, annotation):
         if not self.saved:
-            raise self.NotSaved("Task needs to be saved to add annotation")
+            raise Task.NotSaved("Task needs to be saved to add annotation")
 
         if isinstance(annotation, TaskAnnotation):
             annotation = annotation['description']
@@ -239,7 +239,7 @@ class Task(TaskResource):
     def refresh(self, only_fields=[]):
         # Raise error when trying to refresh a task that has not been saved
         if not self.saved:
-            raise self.NotSaved("Task needs to be saved to be refreshed")
+            raise Task.NotSaved("Task needs to be saved to be refreshed")
 
         # We need to use ID as backup for uuid here for the refreshes
         # of newly saved tasks. Any other place in the code is fine
