@@ -201,8 +201,18 @@ class Task(TaskResource):
 
     def _get_modified_fields_as_args(self):
         args = []
-        for field in self._modified_fields:
-            args.append('{}:{}'.format(field, self._data[field]))
+
+        # If we're modifying saved task, simply pass on all modified fields
+        if self.saved:
+            for field in self._modified_fields:
+                args.append('{0}:{1}'.format(field, self._data[field]))
+        # For new tasks, pass all fields that make sense
+        else:
+            for field in self._data.keys():
+                if field in self.read_only_fields:
+                    continue
+                args.append('{0}:{1}'.format(field, self._data[field]))
+
         return args
 
     def refresh(self, only_fields=[]):
