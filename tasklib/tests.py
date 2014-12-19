@@ -4,7 +4,7 @@ import shutil
 import tempfile
 import unittest
 
-from .task import TaskWarrior
+from .task import TaskWarrior, Task
 
 
 class TasklibTest(unittest.TestCase):
@@ -23,24 +23,24 @@ class TaskFilterTest(TasklibTest):
         self.assertEqual(len(self.tw.tasks.all()), 0)
 
     def test_all_non_empty(self):
-        self.tw.execute_command(['add', 'test task'])
+        Task(self.tw, description="test task").save()
         self.assertEqual(len(self.tw.tasks.all()), 1)
         self.assertEqual(self.tw.tasks.all()[0]['description'], 'test task')
         self.assertEqual(self.tw.tasks.all()[0]['status'], 'pending')
 
     def test_pending_non_empty(self):
-        self.tw.execute_command(['add', 'test task'])
+        Task(self.tw, description="test task").save()
         self.assertEqual(len(self.tw.tasks.pending()), 1)
         self.assertEqual(self.tw.tasks.pending()[0]['description'],
                          'test task')
         self.assertEqual(self.tw.tasks.pending()[0]['status'], 'pending')
 
     def test_completed_empty(self):
-        self.tw.execute_command(['add', 'test task'])
+        Task(self.tw, description="test task").save()
         self.assertEqual(len(self.tw.tasks.completed()), 0)
 
     def test_completed_non_empty(self):
-        self.tw.execute_command(['add', 'test task'])
+        Task(self.tw, description="test task").save()
         self.assertEqual(len(self.tw.tasks.completed()), 0)
         self.tw.tasks.all()[0].done()
         self.assertEqual(len(self.tw.tasks.completed()), 1)
@@ -50,7 +50,7 @@ class AnnotationTest(TasklibTest):
 
     def setUp(self):
         super(AnnotationTest, self).setUp()
-        self.tw.execute_command(['add', 'test task'])
+        Task(self.tw, description="test task").save()
 
     def test_adding_annotation(self):
         task = self.tw.tasks.get()
@@ -83,9 +83,9 @@ class AnnotationTest(TasklibTest):
 class UnicodeTest(TasklibTest):
 
     def test_unicode_task(self):
-        self.tw.execute_command(['add', '†åßk'])
+        Task(self.tw, description="†åßk").save()
         self.tw.tasks.get()
 
     def test_non_unicode_task(self):
-        self.tw.execute_command(['add', 'task'])
+        Task(self.tw, description="test task").save()
         self.tw.tasks.get()
