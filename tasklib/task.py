@@ -88,6 +88,13 @@ class Task(TaskResource):
         """
         pass
 
+    class NotSaved(Exception):
+        """
+        Raised when the operation cannot be performed on the task, because
+        it has not been saved to TaskWarrior yet.
+        """
+        pass
+
     def __init__(self, warrior, data={}):
         self.warrior = warrior
         self._load_data(data)
@@ -136,6 +143,9 @@ class Task(TaskResource):
         return ','.join(tags) if tags else ''
 
     def delete(self):
+        if not self.saved:
+            raise self.NotSaved("Task needs to be saved before it can be deleted")
+
         # Refresh the status, and raise exception if the task is deleted
         self.refresh(only_fields=['status'])
 
@@ -151,6 +161,9 @@ class Task(TaskResource):
 
 
     def done(self):
+        if not self.saved:
+            raise self.NotSaved("Task needs to be saved before it can be completed")
+
         # Refresh, and raise exception if task is already completed/deleted
         self.refresh(only_fields=['status'])
 
@@ -186,17 +199,21 @@ class Task(TaskResource):
         self.refresh()
 
     def add_annotation(self, annotation):
+        if not self.saved:
+            raise self.NotSaved("Task needs to be saved to add annotation")
+
         args = [self['uuid'], 'annotate', annotation]
         self.warrior.execute_command(args)
-        # TODO: This will not work with the tasks that are not yet saved
         self.refresh(only_fields=['annotations'])
 
     def remove_annotation(self, annotation):
+        if not self.saved:
+            raise self.NotSaved("Task needs to be saved to add annotation")
+
         if isinstance(annotation, TaskAnnotation):
             annotation = annotation['description']
         args = [self['uuid'], 'denotate', annotation]
         self.warrior.execute_command(args)
-        # TODO: This will not work with the tasks that are not yet saved
         self.refresh(only_fields=['annotations'])
 
     def _get_modified_fields_as_args(self):
@@ -216,9 +233,9 @@ class Task(TaskResource):
         return args
 
     def refresh(self, only_fields=[]):
-        # Do not refresh for tasks that are not yet saved in the TW
+        # Raise error when trying to refresh a task that has not been saved
         if not self.saved:
-            return
+            raise self.NotSaved("Task needs to be saved to be refreshed")
 
         # We need to use ID as backup for uuid here for the refreshes
         # of newly saved tasks. Any other place in the code is fine
