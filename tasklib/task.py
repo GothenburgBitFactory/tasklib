@@ -76,6 +76,18 @@ class Task(TaskResource):
     class DoesNotExist(Exception):
         pass
 
+    class CompletedTask(Exception):
+        """
+        Raised when the operation cannot be performed on the completed task.
+        """
+        pass
+
+    class DeletedTask(Exception):
+        """
+        Raised when the operation cannot be performed on the deleted task.
+        """
+        pass
+
     def __init__(self, warrior, data={}):
         self.warrior = warrior
         self._load_data(data)
@@ -83,6 +95,22 @@ class Task(TaskResource):
 
     def __unicode__(self):
         return self['description']
+
+    @property
+    def completed(self):
+        return self['status'] == six.text_type('completed')
+
+    @property
+    def deleted(self):
+        return self['status'] == six.text_type('deleted')
+
+    @property
+    def waiting(self):
+        return self['status'] == six.text_type('waiting')
+
+    @property
+    def pending(self):
+        return self['status'] == six.text_type('pending')
 
     def serialize_due(self, date):
         return date.strftime(DATE_FORMAT)
@@ -104,12 +132,33 @@ class Task(TaskResource):
         return ','.join(tags) if tags else ''
 
     def delete(self):
+        # Refresh the status, and raise exception if the task is deleted
+        self.refresh(only_fields=['status'])
+
+        if self.deleted:
+            raise self.DeletedTask("Task was already deleted")
+
         self.warrior.execute_command([self['id'], 'delete'], config_override={
             'confirmation': 'no',
         })
 
+        # Refresh the status again, so that we have updated info stored
+        self.refresh(only_fields=['status'])
+
+
     def done(self):
+        # Refresh, and raise exception if task is already completed/deleted
+        self.refresh(only_fields=['status'])
+
+        if self.completed:
+            raise self.CompletedTask("Cannot complete a completed task")
+        elif self.deleted:
+            raise self.DeletedTask("Deleted task cannot be completed")
+
         self.warrior.execute_command([self['id'], 'done'])
+
+        # Refresh the status again, so that we have updated info stored
+        self.refresh(only_fields=['status'])
 
     def save(self):
         args = [self['id'], 'modify'] if self['id'] else ['add']
