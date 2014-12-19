@@ -112,6 +112,10 @@ class Task(TaskResource):
     def pending(self):
         return self['status'] == six.text_type('pending')
 
+    @property
+    def saved(self):
+        return self['uuid'] is not None or self['id'] is not None
+
     def serialize_due(self, date):
         return date.strftime(DATE_FORMAT)
 
@@ -161,14 +165,30 @@ class Task(TaskResource):
         self.refresh(only_fields=['status'])
 
     def save(self):
-        args = [self['uuid'], 'modify'] if self['uuid'] else ['add']
+        args = [self['uuid'], 'modify'] if self.saved else ['add']
         args.extend(self._get_modified_fields_as_args())
-        self.warrior.execute_command(args)
+        output = self.warrior.execute_command(args)
+
+        # Parse out the new ID, if the task is being added for the first time
+        if not self.saved:
+            id_lines = [l for l in output if l.startswith('Created task ')]
+
+            # Complain loudly if it seems that more tasks were created
+            # Should not happen
+            if len(id_lines) != 1 or len(id_lines[0].split(' ')) != 3:
+                raise TaskWarriorException("Unexpected output when creating "
+                                           "task: %s" % '\n'.join(id_lines))
+
+            # Circumvent the ID storage, since ID is considered read-only
+            self._data['id'] = int(id_lines[0].split(' ')[2].rstrip('.'))
+
         self._modified_fields.clear()
+        self.refresh()
 
     def add_annotation(self, annotation):
         args = [self['uuid'], 'annotate', annotation]
         self.warrior.execute_command(args)
+        # TODO: This will not work with the tasks that are not yet saved
         self.refresh(only_fields=['annotations'])
 
     def remove_annotation(self, annotation):
@@ -176,6 +196,7 @@ class Task(TaskResource):
             annotation = annotation['description']
         args = [self['uuid'], 'denotate', annotation]
         self.warrior.execute_command(args)
+        # TODO: This will not work with the tasks that are not yet saved
         self.refresh(only_fields=['annotations'])
 
     def _get_modified_fields_as_args(self):
@@ -185,7 +206,14 @@ class Task(TaskResource):
         return args
 
     def refresh(self, only_fields=[]):
-        args = [self['uuid'], 'export']
+        # Do not refresh for tasks that are not yet saved in the TW
+        if not self.saved:
+            return
+
+        # We need to use ID as backup for uuid here for the refreshes
+        # of newly saved tasks. Any other place in the code is fine
+        # with using UUID only.
+        args = [self['uuid'] or self['id'], 'export']
         new_data = json.loads(self.warrior.execute_command(args)[0])
         if only_fields:
             to_update = dict(
