@@ -45,6 +45,30 @@ class TaskFilterTest(TasklibTest):
         self.tw.tasks.all()[0].done()
         self.assertEqual(len(self.tw.tasks.completed()), 1)
 
+    def test_filtering_by_attribute(self):
+        Task(self.tw, description="no priority task").save()
+        Task(self.tw, priority="H", description="high priority task").save()
+        self.assertEqual(len(self.tw.tasks.all()), 2)
+
+        # Assert that the correct number of tasks is returned
+        self.assertEqual(len(self.tw.tasks.filter(priority="H")), 1)
+
+        # Assert that the correct tasks are returned
+        high_priority_task = self.tw.tasks.get(priority="H")
+        self.assertEqual(high_priority_task['description'], "high priority task")
+
+    def test_filtering_by_empty_attribute(self):
+        Task(self.tw, description="no priority task").save()
+        Task(self.tw, priority="H", description="high priority task").save()
+        self.assertEqual(len(self.tw.tasks.all()), 2)
+
+        # Assert that the correct number of tasks is returned
+        self.assertEqual(len(self.tw.tasks.filter(priority=None)), 1)
+
+        # Assert that the correct tasks are returned
+        no_priority_task = self.tw.tasks.get(priority=None)
+        self.assertEqual(no_priority_task['description'], "no priority task")
+
 
 class AnnotationTest(TasklibTest):
 
