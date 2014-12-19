@@ -70,6 +70,53 @@ class TaskFilterTest(TasklibTest):
         self.assertEqual(no_priority_task['description'], "no priority task")
 
 
+class TaskTest(TasklibTest):
+
+    def test_create_unsaved_task(self):
+        # Make sure a new task is not saved unless explicitly called for
+        t = Task(self.tw, description="test task")
+        self.assertEqual(len(self.tw.tasks.all()), 0)
+
+    def test_delete_unsaved_task(self):
+        with self.assertRaises(Task.NotSaved):
+            t = Task(self.tw, description="test task")
+            t.delete()
+
+    def test_complete_unsaved_task(self):
+        with self.assertRaises(Task.NotSaved):
+            t = Task(self.tw, description="test task")
+            t.done()
+
+    def test_refresh_unsaved_task(self):
+        with self.assertRaises(Task.NotSaved):
+            t = Task(self.tw, description="test task")
+            t.refresh()
+
+    def test_delete_deleted_task(self):
+        t = Task(self.tw, description="test task")
+        t.save()
+        t.delete()
+
+        with self.assertRaises(Task.DeletedTask):
+            t.delete()
+
+    def test_complete_completed_task(self):
+        t = Task(self.tw, description="test task")
+        t.save()
+        t.done()
+
+        with self.assertRaises(Task.CompletedTask):
+            t.done()
+
+    def test_complete_deleted_task(self):
+        t = Task(self.tw, description="test task")
+        t.save()
+        t.delete()
+
+        with self.assertRaises(Task.DeletedTask):
+            t.done()
+
+
 class AnnotationTest(TasklibTest):
 
     def setUp(self):
