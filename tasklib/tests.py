@@ -77,44 +77,41 @@ class TaskTest(TasklibTest):
         t = Task(self.tw, description="test task")
         self.assertEqual(len(self.tw.tasks.all()), 0)
 
+    # TODO: once python 2.6 compatiblity is over, use context managers here
+    #       and in all subsequent tests for assertRaises
+
     def test_delete_unsaved_task(self):
-        with self.assertRaises(Task.NotSaved):
-            t = Task(self.tw, description="test task")
-            t.delete()
+        t = Task(self.tw, description="test task")
+        self.assertRaises(Task.NotSaved, t.delete)
 
     def test_complete_unsaved_task(self):
-        with self.assertRaises(Task.NotSaved):
-            t = Task(self.tw, description="test task")
-            t.done()
+        t = Task(self.tw, description="test task")
+        self.assertRaises(Task.NotSaved, t.done)
 
     def test_refresh_unsaved_task(self):
-        with self.assertRaises(Task.NotSaved):
-            t = Task(self.tw, description="test task")
-            t.refresh()
+        t = Task(self.tw, description="test task")
+        self.assertRaises(Task.NotSaved, t.refresh)
 
     def test_delete_deleted_task(self):
         t = Task(self.tw, description="test task")
         t.save()
         t.delete()
 
-        with self.assertRaises(Task.DeletedTask):
-            t.delete()
+        self.assertRaises(Task.DeletedTask, t.delete)
 
     def test_complete_completed_task(self):
         t = Task(self.tw, description="test task")
         t.save()
         t.done()
 
-        with self.assertRaises(Task.CompletedTask):
-            t.done()
+        self.assertRaises(Task.CompletedTask, t.done)
 
     def test_complete_deleted_task(self):
         t = Task(self.tw, description="test task")
         t.save()
         t.delete()
 
-        with self.assertRaises(Task.DeletedTask):
-            t.done()
+        self.assertRaises(Task.DeletedTask, t.done)
 
 
 class AnnotationTest(TasklibTest):
