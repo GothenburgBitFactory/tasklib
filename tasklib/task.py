@@ -228,16 +228,24 @@ class Task(TaskResource):
     def _get_modified_fields_as_args(self):
         args = []
 
+        def add_field(field):
+            # Task version older than 2.4.0 ignores first word of the
+            # task description if description: prefix is used
+            if self.warrior.version < VERSION_2_4_0 and field == 'description':
+                args.append(self._data[field])
+            else:
+                args.append('{0}:{1}'.format(field, self._data[field]))
+
         # If we're modifying saved task, simply pass on all modified fields
         if self.saved:
             for field in self._modified_fields:
-                args.append('{0}:{1}'.format(field, self._data[field]))
+                add_field(field)
         # For new tasks, pass all fields that make sense
         else:
             for field in self._data.keys():
                 if field in self.read_only_fields:
                     continue
-                args.append('{0}:{1}'.format(field, self._data[field]))
+                add_field(field)
 
         return args
 
