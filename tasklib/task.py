@@ -12,6 +12,11 @@ REPR_OUTPUT_SIZE = 10
 PENDING = 'pending'
 COMPLETED = 'completed'
 
+VERSION_2_1_0 = six.u('2.1.0')
+VERSION_2_2_0 = six.u('2.2.0')
+VERSION_2_3_0 = six.u('2.3.0')
+VERSION_2_4_0 = six.u('2.4.0')
+
 logger = logging.getLogger(__name__)
 
 
@@ -401,6 +406,7 @@ class TaskWarrior(object):
             'data.location': os.path.expanduser(data_location),
         }
         self.tasks = TaskQuerySet(self)
+        self.version = self._get_version()
 
     def _get_command_args(self, args, config_override={}):
         command_args = ['task', 'rc:/']
@@ -410,6 +416,14 @@ class TaskWarrior(object):
             command_args.append('rc.{0}={1}'.format(*item))
         command_args.extend(map(str, args))
         return command_args
+
+    def _get_version(self):
+        p = subprocess.Popen(
+                ['task', '--version'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
+        stdout, stderr = [x.decode('utf-8') for x in p.communicate()]
+        return stdout.strip('\n')
 
     def execute_command(self, args, config_override={}):
         command_args = self._get_command_args(
