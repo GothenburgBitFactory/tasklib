@@ -112,6 +112,12 @@ class Task(TaskResource):
     def __unicode__(self):
         return self['description']
 
+    def __eq__(self, other):
+        return self['uuid'] == other['uuid']
+
+    def __hash__(self):
+        return self['uuid'].__hash__()
+
     @property
     def completed(self):
         return self['status'] == six.text_type('completed')
