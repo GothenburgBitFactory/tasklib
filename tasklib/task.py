@@ -29,6 +29,7 @@ class TaskResource(object):
 
     def _load_data(self, data):
         self._data = data
+        self._original_data = data
 
     def __getitem__(self, key):
         hydrate_func = getattr(self, 'deserialize_{0}'.format(key),
@@ -41,7 +42,6 @@ class TaskResource(object):
         dehydrate_func = getattr(self, 'serialize_{0}'.format(key),
                                  lambda x: x)
         self._data[key] = dehydrate_func(value)
-        self._modified_fields.add(key)
 
     def __str__(self):
         s = six.text_type(self.__unicode__())
@@ -107,7 +107,6 @@ class Task(TaskResource):
         kwargs.update(data)
 
         self._load_data(kwargs)
-        self._modified_fields = set()
 
     def __unicode__(self):
         return self['description']
@@ -117,6 +116,12 @@ class Task(TaskResource):
 
     def __hash__(self):
         return self['uuid'].__hash__()
+
+    @property
+    def _modified_fields(self):
+        for key in self._data.keys():
+            if self._data.get(key) != self._original_data.get(key):
+                yield key
 
     @property
     def completed(self):
@@ -210,7 +215,6 @@ class Task(TaskResource):
             # Circumvent the ID storage, since ID is considered read-only
             self._data['id'] = int(id_lines[0].split(' ')[2].rstrip('.'))
 
-        self._modified_fields.clear()
         self.refresh()
 
     def add_annotation(self, annotation):
@@ -269,8 +273,10 @@ class Task(TaskResource):
             to_update = dict(
                 [(k, new_data.get(k)) for k in only_fields])
             self._data.update(to_update)
+            self._original_data.update(to_update)
         else:
             self._data = new_data
+            self._original_data = new_data
 
 
 class TaskFilter(object):
