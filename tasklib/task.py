@@ -12,6 +12,11 @@ REPR_OUTPUT_SIZE = 10
 PENDING = 'pending'
 COMPLETED = 'completed'
 
+VERSION_2_1_0 = six.u('2.1.0')
+VERSION_2_2_0 = six.u('2.2.0')
+VERSION_2_3_0 = six.u('2.3.0')
+VERSION_2_4_0 = six.u('2.4.0')
+
 logger = logging.getLogger(__name__)
 
 
@@ -71,18 +76,61 @@ class TaskAnnotation(TaskResource):
 
 
 class Task(TaskResource):
-    read_only_fields = ['id', 'entry', 'urgency']
+    read_only_fields = ['id', 'entry', 'urgency', 'uuid']
 
     class DoesNotExist(Exception):
         pass
 
-    def __init__(self, warrior, data={}):
+    class CompletedTask(Exception):
+        """
+        Raised when the operation cannot be performed on the completed task.
+        """
+        pass
+
+    class DeletedTask(Exception):
+        """
+        Raised when the operation cannot be performed on the deleted task.
+        """
+        pass
+
+    class NotSaved(Exception):
+        """
+        Raised when the operation cannot be performed on the task, because
+        it has not been saved to TaskWarrior yet.
+        """
+        pass
+
+    def __init__(self, warrior, data={}, **kwargs):
         self.warrior = warrior
-        self._load_data(data)
+
+        # We keep data for backwards compatibility
+        kwargs.update(data)
+
+        self._load_data(kwargs)
         self._modified_fields = set()
 
     def __unicode__(self):
         return self['description']
+
+    @property
+    def completed(self):
+        return self['status'] == six.text_type('completed')
+
+    @property
+    def deleted(self):
+        return self['status'] == six.text_type('deleted')
+
+    @property
+    def waiting(self):
+        return self['status'] == six.text_type('waiting')
+
+    @property
+    def pending(self):
+        return self['status'] == six.text_type('pending')
+
+    @property
+    def saved(self):
+        return self['uuid'] is not None or self['id'] is not None
 
     def serialize_due(self, date):
         return date.strftime(DATE_FORMAT)
@@ -104,39 +152,112 @@ class Task(TaskResource):
         return ','.join(tags) if tags else ''
 
     def delete(self):
-        self.warrior.execute_command([self['id'], 'delete'], config_override={
+        if not self.saved:
+            raise Task.NotSaved("Task needs to be saved before it can be deleted")
+
+        # Refresh the status, and raise exception if the task is deleted
+        self.refresh(only_fields=['status'])
+
+        if self.deleted:
+            raise Task.DeletedTask("Task was already deleted")
+
+        self.warrior.execute_command([self['uuid'], 'delete'], config_override={
             'confirmation': 'no',
         })
 
+        # Refresh the status again, so that we have updated info stored
+        self.refresh(only_fields=['status'])
+
+
     def done(self):
-        self.warrior.execute_command([self['id'], 'done'])
+        if not self.saved:
+            raise Task.NotSaved("Task needs to be saved before it can be completed")
+
+        # Refresh, and raise exception if task is already completed/deleted
+        self.refresh(only_fields=['status'])
+
+        if self.completed:
+            raise Task.CompletedTask("Cannot complete a completed task")
+        elif self.deleted:
+            raise Task.DeletedTask("Deleted task cannot be completed")
+
+        self.warrior.execute_command([self['uuid'], 'done'])
+
+        # Refresh the status again, so that we have updated info stored
+        self.refresh(only_fields=['status'])
 
     def save(self):
-        args = [self['id'], 'modify'] if self['id'] else ['add']
+        args = [self['uuid'], 'modify'] if self.saved else ['add']
         args.extend(self._get_modified_fields_as_args())
-        self.warrior.execute_command(args)
+        output = self.warrior.execute_command(args)
+
+        # Parse out the new ID, if the task is being added for the first time
+        if not self.saved:
+            id_lines = [l for l in output if l.startswith('Created task ')]
+
+            # Complain loudly if it seems that more tasks were created
+            # Should not happen
+            if len(id_lines) != 1 or len(id_lines[0].split(' ')) != 3:
+                raise TaskWarriorException("Unexpected output when creating "
+                                           "task: %s" % '\n'.join(id_lines))
+
+            # Circumvent the ID storage, since ID is considered read-only
+            self._data['id'] = int(id_lines[0].split(' ')[2].rstrip('.'))
+
         self._modified_fields.clear()
+        self.refresh()
 
     def add_annotation(self, annotation):
-        args = [self['id'], 'annotate', annotation]
+        if not self.saved:
+            raise Task.NotSaved("Task needs to be saved to add annotation")
+
+        args = [self['uuid'], 'annotate', annotation]
         self.warrior.execute_command(args)
         self.refresh(only_fields=['annotations'])
 
     def remove_annotation(self, annotation):
+        if not self.saved:
+            raise Task.NotSaved("Task needs to be saved to add annotation")
+
         if isinstance(annotation, TaskAnnotation):
             annotation = annotation['description']
-        args = [self['id'], 'denotate', annotation]
+        args = [self['uuid'], 'denotate', annotation]
         self.warrior.execute_command(args)
         self.refresh(only_fields=['annotations'])
 
     def _get_modified_fields_as_args(self):
         args = []
-        for field in self._modified_fields:
-            args.append('{}:{}'.format(field, self._data[field]))
+
+        def add_field(field):
+            # Task version older than 2.4.0 ignores first word of the
+            # task description if description: prefix is used
+            if self.warrior.version < VERSION_2_4_0 and field == 'description':
+                args.append(self._data[field])
+            else:
+                args.append('{0}:{1}'.format(field, self._data[field]))
+
+        # If we're modifying saved task, simply pass on all modified fields
+        if self.saved:
+            for field in self._modified_fields:
+                add_field(field)
+        # For new tasks, pass all fields that make sense
+        else:
+            for field in self._data.keys():
+                if field in self.read_only_fields:
+                    continue
+                add_field(field)
+
         return args
 
     def refresh(self, only_fields=[]):
-        args = [self['uuid'], 'export']
+        # Raise error when trying to refresh a task that has not been saved
+        if not self.saved:
+            raise Task.NotSaved("Task needs to be saved to be refreshed")
+
+        # We need to use ID as backup for uuid here for the refreshes
+        # of newly saved tasks. Any other place in the code is fine
+        # with using UUID only.
+        args = [self['uuid'] or self['id'], 'export']
         new_data = json.loads(self.warrior.execute_command(args)[0])
         if only_fields:
             to_update = dict(
@@ -293,6 +414,7 @@ class TaskWarrior(object):
             'data.location': os.path.expanduser(data_location),
         }
         self.tasks = TaskQuerySet(self)
+        self.version = self._get_version()
 
     def _get_command_args(self, args, config_override={}):
         command_args = ['task', 'rc:/']
@@ -302,6 +424,14 @@ class TaskWarrior(object):
             command_args.append('rc.{0}={1}'.format(*item))
         command_args.extend(map(str, args))
         return command_args
+
+    def _get_version(self):
+        p = subprocess.Popen(
+                ['task', '--version'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
+        stdout, stderr = [x.decode('utf-8') for x in p.communicate()]
+        return stdout.strip('\n')
 
     def execute_command(self, args, config_override={}):
         command_args = self._get_command_args(
