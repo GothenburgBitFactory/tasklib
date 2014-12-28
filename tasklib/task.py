@@ -34,6 +34,14 @@ class TaskResource(object):
         self._original_data = data.copy()
 
     def __getitem__(self, key):
+        # This is a workaround to make TaskResource non-iterable
+        # over simple index-based iteration
+        try:
+            int(key)
+            raise StopIteration
+        except ValueError:
+            pass
+
         hydrate_func = getattr(self, 'deserialize_{0}'.format(key),
                                lambda x: x)
         return hydrate_func(self._data.get(key))
