@@ -113,6 +113,86 @@ class TaskTest(TasklibTest):
 
         self.assertRaises(Task.DeletedTask, t.done)
 
+    def test_empty_dependency_set_of_unsaved_task(self):
+        t = Task(self.tw, description="test task")
+        self.assertEqual(t['depends'], set())
+
+    def test_empty_dependency_set_of_saved_task(self):
+        t = Task(self.tw, description="test task")
+        t.save()
+        self.assertEqual(t['depends'], set())
+
+    def test_set_unsaved_task_as_dependency(self):
+        # Adds only one dependency to task with no dependencies
+        t = Task(self.tw, description="test task")
+        dependency = Task(self.tw, description="needs to be done first")
+
+        # We only save the parent task, dependency task is unsaved
+        t.save()
+
+        self.assertRaises(Task.NotSaved,
+                          t.__setitem__, 'depends', set([dependency]))
+
+    def test_set_simple_dependency_set(self):
+        # Adds only one dependency to task with no dependencies
+        t = Task(self.tw, description="test task")
+        dependency = Task(self.tw, description="needs to be done first")
+
+        t.save()
+        dependency.save()
+
+        t['depends'] = set([dependency])
+
+        self.assertEqual(t['depends'], set([dependency]))
+
+    def test_set_complex_dependency_set(self):
+        # Adds two dependencies to task with no dependencies
+        t = Task(self.tw, description="test task")
+        dependency1 = Task(self.tw, description="needs to be done first")
+        dependency2 = Task(self.tw, description="needs to be done second")
+
+        t.save()
+        dependency1.save()
+        dependency2.save()
+
+        t['depends'] = set([dependency1, dependency2])
+
+        self.assertEqual(t['depends'], set([dependency1, dependency2]))
+
+    def test_remove_from_dependency_set(self):
+        # Removes dependency from task with two dependencies
+        t = Task(self.tw, description="test task")
+        dependency1 = Task(self.tw, description="needs to be done first")
+        dependency2 = Task(self.tw, description="needs to be done second")
+
+        dependency1.save()
+        dependency2.save()
+
+        t['depends'] = set([dependency1, dependency2])
+        t.save()
+
+        t['depends'] = t['depends'] - set([dependency2])
+        t.save()
+
+        self.assertEqual(t['depends'], set([dependency1]))
+
+    def test_add_to_dependency_set(self):
+        # Adds dependency to task with one dependencies
+        t = Task(self.tw, description="test task")
+        dependency1 = Task(self.tw, description="needs to be done first")
+        dependency2 = Task(self.tw, description="needs to be done second")
+
+        dependency1.save()
+        dependency2.save()
+
+        t['depends'] = set([dependency1])
+        t.save()
+
+        t['depends'] = t['depends'] | set([dependency2])
+        t.save()
+
+        self.assertEqual(t['depends'], set([dependency1, dependency2]))
+
 
 class AnnotationTest(TasklibTest):
 
