@@ -29,7 +29,9 @@ class TaskResource(object):
 
     def _load_data(self, data):
         self._data = data
-        self._original_data = data
+        # We need to use a copy for original data, so that changes
+        # are not propagated
+        self._original_data = data.copy()
 
     def __getitem__(self, key):
         hydrate_func = getattr(self, 'deserialize_{0}'.format(key),
@@ -276,7 +278,10 @@ class Task(TaskResource):
             self._original_data.update(to_update)
         else:
             self._data = new_data
-            self._original_data = new_data
+            # We need to create a clone for original_data though
+            # Shallow copy is alright, since data dict uses only
+            # primitive data types
+            self._original_data = new_data.copy()
 
 
 class TaskFilter(object):
