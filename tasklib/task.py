@@ -161,6 +161,41 @@ class Task(TaskResource):
             return None
         return datetime.datetime.strptime(date_str, DATE_FORMAT)
 
+    def serialize_depends(self, cur_dependencies):
+        # Check that all the tasks are saved
+        for task in cur_dependencies:
+            if not task.saved:
+                raise Task.NotSaved('Task \'%s\' needs to be saved before '
+                                    'it can be set as dependency.' % task)
+
+        # Return the list of uuids
+        return ','.join(task['uuid'] for task in cur_dependencies)
+
+    def deserialize_depends(self, raw_uuids):
+        raw_uuids = raw_uuids or ''  # Convert None to empty string
+        uuids = raw_uuids.split(',')
+        return set(self.warrior.tasks.get(uuid=uuid) for uuid in uuids if uuid)
+
+    def format_depends(self):
+        # We need to generate added and removed dependencies list,
+        # since Taskwarrior does not accept redefining dependencies.
+
+        # This cannot be part of serialize_depends, since we need
+        # to keep a list of all depedencies in the _data dictionary,
+        # not just currently added/removed ones
+
+        old_dependencies_raw = self._original_data.get('depends','')
+        old_dependencies = self.deserialize_depends(old_dependencies_raw)
+
+        added = self['depends'] - old_dependencies
+        removed = old_dependencies - self['depends']
+
+        # Removed dependencies need to be prefixed with '-'
+        return ','.join(
+                [t['uuid'] for t in added] +
+                ['-' + t['uuid'] for t in removed]
+            )
+
     def deserialize_annotations(self, data):
         return [TaskAnnotation(self, d) for d in data] if data else []
 
@@ -253,6 +288,8 @@ class Task(TaskResource):
             # task description if description: prefix is used
             if self.warrior.version < VERSION_2_4_0 and field == 'description':
                 args.append(self._data[field])
+            elif field == 'depends':
+                args.append('{0}:{1}'.format(field, self.format_depends()))
             else:
                 args.append('{0}:{1}'.format(field, self._data[field]))
 
