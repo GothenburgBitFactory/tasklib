@@ -193,6 +193,52 @@ class TaskTest(TasklibTest):
 
         self.assertEqual(t['depends'], set([dependency1, dependency2]))
 
+    def test_compare_different_tasks(self):
+        # Negative: compare two different tasks
+        t1 = Task(self.tw, description="test task")
+        t2 = Task(self.tw, description="test task")
+
+        t1.save()
+        t2.save()
+
+        self.assertEqual(t1 == t2, False)
+
+    def test_compare_same_task_object(self):
+        # Compare Task object wit itself
+        t = Task(self.tw, description="test task")
+        t.save()
+
+        self.assertEqual(t == t, True)
+
+    def test_compare_same_task(self):
+        # Compare the same task using two different objects
+        t1 = Task(self.tw, description="test task")
+        t1.save()
+
+        t2 = self.tw.tasks.get(uuid=t1['uuid'])
+        self.assertEqual(t1 == t2, True)
+
+    def test_compare_unsaved_tasks(self):
+        # t1 and t2 are unsaved tasks, considered to be unequal
+        # despite the content of data
+        t1 = Task(self.tw, description="test task")
+        t2 = Task(self.tw, description="test task")
+
+        self.assertEqual(t1 == t2, False)
+
+    def test_hash_unsaved_tasks(self):
+        # Considered equal, it's the same object
+        t1 = Task(self.tw, description="test task")
+        t2 = t1
+        self.assertEqual(hash(t1) == hash(t2), True)
+
+    def test_hash_same_task(self):
+        # Compare the hash of the task using two different objects
+        t1 = Task(self.tw, description="test task")
+        t1.save()
+
+        t2 = self.tw.tasks.get(uuid=t1['uuid'])
+        self.assertEqual(t1.__hash__(), t2.__hash__())
 
 class AnnotationTest(TasklibTest):
 
