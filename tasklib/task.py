@@ -122,10 +122,21 @@ class Task(TaskResource):
         return self['description']
 
     def __eq__(self, other):
-        return self['uuid'] == other['uuid']
+        if self['uuid'] and other['uuid']:
+            # For saved Tasks, just define equality by equality of uuids
+            return self['uuid'] == other['uuid']
+        else:
+            # If the tasks are not saved, compare the actual instances
+            return id(self) == id(other)
+
 
     def __hash__(self):
-        return self['uuid'].__hash__()
+        if self['uuid']:
+            # For saved Tasks, just define equality by equality of uuids
+            return self['uuid'].__hash__()
+        else:
+            # If the tasks are not saved, return hash of instance id
+            return id(self).__hash__()
 
     @property
     def _modified_fields(self):
