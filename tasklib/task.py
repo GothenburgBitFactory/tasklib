@@ -302,7 +302,8 @@ class Task(TaskResource):
             elif field == 'depends':
                 args.append('{0}:{1}'.format(field, self.format_depends()))
             else:
-                args.append('{0}:{1}'.format(field, self._data[field]))
+                # Use empty string to substitute for None value
+                args.append('{0}:{1}'.format(field, self._data[field] or ''))
 
         # If we're modifying saved task, simply pass on all modified fields
         if self.saved:
