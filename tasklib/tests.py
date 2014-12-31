@@ -240,6 +240,22 @@ class TaskTest(TasklibTest):
         t2 = self.tw.tasks.get(uuid=t1['uuid'])
         self.assertEqual(t1.__hash__(), t2.__hash__())
 
+    def test_adding_task_with_priority(self):
+        t = Task(self.tw, description="test task", priority="M")
+        t.save()
+
+    def test_removing_priority_with_none(self):
+        t = Task(self.tw, description="test task", priority="L")
+        t.save()
+
+        # Remove the priority mark
+        t['priority'] = None
+        t.save()
+
+        # Assert that priority is not there after saving
+        self.assertEqual(t['priority'], None)
+
+
 class AnnotationTest(TasklibTest):
 
     def setUp(self):
