@@ -1,5 +1,6 @@
 # coding=utf-8
 
+import datetime
 import shutil
 import tempfile
 import unittest
@@ -254,6 +255,21 @@ class TaskTest(TasklibTest):
 
         # Assert that priority is not there after saving
         self.assertEqual(t['priority'], None)
+
+    def test_adding_task_with_due_time(self):
+        t = Task(self.tw, description="test task", due=datetime.datetime.now())
+        t.save()
+
+    def test_removing_due_time_with_none(self):
+        t = Task(self.tw, description="test task", due=datetime.datetime.now())
+        t.save()
+
+        # Remove the due timestamp
+        t['due'] = None
+        t.save()
+
+        # Assert that due timestamp is no longer there
+        self.assertEqual(t['due'], None)
 
 
 class AnnotationTest(TasklibTest):
