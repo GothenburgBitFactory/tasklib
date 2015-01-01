@@ -165,6 +165,8 @@ class Task(TaskResource):
         return self['uuid'] is not None or self['id'] is not None
 
     def serialize_due(self, date):
+        if not date:
+            return None
         return date.strftime(DATE_FORMAT)
 
     def deserialize_due(self, date_str):
