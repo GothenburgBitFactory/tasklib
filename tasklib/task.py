@@ -42,16 +42,22 @@ class TaskResource(object):
         except ValueError:
             pass
 
-        hydrate_func = getattr(self, 'deserialize_{0}'.format(key),
-                               lambda x: x)
-        return hydrate_func(self._data.get(key))
+        return self._deserialize(key, self._data.get(key))
 
     def __setitem__(self, key, value):
         if key in self.read_only_fields:
             raise RuntimeError('Field \'%s\' is read-only' % key)
+        self._data[key] = self._serialize(key, value)
+
+    def _deserialize(self, key, value):
+        hydrate_func = getattr(self, 'deserialize_{0}'.format(key),
+                               lambda x: x)
+        return hydrate_func(value)
+
+    def _serialize(self, key, value):
         dehydrate_func = getattr(self, 'serialize_{0}'.format(key),
                                  lambda x: x)
-        self._data[key] = dehydrate_func(value)
+        return dehydrate_func(value)
 
     def __str__(self):
         s = six.text_type(self.__unicode__())
@@ -113,10 +119,17 @@ class Task(TaskResource):
     def __init__(self, warrior, data={}, **kwargs):
         self.warrior = warrior
 
-        # We keep data for backwards compatibility
-        kwargs.update(data)
+        # We serialize the data in kwargs so that users of the library
+        # do not have to pass different data formats via __setitem__ and
+        # __init__ methods, that would be confusing
 
-        self._load_data(kwargs)
+        # Rather unfortunate syntax due to python2.6 comaptiblity
+        self._load_data(dict((key, self._serialize(key, value))
+                        for (key, value) in six.iteritems(kwargs)))
+
+        # We keep data for backwards compatibility
+        # TODO: Should we keep this using unserialized access to _data dict?
+        self._data.update(data)
 
     def __unicode__(self):
         return self['description']
