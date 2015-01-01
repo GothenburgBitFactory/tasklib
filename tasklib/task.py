@@ -153,7 +153,8 @@ class Task(TaskResource):
 
     @property
     def _modified_fields(self):
-        for key in self._data.keys():
+        writable_fields = set(self._data.keys()) - set(self.read_only_fields)
+        for key in writable_fields:
             if self._data.get(key) != self._original_data.get(key):
                 yield key
 
