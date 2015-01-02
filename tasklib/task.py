@@ -92,7 +92,7 @@ class TaskAnnotation(TaskResource):
 
 
 class Task(TaskResource):
-    read_only_fields = ['id', 'entry', 'urgency', 'uuid']
+    read_only_fields = ['id', 'entry', 'urgency', 'uuid', 'modified']
 
     class DoesNotExist(Exception):
         pass
