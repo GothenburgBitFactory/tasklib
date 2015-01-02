@@ -293,6 +293,60 @@ class TaskTest(TasklibTest):
         # Assert that due timestamp is no longer there
         self.assertEqual(t['due'], None)
 
+    def test_modified_fields_new_task(self):
+        t = Task(self.tw)
+
+        # This should be empty with new task
+        self.assertEqual(set(t._modified_fields), set())
+
+        # Modify the task
+        t['description'] = "test task"
+        self.assertEqual(set(t._modified_fields), set(['description']))
+
+        t['due'] = datetime.datetime(2014, 2, 14, 14, 14, 14)  # <3
+        self.assertEqual(set(t._modified_fields), set(['description', 'due']))
+
+        t['project'] = "test project"
+        self.assertEqual(set(t._modified_fields),
+                         set(['description', 'due', 'project']))
+
+        # List of modified fields should clear out when saved
+        t.save()
+        self.assertEqual(set(t._modified_fields), set())
+
+        # Reassigning the fields with the same values now should not produce
+        # modified fields
+        t['description'] = "test task"
+        t['due'] = datetime.datetime(2014, 2, 14, 14, 14, 14)  # <3
+        t['project'] = "test project"
+        self.assertEqual(set(t._modified_fields), set())
+
+    def test_modified_fields_loaded_task(self):
+        t = Task(self.tw)
+
+        # Modify the task
+        t['description'] = "test task"
+        t['due'] = datetime.datetime(2014, 2, 14, 14, 14, 14)  # <3
+        t['project'] = "test project"
+
+        dependency = Task(self.tw, description="dependency")
+        dependency.save()
+        t['depends'] = set([dependency])
+
+        # List of modified fields should clear out when saved
+        t.save()
+        self.assertEqual(set(t._modified_fields), set())
+
+        # Get the task by using a filter by UUID
+        t2 = self.tw.tasks.get(uuid=t['uuid'])
+
+        # Reassigning the fields with the same values now should not produce
+        # modified fields
+        t['description'] = "test task"
+        t['due'] = datetime.datetime(2014, 2, 14, 14, 14, 14)  # <3
+        t['project'] = "test project"
+        t['depends'] = set([dependency])
+        self.assertEqual(set(t._modified_fields), set())
 
 class AnnotationTest(TasklibTest):
 
