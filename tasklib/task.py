@@ -227,7 +227,7 @@ class Task(TaskResource):
         removed = old_dependencies - self['depends']
 
         # Removed dependencies need to be prefixed with '-'
-        return ','.join(
+        return 'depends:' + ','.join(
                 [t['uuid'] for t in added] +
                 ['-' + t['uuid'] for t in removed]
             )
@@ -242,6 +242,14 @@ class Task(TaskResource):
 
     def serialize_tags(self, tags):
         return ','.join(tags) if tags else ''
+
+    def format_description(self):
+        # Task version older than 2.4.0 ignores first word of the
+        # task description if description: prefix is used
+        if self.warrior.version < VERSION_2_4_0:
+            return self._data['description']
+        else:
+            return "description:{0}".format(self._data['description'] or '')
 
     def delete(self):
         if not self.saved:
@@ -320,15 +328,12 @@ class Task(TaskResource):
         args = []
 
         def add_field(field):
-            # Task version older than 2.4.0 ignores first word of the
-            # task description if description: prefix is used
-            if self.warrior.version < VERSION_2_4_0 and field == 'description':
-                args.append(self._data[field])
-            elif field == 'depends':
-                args.append('{0}:{1}'.format(field, self.format_depends()))
-            else:
-                # Use empty string to substitute for None value
-                args.append('{0}:{1}'.format(field, self._data[field] or ''))
+            # Add the output of format_field method to args list (defaults to
+            # field:value)
+            format_default = lambda k: '{0}:{1}'.format(k, self._data[k] or '')
+            format_func = getattr(self, 'format_{0}'.format(field),
+                                  lambda: format_default(field))
+            args.append(format_func())
 
         # If we're modifying saved task, simply pass on all modified fields
         if self.saved:
