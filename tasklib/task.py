@@ -130,6 +130,7 @@ class Task(TaskResource):
         # We keep data for backwards compatibility
         # TODO: Should we keep this using unserialized access to _data dict?
         self._data.update(data)
+        self._original_data.update(data)
 
     def __unicode__(self):
         return self['description']
