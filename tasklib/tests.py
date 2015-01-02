@@ -194,6 +194,28 @@ class TaskTest(TasklibTest):
 
         self.assertEqual(t['depends'], set([dependency1, dependency2]))
 
+    def test_simple_dependency_set_save_repeatedly(self):
+        # Adds only one dependency to task with no dependencies
+        t = Task(self.tw, description="test task")
+        dependency = Task(self.tw, description="needs to be done first")
+        dependency.save()
+
+        t['depends'] = set([dependency])
+        t.save()
+
+        # We taint the task, but keep depends intact
+        t['description'] = "test task modified"
+        t.save()
+
+        self.assertEqual(t['depends'], set([dependency]))
+
+        # We taint the task, but assign the same set to the depends
+        t['depends'] = set([dependency])
+        t['description'] = "test task modified again"
+        t.save()
+
+        self.assertEqual(t['depends'], set([dependency]))
+
     def test_compare_different_tasks(self):
         # Negative: compare two different tasks
         t1 = Task(self.tw, description="test task")
