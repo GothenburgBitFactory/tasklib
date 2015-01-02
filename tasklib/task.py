@@ -261,9 +261,7 @@ class Task(TaskResource):
         if self.deleted:
             raise Task.DeletedTask("Task was already deleted")
 
-        self.warrior.execute_command([self['uuid'], 'delete'], config_override={
-            'confirmation': 'no',
-        })
+        self.warrior.execute_command([self['uuid'], 'delete'])
 
         # Refresh the status again, so that we have updated info stored
         self.refresh(only_fields=['status'])
@@ -517,6 +515,7 @@ class TaskWarrior(object):
             os.makedirs(data_location)
         self.config = {
             'data.location': os.path.expanduser(data_location),
+            'confirmation': 'no',
         }
         self.tasks = TaskQuerySet(self)
         self.version = self._get_version()
@@ -574,6 +573,4 @@ class TaskWarrior(object):
         })
 
     def undo(self):
-        self.execute_command(['undo'], config_override={
-            'confirmation': 'no',
-        })
+        self.execute_command(['undo'])
