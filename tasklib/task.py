@@ -30,8 +30,21 @@ class TaskResource(object):
     def _load_data(self, data):
         self._data = data
         # We need to use a copy for original data, so that changes
-        # are not propagated
+        # are not propagated. Shallow copy is alright, since data dict uses only
+        # primitive data types
         self._original_data = data.copy()
+
+    def _update_data(self, data, update_original=False):
+        """
+        Low level update of the internal _data dict. Data which are coming as
+        updates should already be serialized. If update_original is True, the
+        original_data dict is updated as well.
+        """
+
+        self._data.update(data)
+
+        if update_original:
+            self._original_data.update(data)
 
     def __getitem__(self, key):
         # This is a workaround to make TaskResource non-iterable
@@ -116,7 +129,7 @@ class Task(TaskResource):
         """
         pass
 
-    def __init__(self, warrior, data={}, **kwargs):
+    def __init__(self, warrior, **kwargs):
         self.warrior = warrior
 
         # We serialize the data in kwargs so that users of the library
@@ -126,11 +139,6 @@ class Task(TaskResource):
         # Rather unfortunate syntax due to python2.6 comaptiblity
         self._load_data(dict((key, self._serialize(key, value))
                         for (key, value) in six.iteritems(kwargs)))
-
-        # We keep data for backwards compatibility
-        # TODO: Should we keep this using unserialized access to _data dict?
-        self._data.update(data)
-        self._original_data.update(data)
 
     def __unicode__(self):
         return self['description']
@@ -348,14 +356,9 @@ class Task(TaskResource):
         if only_fields:
             to_update = dict(
                 [(k, new_data.get(k)) for k in only_fields])
-            self._data.update(to_update)
-            self._original_data.update(to_update)
+            self._update_data(to_update, update_original=True)
         else:
-            self._data = new_data
-            # We need to create a clone for original_data though
-            # Shallow copy is alright, since data dict uses only
-            # primitive data types
-            self._original_data = new_data.copy()
+            self._load_data(new_data)
 
 
 class TaskFilter(object):
@@ -552,7 +555,9 @@ class TaskWarrior(object):
             if line:
                 data = line.strip(',')
                 try:
-                    tasks.append(Task(self, json.loads(data)))
+                    filtered_task = Task(self)
+                    filtered_task._load_data(json.loads(data))
+                    tasks.append(filtered_task)
                 except ValueError:
                     raise TaskWarriorException('Invalid JSON: %s' % data)
         return tasks
