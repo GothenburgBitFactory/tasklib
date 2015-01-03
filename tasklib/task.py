@@ -81,6 +81,22 @@ class TaskResource(object):
     def __repr__(self):
         return str(self)
 
+    def timestamp_serializer(self, date):
+        if not date:
+            return None
+        return date.strftime(DATE_FORMAT)
+
+    def timestamp_deserializer(self, date_str):
+        if not date_str:
+            return None
+        return datetime.datetime.strptime(date_str, DATE_FORMAT)
+
+    def serialize_entry(self, value):
+        return self.timestamp_serializer(value)
+
+    def deserialize_entry(self, value):
+        return self.timestamp_deserializer(value)
+
 
 class TaskAnnotation(TaskResource):
     read_only_fields = ['entry', 'description']
@@ -88,12 +104,6 @@ class TaskAnnotation(TaskResource):
     def __init__(self, task, data={}):
         self.task = task
         self._load_data(data)
-
-    def deserialize_entry(self, data):
-        return datetime.datetime.strptime(data, DATE_FORMAT) if data else None
-
-    def serialize_entry(self, date):
-        return date.strftime(DATE_FORMAT) if date else ''
 
     def remove(self):
         self.task.remove_annotation(self)
@@ -192,15 +202,29 @@ class Task(TaskResource):
     def saved(self):
         return self['uuid'] is not None or self['id'] is not None
 
-    def serialize_due(self, date):
-        if not date:
-            return None
-        return date.strftime(DATE_FORMAT)
+    def serialize_due(self, value):
+        return self.timestamp_serializer(value)
 
-    def deserialize_due(self, date_str):
-        if not date_str:
-            return None
-        return datetime.datetime.strptime(date_str, DATE_FORMAT)
+    def deserialize_due(self, value):
+        return self.timestamp_deserializer(value)
+
+    def serialize_scheduled(self, value):
+        return self.timestamp_serializer(value)
+
+    def deserialize_scheduled(self, value):
+        return self.timestamp_deserializer(value)
+
+    def serialize_until(self, value):
+        return self.timestamp_serializer(value)
+
+    def deserialize_until(self, value):
+        return self.timestamp_deserializer(value)
+
+    def serialize_wait(self, value):
+        return self.timestamp_serializer(value)
+
+    def deserialize_wait(self, value):
+        return self.timestamp_deserializer(value)
 
     def serialize_depends(self, cur_dependencies):
         # Check that all the tasks are saved
