@@ -359,7 +359,7 @@ class Task(TaskResource):
 
     def remove_annotation(self, annotation):
         if not self.saved:
-            raise Task.NotSaved("Task needs to be saved to add annotation")
+            raise Task.NotSaved("Task needs to be saved to remove annotation")
 
         if isinstance(annotation, TaskAnnotation):
             annotation = annotation['description']
