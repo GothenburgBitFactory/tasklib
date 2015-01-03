@@ -371,6 +371,21 @@ class TaskTest(TasklibTest):
         t['depends'] = set([dependency])
         self.assertEqual(set(t._modified_fields), set())
 
+    def test_setting_read_only_attrs_through_init(self):
+        # Test that we are unable to set readonly attrs through __init__
+        for readonly_key in Task.read_only_fields:
+            kwargs = {'description': 'test task', readonly_key: 'value'}
+            self.assertRaises(RuntimeError,
+                              lambda: Task(self.tw, **kwargs))
+
+    def test_setting_read_only_attrs_through_setitem(self):
+        # Test that we are unable to set readonly attrs through __init__
+        for readonly_key in Task.read_only_fields:
+            t = Task(self.tw, description='test task')
+            self.assertRaises(RuntimeError,
+                              lambda: t.__setitem__(readonly_key, 'value'))
+
+
 class AnnotationTest(TasklibTest):
 
     def setUp(self):
