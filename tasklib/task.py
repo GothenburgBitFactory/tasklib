@@ -433,9 +433,15 @@ class TaskFilter(SerializingObject):
         if key == 'uuid':
             self.filter_params.insert(0, value)
         else:
-            # We enforce equality match by using is keyword
-            # Also, without using this syntax, filter fails due to TW-1479
-            self.filter_params.append("{0}.is:'{1}'".format(key, value))
+            # Surround value with aphostrophes unless it's a empty string
+            value = "'%s'" % value if value else ''
+
+            # We enforce equality match by using 'is' (or 'none') modifier
+            # Without using this syntax, filter fails due to TW-1479
+            modifier = '.is' if value else '.none'
+            key = key + modifier if '.' not in key else key
+
+            self.filter_params.append("{0}:{1}".format(key, value))
 
     def get_filter_params(self):
         return [f for f in self.filter_params if f]
