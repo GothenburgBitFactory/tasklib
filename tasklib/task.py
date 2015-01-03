@@ -132,6 +132,11 @@ class Task(TaskResource):
     def __init__(self, warrior, **kwargs):
         self.warrior = warrior
 
+        # Check that user is not able to set read-only value in __init__
+        for key in kwargs.keys():
+            if key in self.read_only_fields:
+                raise RuntimeError('Field \'%s\' is read-only' % key)
+
         # We serialize the data in kwargs so that users of the library
         # do not have to pass different data formats via __setitem__ and
         # __init__ methods, that would be confusing
