@@ -24,7 +24,90 @@ class TaskWarriorException(Exception):
     pass
 
 
-class TaskResource(object):
+class SerializingObject(object):
+    """
+    Common ancestor for TaskResource & TaskFilter, since they both
+    need to serialize arguments.
+    """
+
+    def _deserialize(self, key, value):
+        hydrate_func = getattr(self, 'deserialize_{0}'.format(key),
+                               lambda x: x if x != '' else None)
+        return hydrate_func(value)
+
+    def _serialize(self, key, value):
+        dehydrate_func = getattr(self, 'serialize_{0}'.format(key),
+                                 lambda x: x if x is not None else '')
+        return dehydrate_func(value)
+
+    def timestamp_serializer(self, date):
+        if not date:
+            return None
+        return date.strftime(DATE_FORMAT)
+
+    def timestamp_deserializer(self, date_str):
+        if not date_str:
+            return None
+        return datetime.datetime.strptime(date_str, DATE_FORMAT)
+
+    def serialize_entry(self, value):
+        return self.timestamp_serializer(value)
+
+    def deserialize_entry(self, value):
+        return self.timestamp_deserializer(value)
+
+    def serialize_modified(self, value):
+        return self.timestamp_serializer(value)
+
+    def deserialize_modified(self, value):
+        return self.timestamp_deserializer(value)
+
+    def serialize_due(self, value):
+        return self.timestamp_serializer(value)
+
+    def deserialize_due(self, value):
+        return self.timestamp_deserializer(value)
+
+    def serialize_scheduled(self, value):
+        return self.timestamp_serializer(value)
+
+    def deserialize_scheduled(self, value):
+        return self.timestamp_deserializer(value)
+
+    def serialize_until(self, value):
+        return self.timestamp_serializer(value)
+
+    def deserialize_until(self, value):
+        return self.timestamp_deserializer(value)
+
+    def serialize_wait(self, value):
+        return self.timestamp_serializer(value)
+
+    def deserialize_wait(self, value):
+        return self.timestamp_deserializer(value)
+
+    def deserialize_annotations(self, data):
+        return [TaskAnnotation(self, d) for d in data] if data else []
+
+    def serialize_tags(self, tags):
+        return ','.join(tags) if tags else ''
+
+    def deserialize_tags(self, tags):
+        if isinstance(tags, basestring):
+            return tags.split(',') if tags else []
+        return tags
+
+    def serialize_depends(self, cur_dependencies):
+        # Return the list of uuids
+        return ','.join(task['uuid'] for task in cur_dependencies)
+
+    def deserialize_depends(self, raw_uuids):
+        raw_uuids = raw_uuids or ''  # Convert None to empty string
+        uuids = raw_uuids.split(',')
+        return set(self.warrior.tasks.get(uuid=uuid) for uuid in uuids if uuid)
+
+
+class TaskResource(SerializingObject):
     read_only_fields = []
 
     def _load_data(self, data):
@@ -62,16 +145,6 @@ class TaskResource(object):
             raise RuntimeError('Field \'%s\' is read-only' % key)
         self._data[key] = self._serialize(key, value)
 
-    def _deserialize(self, key, value):
-        hydrate_func = getattr(self, 'deserialize_{0}'.format(key),
-                               lambda x: x)
-        return hydrate_func(value)
-
-    def _serialize(self, key, value):
-        dehydrate_func = getattr(self, 'serialize_{0}'.format(key),
-                                 lambda x: x)
-        return dehydrate_func(value)
-
     def __str__(self):
         s = six.text_type(self.__unicode__())
         if not six.PY3:
@@ -80,22 +153,6 @@ class TaskResource(object):
 
     def __repr__(self):
         return str(self)
-
-    def timestamp_serializer(self, date):
-        if not date:
-            return None
-        return date.strftime(DATE_FORMAT)
-
-    def timestamp_deserializer(self, date_str):
-        if not date_str:
-            return None
-        return datetime.datetime.strptime(date_str, DATE_FORMAT)
-
-    def serialize_entry(self, value):
-        return self.timestamp_serializer(value)
-
-    def deserialize_entry(self, value):
-        return self.timestamp_deserializer(value)
 
 
 class TaskAnnotation(TaskResource):
@@ -202,30 +259,6 @@ class Task(TaskResource):
     def saved(self):
         return self['uuid'] is not None or self['id'] is not None
 
-    def serialize_due(self, value):
-        return self.timestamp_serializer(value)
-
-    def deserialize_due(self, value):
-        return self.timestamp_deserializer(value)
-
-    def serialize_scheduled(self, value):
-        return self.timestamp_serializer(value)
-
-    def deserialize_scheduled(self, value):
-        return self.timestamp_deserializer(value)
-
-    def serialize_until(self, value):
-        return self.timestamp_serializer(value)
-
-    def deserialize_until(self, value):
-        return self.timestamp_deserializer(value)
-
-    def serialize_wait(self, value):
-        return self.timestamp_serializer(value)
-
-    def deserialize_wait(self, value):
-        return self.timestamp_deserializer(value)
-
     def serialize_depends(self, cur_dependencies):
         # Check that all the tasks are saved
         for task in cur_dependencies:
@@ -233,13 +266,7 @@ class Task(TaskResource):
                 raise Task.NotSaved('Task \'%s\' needs to be saved before '
                                     'it can be set as dependency.' % task)
 
-        # Return the list of uuids
-        return ','.join(task['uuid'] for task in cur_dependencies)
-
-    def deserialize_depends(self, raw_uuids):
-        raw_uuids = raw_uuids or ''  # Convert None to empty string
-        uuids = raw_uuids.split(',')
-        return set(self.warrior.tasks.get(uuid=uuid) for uuid in uuids if uuid)
+        return super(Task, self).serialize_depends(cur_dependencies)
 
     def format_depends(self):
         # We need to generate added and removed dependencies list,
@@ -260,17 +287,6 @@ class Task(TaskResource):
                 [t['uuid'] for t in added] +
                 ['-' + t['uuid'] for t in removed]
             )
-
-    def deserialize_annotations(self, data):
-        return [TaskAnnotation(self, d) for d in data] if data else []
-
-    def deserialize_tags(self, tags):
-        if isinstance(tags, basestring):
-            return tags.split(',') if tags else []
-        return tags
-
-    def serialize_tags(self, tags):
-        return ','.join(tags) if tags else ''
 
     def format_description(self):
         # Task version older than 2.4.0 ignores first word of the
@@ -393,7 +409,7 @@ class Task(TaskResource):
             self._load_data(new_data)
 
 
-class TaskFilter(object):
+class TaskFilter(SerializingObject):
     """
     A set of parameters to filter the task list with.
     """
@@ -409,7 +425,8 @@ class TaskFilter(object):
 
         # Replace the value with empty string, since that is the
         # convention in TW for empty values
-        value = value if value is not None else ''
+        attribute_key = key.split('.')[0]
+        value = self._serialize(attribute_key, value)
 
         # If we are filtering by uuid:, do not use uuid keyword
         # due to TW-1452 bug
