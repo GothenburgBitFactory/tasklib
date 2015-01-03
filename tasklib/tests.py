@@ -70,6 +70,34 @@ class TaskFilterTest(TasklibTest):
         no_priority_task = self.tw.tasks.get(priority=None)
         self.assertEqual(no_priority_task['description'], "no priority task")
 
+    def test_filter_for_task_with_space_in_descripition(self):
+        task = Task(self.tw, description="test task")
+        task.save()
+
+        filtered_task = self.tw.tasks.get(description="test task")
+        self.assertEqual(filtered_task['description'], "test task")
+
+    def test_filter_for_task_without_space_in_descripition(self):
+        task = Task(self.tw, description="test")
+        task.save()
+
+        filtered_task = self.tw.tasks.get(description="test")
+        self.assertEqual(filtered_task['description'], "test")
+
+    def test_filter_for_task_with_space_in_project(self):
+        task = Task(self.tw, description="test", project="random project")
+        task.save()
+
+        filtered_task = self.tw.tasks.get(project="random project")
+        self.assertEqual(filtered_task['project'], "random project")
+
+    def test_filter_for_task_without_space_in_project(self):
+        task = Task(self.tw, description="test", project="random")
+        task.save()
+
+        filtered_task = self.tw.tasks.get(project="random")
+        self.assertEqual(filtered_task['project'], "random")
+
 
 class TaskTest(TasklibTest):
 
