@@ -24,24 +24,126 @@ class TaskWarriorException(Exception):
     pass
 
 
-class TaskResource(object):
+class SerializingObject(object):
+    """
+    Common ancestor for TaskResource & TaskFilter, since they both
+    need to serialize arguments.
+    """
+
+    def _deserialize(self, key, value):
+        hydrate_func = getattr(self, 'deserialize_{0}'.format(key),
+                               lambda x: x if x != '' else None)
+        return hydrate_func(value)
+
+    def _serialize(self, key, value):
+        dehydrate_func = getattr(self, 'serialize_{0}'.format(key),
+                                 lambda x: x if x is not None else '')
+        return dehydrate_func(value)
+
+    def timestamp_serializer(self, date):
+        if not date:
+            return None
+        return date.strftime(DATE_FORMAT)
+
+    def timestamp_deserializer(self, date_str):
+        if not date_str:
+            return None
+        return datetime.datetime.strptime(date_str, DATE_FORMAT)
+
+    def serialize_entry(self, value):
+        return self.timestamp_serializer(value)
+
+    def deserialize_entry(self, value):
+        return self.timestamp_deserializer(value)
+
+    def serialize_modified(self, value):
+        return self.timestamp_serializer(value)
+
+    def deserialize_modified(self, value):
+        return self.timestamp_deserializer(value)
+
+    def serialize_due(self, value):
+        return self.timestamp_serializer(value)
+
+    def deserialize_due(self, value):
+        return self.timestamp_deserializer(value)
+
+    def serialize_scheduled(self, value):
+        return self.timestamp_serializer(value)
+
+    def deserialize_scheduled(self, value):
+        return self.timestamp_deserializer(value)
+
+    def serialize_until(self, value):
+        return self.timestamp_serializer(value)
+
+    def deserialize_until(self, value):
+        return self.timestamp_deserializer(value)
+
+    def serialize_wait(self, value):
+        return self.timestamp_serializer(value)
+
+    def deserialize_wait(self, value):
+        return self.timestamp_deserializer(value)
+
+    def deserialize_annotations(self, data):
+        return [TaskAnnotation(self, d) for d in data] if data else []
+
+    def serialize_tags(self, tags):
+        return ','.join(tags) if tags else ''
+
+    def deserialize_tags(self, tags):
+        if isinstance(tags, basestring):
+            return tags.split(',') if tags else []
+        return tags
+
+    def serialize_depends(self, cur_dependencies):
+        # Return the list of uuids
+        return ','.join(task['uuid'] for task in cur_dependencies)
+
+    def deserialize_depends(self, raw_uuids):
+        raw_uuids = raw_uuids or ''  # Convert None to empty string
+        uuids = raw_uuids.split(',')
+        return set(self.warrior.tasks.get(uuid=uuid) for uuid in uuids if uuid)
+
+
+class TaskResource(SerializingObject):
     read_only_fields = []
 
     def _load_data(self, data):
         self._data = data
+        # We need to use a copy for original data, so that changes
+        # are not propagated. Shallow copy is alright, since data dict uses only
+        # primitive data types
+        self._original_data = data.copy()
+
+    def _update_data(self, data, update_original=False):
+        """
+        Low level update of the internal _data dict. Data which are coming as
+        updates should already be serialized. If update_original is True, the
+        original_data dict is updated as well.
+        """
+
+        self._data.update(data)
+
+        if update_original:
+            self._original_data.update(data)
 
     def __getitem__(self, key):
-        hydrate_func = getattr(self, 'deserialize_{0}'.format(key),
-                               lambda x: x)
-        return hydrate_func(self._data.get(key))
+        # This is a workaround to make TaskResource non-iterable
+        # over simple index-based iteration
+        try:
+            int(key)
+            raise StopIteration
+        except ValueError:
+            pass
+
+        return self._deserialize(key, self._data.get(key))
 
     def __setitem__(self, key, value):
         if key in self.read_only_fields:
             raise RuntimeError('Field \'%s\' is read-only' % key)
-        dehydrate_func = getattr(self, 'serialize_{0}'.format(key),
-                                 lambda x: x)
-        self._data[key] = dehydrate_func(value)
-        self._modified_fields.add(key)
+        self._data[key] = self._serialize(key, value)
 
     def __str__(self):
         s = six.text_type(self.__unicode__())
@@ -60,12 +162,6 @@ class TaskAnnotation(TaskResource):
         self.task = task
         self._load_data(data)
 
-    def deserialize_entry(self, data):
-        return datetime.datetime.strptime(data, DATE_FORMAT) if data else None
-
-    def serialize_entry(self, date):
-        return date.strftime(DATE_FORMAT) if date else ''
-
     def remove(self):
         self.task.remove_annotation(self)
 
@@ -76,7 +172,7 @@ class TaskAnnotation(TaskResource):
 
 
 class Task(TaskResource):
-    read_only_fields = ['id', 'entry', 'urgency', 'uuid']
+    read_only_fields = ['id', 'entry', 'urgency', 'uuid', 'modified']
 
     class DoesNotExist(Exception):
         pass
@@ -100,17 +196,48 @@ class Task(TaskResource):
         """
         pass
 
-    def __init__(self, warrior, data={}, **kwargs):
+    def __init__(self, warrior, **kwargs):
         self.warrior = warrior
 
-        # We keep data for backwards compatibility
-        kwargs.update(data)
+        # Check that user is not able to set read-only value in __init__
+        for key in kwargs.keys():
+            if key in self.read_only_fields:
+                raise RuntimeError('Field \'%s\' is read-only' % key)
 
-        self._load_data(kwargs)
-        self._modified_fields = set()
+        # We serialize the data in kwargs so that users of the library
+        # do not have to pass different data formats via __setitem__ and
+        # __init__ methods, that would be confusing
+
+        # Rather unfortunate syntax due to python2.6 comaptiblity
+        self._load_data(dict((key, self._serialize(key, value))
+                        for (key, value) in six.iteritems(kwargs)))
 
     def __unicode__(self):
         return self['description']
+
+    def __eq__(self, other):
+        if self['uuid'] and other['uuid']:
+            # For saved Tasks, just define equality by equality of uuids
+            return self['uuid'] == other['uuid']
+        else:
+            # If the tasks are not saved, compare the actual instances
+            return id(self) == id(other)
+
+
+    def __hash__(self):
+        if self['uuid']:
+            # For saved Tasks, just define equality by equality of uuids
+            return self['uuid'].__hash__()
+        else:
+            # If the tasks are not saved, return hash of instance id
+            return id(self).__hash__()
+
+    @property
+    def _modified_fields(self):
+        writable_fields = set(self._data.keys()) - set(self.read_only_fields)
+        for key in writable_fields:
+            if self._data.get(key) != self._original_data.get(key):
+                yield key
 
     @property
     def completed(self):
@@ -132,24 +259,42 @@ class Task(TaskResource):
     def saved(self):
         return self['uuid'] is not None or self['id'] is not None
 
-    def serialize_due(self, date):
-        return date.strftime(DATE_FORMAT)
+    def serialize_depends(self, cur_dependencies):
+        # Check that all the tasks are saved
+        for task in cur_dependencies:
+            if not task.saved:
+                raise Task.NotSaved('Task \'%s\' needs to be saved before '
+                                    'it can be set as dependency.' % task)
 
-    def deserialize_due(self, date_str):
-        if not date_str:
-            return None
-        return datetime.datetime.strptime(date_str, DATE_FORMAT)
+        return super(Task, self).serialize_depends(cur_dependencies)
 
-    def deserialize_annotations(self, data):
-        return [TaskAnnotation(self, d) for d in data] if data else []
+    def format_depends(self):
+        # We need to generate added and removed dependencies list,
+        # since Taskwarrior does not accept redefining dependencies.
 
-    def deserialize_tags(self, tags):
-        if isinstance(tags, basestring):
-            return tags.split(',') if tags else []
-        return tags
+        # This cannot be part of serialize_depends, since we need
+        # to keep a list of all depedencies in the _data dictionary,
+        # not just currently added/removed ones
 
-    def serialize_tags(self, tags):
-        return ','.join(tags) if tags else ''
+        old_dependencies_raw = self._original_data.get('depends','')
+        old_dependencies = self.deserialize_depends(old_dependencies_raw)
+
+        added = self['depends'] - old_dependencies
+        removed = old_dependencies - self['depends']
+
+        # Removed dependencies need to be prefixed with '-'
+        return 'depends:' + ','.join(
+                [t['uuid'] for t in added] +
+                ['-' + t['uuid'] for t in removed]
+            )
+
+    def format_description(self):
+        # Task version older than 2.4.0 ignores first word of the
+        # task description if description: prefix is used
+        if self.warrior.version < VERSION_2_4_0:
+            return self._data['description']
+        else:
+            return "description:'{0}'".format(self._data['description'] or '')
 
     def delete(self):
         if not self.saved:
@@ -161,9 +306,7 @@ class Task(TaskResource):
         if self.deleted:
             raise Task.DeletedTask("Task was already deleted")
 
-        self.warrior.execute_command([self['uuid'], 'delete'], config_override={
-            'confirmation': 'no',
-        })
+        self.warrior.execute_command([self['uuid'], 'delete'])
 
         # Refresh the status again, so that we have updated info stored
         self.refresh(only_fields=['status'])
@@ -204,7 +347,6 @@ class Task(TaskResource):
             # Circumvent the ID storage, since ID is considered read-only
             self._data['id'] = int(id_lines[0].split(' ')[2].rstrip('.'))
 
-        self._modified_fields.clear()
         self.refresh()
 
     def add_annotation(self, annotation):
@@ -217,7 +359,7 @@ class Task(TaskResource):
 
     def remove_annotation(self, annotation):
         if not self.saved:
-            raise Task.NotSaved("Task needs to be saved to add annotation")
+            raise Task.NotSaved("Task needs to be saved to remove annotation")
 
         if isinstance(annotation, TaskAnnotation):
             annotation = annotation['description']
@@ -229,12 +371,12 @@ class Task(TaskResource):
         args = []
 
         def add_field(field):
-            # Task version older than 2.4.0 ignores first word of the
-            # task description if description: prefix is used
-            if self.warrior.version < VERSION_2_4_0 and field == 'description':
-                args.append(self._data[field])
-            else:
-                args.append('{0}:{1}'.format(field, self._data[field]))
+            # Add the output of format_field method to args list (defaults to
+            # field:value)
+            format_default = lambda k: "{0}:'{1}'".format(k, self._data[k] or '')
+            format_func = getattr(self, 'format_{0}'.format(field),
+                                  lambda: format_default(field))
+            args.append(format_func())
 
         # If we're modifying saved task, simply pass on all modified fields
         if self.saved:
@@ -262,12 +404,12 @@ class Task(TaskResource):
         if only_fields:
             to_update = dict(
                 [(k, new_data.get(k)) for k in only_fields])
-            self._data.update(to_update)
+            self._update_data(to_update, update_original=True)
         else:
-            self._data = new_data
+            self._load_data(new_data)
 
 
-class TaskFilter(object):
+class TaskFilter(SerializingObject):
     """
     A set of parameters to filter the task list with.
     """
@@ -283,14 +425,23 @@ class TaskFilter(object):
 
         # Replace the value with empty string, since that is the
         # convention in TW for empty values
-        value = value if value is not None else ''
+        attribute_key = key.split('.')[0]
+        value = self._serialize(attribute_key, value)
 
         # If we are filtering by uuid:, do not use uuid keyword
         # due to TW-1452 bug
         if key == 'uuid':
             self.filter_params.insert(0, value)
         else:
-            self.filter_params.append('{0}:{1}'.format(key, value))
+            # Surround value with aphostrophes unless it's a empty string
+            value = "'%s'" % value if value else ''
+
+            # We enforce equality match by using 'is' (or 'none') modifier
+            # Without using this syntax, filter fails due to TW-1479
+            modifier = '.is' if value else '.none'
+            key = key + modifier if '.' not in key else key
+
+            self.filter_params.append("{0}:{1}".format(key, value))
 
     def get_filter_params(self):
         return [f for f in self.filter_params if f]
@@ -418,6 +569,8 @@ class TaskWarrior(object):
             os.makedirs(data_location)
         self.config = {
             'data.location': os.path.expanduser(data_location),
+            'confirmation': 'no',
+            'dependency.confirmation': 'no', # See TW-1483 or taskrc man page
         }
         self.tasks = TaskQuerySet(self)
         self.version = self._get_version()
@@ -461,7 +614,9 @@ class TaskWarrior(object):
             if line:
                 data = line.strip(',')
                 try:
-                    tasks.append(Task(self, json.loads(data)))
+                    filtered_task = Task(self)
+                    filtered_task._load_data(json.loads(data))
+                    tasks.append(filtered_task)
                 except ValueError:
                     raise TaskWarriorException('Invalid JSON: %s' % data)
         return tasks
@@ -473,6 +628,4 @@ class TaskWarrior(object):
         })
 
     def undo(self):
-        self.execute_command(['undo'], config_override={
-            'confirmation': 'no',
-        })
+        self.execute_command(['undo'])
