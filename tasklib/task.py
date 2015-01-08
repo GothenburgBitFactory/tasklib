@@ -460,7 +460,8 @@ class Task(TaskResource):
         Exports current data contained in the Task as JSON
         """
 
-        return json.dumps(self._data)
+        # We need to remove spaces for TW-1504, use custom separators
+        return json.dumps(self._data, separators=(',',':'))
 
 class TaskFilter(SerializingObject):
     """
