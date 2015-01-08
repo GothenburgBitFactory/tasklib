@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import six
+import sys
 import subprocess
 
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
@@ -204,6 +205,33 @@ class Task(TaskResource):
         it has not been saved to TaskWarrior yet.
         """
         pass
+
+    @classmethod
+    def from_input(cls, modify=False):
+        """
+        Creates a Task object, directly from the stdin, by reading one line.
+        If modify=True, two lines are used, first line interpreted as the
+        original state of the Task object, and second line as its new,
+        modified value. This is consistent with the TaskWarrior's hook
+        system.
+
+        Object created by this method should not be saved, deleted
+        or refreshed, as t could create a infinite loop. For this
+        reason, TaskWarrior instance is set to None.
+        """
+
+        # TaskWarrior instance is set to None
+        task = cls(None)
+
+        # Load the data from the input
+        task._load_data(json.loads(sys.stdin.readline().strip()))
+
+        # If this is a on-modify event, we are provided with additional
+        # line of input, which provides updated data
+        if modify:
+            task._update_data(json.loads(sys.stdin.readline().strip()))
+
+        return task
 
     def __init__(self, warrior, **kwargs):
         self.warrior = warrior
@@ -427,6 +455,12 @@ class Task(TaskResource):
         else:
             self._load_data(new_data)
 
+    def export_data(self):
+        """
+        Exports current data contained in the Task as JSON
+        """
+
+        return json.dumps(self._data)
 
 class TaskFilter(SerializingObject):
     """
