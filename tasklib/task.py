@@ -4,9 +4,11 @@ import datetime
 import json
 import logging
 import os
+import pytz
 import six
 import sys
 import subprocess
+import tzlocal
 
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
 REPR_OUTPUT_SIZE = 10
@@ -19,6 +21,7 @@ VERSION_2_3_0 = six.u('2.3.0')
 VERSION_2_4_0 = six.u('2.4.0')
 
 logger = logging.getLogger(__name__)
+local_zone = tzlocal.get_localzone()
 
 
 class TaskWarriorException(Exception):
@@ -68,12 +71,21 @@ class SerializingObject(object):
     def timestamp_serializer(self, date):
         if not date:
             return ''
+
+        # Any serialized timestamp should be localized, we need to
+        # convert to UTC before converting to string (DATE_FORMAT uses UTC)
+        date = date.astimezone(pytz.utc)
+
         return date.strftime(DATE_FORMAT)
 
     def timestamp_deserializer(self, date_str):
         if not date_str:
             return None
-        return datetime.datetime.strptime(date_str, DATE_FORMAT)
+
+        # Return timestamp localized in the local zone
+        naive_timestamp = datetime.datetime.strptime(date_str, DATE_FORMAT)
+        localized_timestamp = pytz.utc.localize(naive_timestamp)
+        return localized_timestamp.astimezone(local_zone)
 
     def serialize_entry(self, value):
         return self.timestamp_serializer(value)
@@ -141,6 +153,32 @@ class SerializingObject(object):
         uuids = raw_uuids.split(',')
         return set(self.warrior.tasks.get(uuid=uuid) for uuid in uuids if uuid)
 
+    def normalize_datetime(self, value):
+        """
+        Normalizes date/datetime value (considered to come from user input)
+        to localized datetime value. Following conversions happen:
+
+        naive date -> localized datetime with the same date, and time=midnight
+        naive datetime -> localized datetime with the same value
+        localized datetime -> localized datetime (no conversion)
+        """
+
+        if (isinstance(value, datetime.date)
+            and not isinstance(value, datetime.datetime)):
+            # Convert to local midnight
+            value_full = datetime.datetime.combine(value, datetime.time.min)
+            localized = local_zone.localize(value_full)
+        elif isinstance(value, datetime.datetime) and value.tzinfo is None:
+            # Convert to localized datetime object
+            localized = local_zone.localize(value)
+        else:
+            # If the value is already localized, there is no need to change
+            # time zone at this point. Also None is a valid value too.
+            localized = value
+        
+        return localized
+            
+
 
 class TaskResource(SerializingObject):
     read_only_fields = []
@@ -182,6 +220,12 @@ class TaskResource(SerializingObject):
     def __setitem__(self, key, value):
         if key in self.read_only_fields:
             raise RuntimeError('Field \'%s\' is read-only' % key)
+
+        # Localize any naive date/datetime to the detected timezone
+        if (isinstance(value, datetime.datetime) or
+            isinstance(value, datetime.date)):
+            value = self.normalize_datetime(value)
+
         self._data[key] = value
 
     def __str__(self):
@@ -548,6 +592,13 @@ class TaskFilter(SerializingObject):
         # Replace the value with empty string, since that is the
         # convention in TW for empty values
         attribute_key = key.split('.')[0]
+
+        # Since this is user input, we need to normalize datetime
+        # objects
+        if (isinstance(value, datetime.datetime) or
+            isinstance(value, datetime.date)):
+            value = self.normalize_datetime(value)
+
         value = self._serialize(attribute_key, value)
 
         # If we are filtering by uuid:, do not use uuid keyword
