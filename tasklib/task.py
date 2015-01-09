@@ -95,7 +95,7 @@ class SerializingObject(object):
     def deserialize_tags(self, tags):
         if isinstance(tags, basestring):
             return tags.split(',') if tags else []
-        return tags
+        return tags or []
 
     def serialize_depends(self, cur_dependencies):
         # Return the list of uuids
