@@ -126,7 +126,10 @@ class TaskResource(SerializingObject):
         except ValueError:
             pass
 
-        return self._data.get(key) or self._deserialize(key, None)
+        if key not in self._data:
+            self._data[key] = self._deserialize(key, None)
+
+        return self._data.get(key)
 
     def __setitem__(self, key, value):
         if key in self.read_only_fields:
