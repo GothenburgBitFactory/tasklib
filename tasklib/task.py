@@ -111,23 +111,11 @@ class TaskResource(SerializingObject):
     read_only_fields = []
 
     def _load_data(self, data):
-        self._data = data
+        self._data = dict((key, self._deserialize(key, value))
+                          for key, value in data.items())
         # We need to use a copy for original data, so that changes
-        # are not propagated. Shallow copy is alright, since data dict uses only
-        # primitive data types
-        self._original_data = data.copy()
-
-    def _update_data(self, data, update_original=False):
-        """
-        Low level update of the internal _data dict. Data which are coming as
-        updates should already be serialized. If update_original is True, the
-        original_data dict is updated as well.
-        """
-
-        self._data.update(data)
-
-        if update_original:
-            self._original_data.update(data)
+        # are not propagated.
+        self._original_data = copy.deepcopy(self._data)
 
     def __getitem__(self, key):
         # This is a workaround to make TaskResource non-iterable
@@ -138,12 +126,12 @@ class TaskResource(SerializingObject):
         except ValueError:
             pass
 
-        return self._deserialize(key, self._data.get(key))
+        return self._data.get(key) or self._deserialize(key, None)
 
     def __setitem__(self, key, value):
         if key in self.read_only_fields:
             raise RuntimeError('Field \'%s\' is read-only' % key)
-        self._data[key] = self._serialize(key, value)
+        self._data[key] = value
 
     def __str__(self):
         s = six.text_type(self.__unicode__())
@@ -240,6 +228,10 @@ class Task(TaskResource):
                 yield key
 
     @property
+    def _is_modified(self):
+        return bool(list(self._modified_fields))
+
+    @property
     def completed(self):
         return self['status'] == six.text_type('completed')
 
@@ -276,8 +268,7 @@ class Task(TaskResource):
         # to keep a list of all depedencies in the _data dictionary,
         # not just currently added/removed ones
 
-        old_dependencies_raw = self._original_data.get('depends','')
-        old_dependencies = self.deserialize_depends(old_dependencies_raw)
+        old_dependencies = self._original_data.get('depends', set())
 
         added = self['depends'] - old_dependencies
         removed = old_dependencies - self['depends']
@@ -301,7 +292,7 @@ class Task(TaskResource):
             raise Task.NotSaved("Task needs to be saved before it can be deleted")
 
         # Refresh the status, and raise exception if the task is deleted
-        self.refresh(only_fields=['status'])
+        self.refresh()
 
         if self.deleted:
             raise Task.DeletedTask("Task was already deleted")
@@ -309,7 +300,7 @@ class Task(TaskResource):
         self.warrior.execute_command([self['uuid'], 'delete'])
 
         # Refresh the status again, so that we have updated info stored
-        self.refresh(only_fields=['status'])
+        self.refresh()
 
 
     def done(self):
@@ -317,7 +308,7 @@ class Task(TaskResource):
             raise Task.NotSaved("Task needs to be saved before it can be completed")
 
         # Refresh, and raise exception if task is already completed/deleted
-        self.refresh(only_fields=['status'])
+        self.refresh()
 
         if self.completed:
             raise Task.CompletedTask("Cannot complete a completed task")
@@ -327,9 +318,12 @@ class Task(TaskResource):
         self.warrior.execute_command([self['uuid'], 'done'])
 
         # Refresh the status again, so that we have updated info stored
-        self.refresh(only_fields=['status'])
+        self.refresh()
 
     def save(self):
+        if self.saved and not self._is_modified:
+            return
+
         args = [self['uuid'], 'modify'] if self.saved else ['add']
         args.extend(self._get_modified_fields_as_args())
         output = self.warrior.execute_command(args)
@@ -355,7 +349,7 @@ class Task(TaskResource):
 
         args = [self['uuid'], 'annotate', annotation]
         self.warrior.execute_command(args)
-        self.refresh(only_fields=['annotations'])
+        self.refresh()
 
     def remove_annotation(self, annotation):
         if not self.saved:
@@ -365,7 +359,7 @@ class Task(TaskResource):
             annotation = annotation['description']
         args = [self['uuid'], 'denotate', annotation]
         self.warrior.execute_command(args)
-        self.refresh(only_fields=['annotations'])
+        self.refresh()
 
     def _get_modified_fields_as_args(self):
         args = []
@@ -373,9 +367,10 @@ class Task(TaskResource):
         def add_field(field):
             # Add the output of format_field method to args list (defaults to
             # field:value)
-            format_default = lambda k: "{0}:'{1}'".format(k, self._data[k] or '')
+            serialized_value = self._serialize(field, self._data[field]) or ''
+            format_default = lambda: "{0}:'{1}'".format(field, serialized_value)
             format_func = getattr(self, 'format_{0}'.format(field),
-                                  lambda: format_default(field))
+                                  format_default)
             args.append(format_func())
 
         # If we're modifying saved task, simply pass on all modified fields
@@ -391,7 +386,7 @@ class Task(TaskResource):
 
         return args
 
-    def refresh(self, only_fields=[]):
+    def refresh(self):
         # Raise error when trying to refresh a task that has not been saved
         if not self.saved:
             raise Task.NotSaved("Task needs to be saved to be refreshed")
@@ -401,12 +396,7 @@ class Task(TaskResource):
         # with using UUID only.
         args = [self['uuid'] or self['id'], 'export']
         new_data = json.loads(self.warrior.execute_command(args)[0])
-        if only_fields:
-            to_update = dict(
-                [(k, new_data.get(k)) for k in only_fields])
-            self._update_data(to_update, update_original=True)
-        else:
-            self._load_data(new_data)
+        self._load_data(new_data)
 
 
 class TaskFilter(SerializingObject):
