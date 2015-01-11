@@ -390,6 +390,9 @@ class Task(TaskResource):
             # Circumvent the ID storage, since ID is considered read-only
             self._data['id'] = int(id_lines[0].split(' ')[2].rstrip('.'))
 
+        # Refreshing is very important here, as not only modification time
+        # is updated, but arbitrary attribute may have changed due hooks
+        # altering the data before saving
         self.refresh()
 
     def add_annotation(self, annotation):
