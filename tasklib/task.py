@@ -280,7 +280,7 @@ class Task(TaskResource):
                 yield key
 
     @property
-    def _is_modified(self):
+    def modified(self):
         return bool(list(self._modified_fields))
 
     @property
@@ -373,7 +373,7 @@ class Task(TaskResource):
         self.refresh(only_fields=['status'])
 
     def save(self):
-        if self.saved and not self._is_modified:
+        if self.saved and not self.modified:
             return
 
         args = [self['uuid'], 'modify'] if self.saved else ['add']
