@@ -93,7 +93,7 @@ class SerializingObject(object):
         return ','.join(tags) if tags else ''
 
     def deserialize_tags(self, tags):
-        if isinstance(tags, basestring):
+        if isinstance(tags, six.string_types):
             return tags.split(',') if tags else []
         return tags or []
 
