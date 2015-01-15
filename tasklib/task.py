@@ -207,7 +207,7 @@ class Task(TaskResource):
         pass
 
     @classmethod
-    def from_input(cls, modify=False):
+    def from_input(cls, input_file=sys.stdin, modify=False):
         """
         Creates a Task object, directly from the stdin, by reading one line.
         If modify=True, two lines are used, first line interpreted as the
@@ -218,18 +218,21 @@ class Task(TaskResource):
         Object created by this method should not be saved, deleted
         or refreshed, as t could create a infinite loop. For this
         reason, TaskWarrior instance is set to None.
+
+        Input_file argument can be used to specify the input file,
+        but defaults to sys.stdin.
         """
 
         # TaskWarrior instance is set to None
         task = cls(None)
 
         # Load the data from the input
-        task._load_data(json.loads(sys.stdin.readline().strip()))
+        task._load_data(json.loads(input_file.readline().strip()))
 
         # If this is a on-modify event, we are provided with additional
         # line of input, which provides updated data
         if modify:
-            task._update_data(json.loads(sys.stdin.readline().strip()))
+            task._update_data(json.loads(input_file.readline().strip()))
 
         return task
 
