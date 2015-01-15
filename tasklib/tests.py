@@ -7,6 +7,29 @@ import unittest
 
 from .task import TaskWarrior, Task
 
+# http://taskwarrior.org/docs/design/task.html , Section: The Attributes
+TASK_STANDARD_ATTRS = (
+    'status',
+    'uuid',
+    'entry',
+    'description',
+    'start',
+    'end',
+    'due',
+    'until',
+    'wait',
+    'modified',
+    'scheduled',
+    'recur',
+    'mask',
+    'imask',
+    'parent',
+    'project',
+    'priority',
+    'depends',
+    'tags',
+    'annotation',
+)
 
 class TasklibTest(unittest.TestCase):
 
@@ -409,6 +432,14 @@ class TaskTest(TasklibTest):
         t['due'] = datetime.datetime(2014, 2, 14, 14, 14, 14)  # <3
         t['project'] = "test project"
         t['depends'] = set([dependency])
+        self.assertEqual(set(t._modified_fields), set())
+
+    def test_modified_fields_not_affected_by_reading(self):
+        t = Task(self.tw)
+
+        for field in TASK_STANDARD_ATTRS:
+            value = t[field]
+
         self.assertEqual(set(t._modified_fields), set())
 
     def test_setting_read_only_attrs_through_init(self):

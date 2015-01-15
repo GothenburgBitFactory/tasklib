@@ -245,7 +245,15 @@ class Task(TaskResource):
     def _modified_fields(self):
         writable_fields = set(self._data.keys()) - set(self.read_only_fields)
         for key in writable_fields:
-            if self._data.get(key) != self._original_data.get(key):
+            new_value = self._data.get(key)
+            old_value = self._original_data.get(key)
+
+            # Make sure not to mark data removal as modified field if the
+            # field originally had some empty value
+            if key in self._data and not new_value and not old_value:
+                continue
+
+            if new_value != old_value:
                 yield key
 
     @property
