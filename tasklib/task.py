@@ -93,9 +93,9 @@ class SerializingObject(object):
         return ','.join(tags) if tags else ''
 
     def deserialize_tags(self, tags):
-        if isinstance(tags, basestring):
+        if isinstance(tags, six.string_types):
             return tags.split(',') if tags else []
-        return tags
+        return tags or []
 
     def serialize_depends(self, cur_dependencies):
         # Return the list of uuids
@@ -111,11 +111,11 @@ class TaskResource(SerializingObject):
     read_only_fields = []
 
     def _load_data(self, data):
-        self._data = data
+        self._data = dict((key, self._deserialize(key, value))
+                          for key, value in data.items())
         # We need to use a copy for original data, so that changes
-        # are not propagated. Shallow copy is alright, since data dict uses only
-        # primitive data types
-        self._original_data = data.copy()
+        # are not propagated.
+        self._original_data = copy.deepcopy(self._data)
 
     def _update_data(self, data, update_original=False):
         """
@@ -123,11 +123,12 @@ class TaskResource(SerializingObject):
         updates should already be serialized. If update_original is True, the
         original_data dict is updated as well.
         """
-
-        self._data.update(data)
+        self._data.update(dict((key, self._deserialize(key, value))
+                               for key, value in data.items()))
 
         if update_original:
-            self._original_data.update(data)
+            self._original_data = copy.deepcopy(self._data)
+
 
     def __getitem__(self, key):
         # This is a workaround to make TaskResource non-iterable
@@ -138,12 +139,15 @@ class TaskResource(SerializingObject):
         except ValueError:
             pass
 
-        return self._deserialize(key, self._data.get(key))
+        if key not in self._data:
+            self._data[key] = self._deserialize(key, None)
+
+        return self._data.get(key)
 
     def __setitem__(self, key, value):
         if key in self.read_only_fields:
             raise RuntimeError('Field \'%s\' is read-only' % key)
-        self._data[key] = self._serialize(key, value)
+        self._data[key] = value
 
     def __str__(self):
         s = six.text_type(self.__unicode__())
@@ -167,6 +171,11 @@ class TaskAnnotation(TaskResource):
 
     def __unicode__(self):
         return self['description']
+
+    def __eq__(self, other):
+        # consider 2 annotations equal if they belong to the same task, and
+        # their data dics are the same
+        return self.task == other.task and self._data == other._data
 
     __repr__ = __unicode__
 
@@ -240,6 +249,10 @@ class Task(TaskResource):
                 yield key
 
     @property
+    def _is_modified(self):
+        return bool(list(self._modified_fields))
+
+    @property
     def completed(self):
         return self['status'] == six.text_type('completed')
 
@@ -276,8 +289,7 @@ class Task(TaskResource):
         # to keep a list of all depedencies in the _data dictionary,
         # not just currently added/removed ones
 
-        old_dependencies_raw = self._original_data.get('depends','')
-        old_dependencies = self.deserialize_depends(old_dependencies_raw)
+        old_dependencies = self._original_data.get('depends', set())
 
         added = self['depends'] - old_dependencies
         removed = old_dependencies - self['depends']
@@ -330,6 +342,9 @@ class Task(TaskResource):
         self.refresh(only_fields=['status'])
 
     def save(self):
+        if self.saved and not self._is_modified:
+            return
+
         args = [self['uuid'], 'modify'] if self.saved else ['add']
         args.extend(self._get_modified_fields_as_args())
         output = self.warrior.execute_command(args)
@@ -372,13 +387,14 @@ class Task(TaskResource):
 
         def add_field(field):
             # Add the output of format_field method to args list (defaults to
-            # field:'value')
-            format_default = lambda k: "{0}:{1}".format(k,
-                                           "'{0}'".format(self._data[k])
-                                           if self._data[k] is not None
-                                           else '')
+            # field:value)
+            serialized_value = self._serialize(field, self._data[field]) or ''
+            format_default = lambda: "{0}:{1}".format(
+                field,
+                "'{0}'".format(serialized_value) if serialized_value else ''
+            )
             format_func = getattr(self, 'format_{0}'.format(field),
-                                  lambda: format_default(field))
+                                  format_default)
             args.append(format_func())
 
         # If we're modifying saved task, simply pass on all modified fields

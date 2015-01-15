@@ -181,9 +181,9 @@ class TaskTest(TasklibTest):
 
         # We only save the parent task, dependency task is unsaved
         t.save()
+        t['depends'] = set([dependency])
 
-        self.assertRaises(Task.NotSaved,
-                          t.__setitem__, 'depends', set([dependency]))
+        self.assertRaises(Task.NotSaved, t.save)
 
     def test_set_simple_dependency_set(self):
         # Adds only one dependency to task with no dependencies
@@ -223,7 +223,7 @@ class TaskTest(TasklibTest):
         t['depends'] = set([dependency1, dependency2])
         t.save()
 
-        t['depends'] = t['depends'] - set([dependency2])
+        t['depends'].remove(dependency2)
         t.save()
 
         self.assertEqual(t['depends'], set([dependency1]))
@@ -240,10 +240,22 @@ class TaskTest(TasklibTest):
         t['depends'] = set([dependency1])
         t.save()
 
-        t['depends'] = t['depends'] | set([dependency2])
+        t['depends'].add(dependency2)
         t.save()
 
         self.assertEqual(t['depends'], set([dependency1, dependency2]))
+
+    def test_add_to_empty_dependency_set(self):
+        # Adds dependency to task with one dependencies
+        t = Task(self.tw, description="test task")
+        dependency = Task(self.tw, description="needs to be done first")
+
+        dependency.save()
+
+        t['depends'].add(dependency)
+        t.save()
+
+        self.assertEqual(t['depends'], set([dependency]))
 
     def test_simple_dependency_set_save_repeatedly(self):
         # Adds only one dependency to task with no dependencies
@@ -413,6 +425,25 @@ class TaskTest(TasklibTest):
             self.assertRaises(RuntimeError,
                               lambda: t.__setitem__(readonly_key, 'value'))
 
+    def test_saving_unmodified_task(self):
+        t = Task(self.tw, description="test task")
+        t.save()
+        t.save()
+
+    def test_adding_tag_by_appending(self):
+        t = Task(self.tw, description="test task", tags=['test1'])
+        t.save()
+        t['tags'].append('test2')
+        t.save()
+        self.assertEqual(t['tags'], ['test1', 'test2'])
+
+    def test_adding_tag_by_appending_empty(self):
+        t = Task(self.tw, description="test task")
+        t.save()
+        t['tags'].append('test')
+        t.save()
+        self.assertEqual(t['tags'], ['test'])
+
 
 class AnnotationTest(TasklibTest):
 
@@ -446,6 +477,14 @@ class AnnotationTest(TasklibTest):
         ann = task['annotations'][0]
         task.remove_annotation(ann)
         self.assertEqual(len(task['annotations']), 0)
+
+    def test_annotation_after_modification(self):
+         task = self.tw.tasks.get()
+         task['project'] = 'test'
+         task.add_annotation('I should really do this task')
+         self.assertEqual(task['project'], 'test')
+         task.save()
+         self.assertEqual(task['project'], 'test')
 
 
 class UnicodeTest(TasklibTest):
