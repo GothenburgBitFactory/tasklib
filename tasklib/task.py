@@ -371,7 +371,10 @@ class Task(TaskResource):
             # Add the output of format_field method to args list (defaults to
             # field:value)
             serialized_value = self._serialize(field, self._data[field]) or ''
-            format_default = lambda: "{0}:'{1}'".format(field, serialized_value)
+            format_default = lambda: "{0}:{1}".format(
+                field,
+                "'{0}'".format(serialized_value) if serialized_value else ''
+            )
             format_func = getattr(self, 'format_{0}'.format(field),
                                   format_default)
             args.append(format_func())

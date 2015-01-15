@@ -1,7 +1,7 @@
 tasklib
 =======
 
-.. image:: https://travis-ci.org/robgolding63/tasklib.png
+.. image:: https://travis-ci.org/robgolding63/tasklib.png?branch=develop
     :target: http://travis-ci.org/robgolding63/tasklib
 
 .. image:: https://coveralls.io/repos/robgolding63/tasklib/badge.png?branch=develop
