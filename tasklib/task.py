@@ -372,8 +372,11 @@ class Task(TaskResource):
 
         def add_field(field):
             # Add the output of format_field method to args list (defaults to
-            # field:value)
-            format_default = lambda k: "{0}:'{1}'".format(k, self._data[k] or '')
+            # field:'value')
+            format_default = lambda k: "{0}:{1}".format(k,
+                                           "'{0}'".format(self._data[k])
+                                           if self._data[k] is not None
+                                           else '')
             format_func = getattr(self, 'format_{0}'.format(field),
                                   lambda: format_default(field))
             args.append(format_func())
