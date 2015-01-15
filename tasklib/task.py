@@ -117,6 +117,19 @@ class TaskResource(SerializingObject):
         # are not propagated.
         self._original_data = copy.deepcopy(self._data)
 
+    def _update_data(self, data, update_original=False):
+        """
+        Low level update of the internal _data dict. Data which are coming as
+        updates should already be serialized. If update_original is True, the
+        original_data dict is updated as well.
+        """
+        self._data.update(dict((key, self._deserialize(key, value))
+                               for key, value in data.items()))
+
+        if update_original:
+            self._original_data = copy.deepcopy(self._data)
+
+
     def __getitem__(self, key):
         # This is a workaround to make TaskResource non-iterable
         # over simple index-based iteration
@@ -158,6 +171,11 @@ class TaskAnnotation(TaskResource):
 
     def __unicode__(self):
         return self['description']
+
+    def __eq__(self, other):
+        # consider 2 annotations equal if they belong to the same task, and
+        # their data dics are the same
+        return self.task == other.task and self._data == other._data
 
     __repr__ = __unicode__
 
@@ -295,7 +313,7 @@ class Task(TaskResource):
             raise Task.NotSaved("Task needs to be saved before it can be deleted")
 
         # Refresh the status, and raise exception if the task is deleted
-        self.refresh()
+        self.refresh(only_fields=['status'])
 
         if self.deleted:
             raise Task.DeletedTask("Task was already deleted")
@@ -303,7 +321,7 @@ class Task(TaskResource):
         self.warrior.execute_command([self['uuid'], 'delete'])
 
         # Refresh the status again, so that we have updated info stored
-        self.refresh()
+        self.refresh(only_fields=['status'])
 
 
     def done(self):
@@ -311,7 +329,7 @@ class Task(TaskResource):
             raise Task.NotSaved("Task needs to be saved before it can be completed")
 
         # Refresh, and raise exception if task is already completed/deleted
-        self.refresh()
+        self.refresh(only_fields=['status'])
 
         if self.completed:
             raise Task.CompletedTask("Cannot complete a completed task")
@@ -321,7 +339,7 @@ class Task(TaskResource):
         self.warrior.execute_command([self['uuid'], 'done'])
 
         # Refresh the status again, so that we have updated info stored
-        self.refresh()
+        self.refresh(only_fields=['status'])
 
     def save(self):
         if self.saved and not self._is_modified:
@@ -352,7 +370,7 @@ class Task(TaskResource):
 
         args = [self['uuid'], 'annotate', annotation]
         self.warrior.execute_command(args)
-        self.refresh()
+        self.refresh(only_fields=['annotations'])
 
     def remove_annotation(self, annotation):
         if not self.saved:
@@ -362,7 +380,7 @@ class Task(TaskResource):
             annotation = annotation['description']
         args = [self['uuid'], 'denotate', annotation]
         self.warrior.execute_command(args)
-        self.refresh()
+        self.refresh(only_fields=['annotations'])
 
     def _get_modified_fields_as_args(self):
         args = []
@@ -392,7 +410,7 @@ class Task(TaskResource):
 
         return args
 
-    def refresh(self):
+    def refresh(self, only_fields=[]):
         # Raise error when trying to refresh a task that has not been saved
         if not self.saved:
             raise Task.NotSaved("Task needs to be saved to be refreshed")
@@ -402,7 +420,12 @@ class Task(TaskResource):
         # with using UUID only.
         args = [self['uuid'] or self['id'], 'export']
         new_data = json.loads(self.warrior.execute_command(args)[0])
-        self._load_data(new_data)
+        if only_fields:
+            to_update = dict(
+                [(k, new_data.get(k)) for k in only_fields])
+            self._update_data(to_update, update_original=True)
+        else:
+            self._load_data(new_data)
 
 
 class TaskFilter(SerializingObject):

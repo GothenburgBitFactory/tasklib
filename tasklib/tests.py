@@ -478,6 +478,14 @@ class AnnotationTest(TasklibTest):
         task.remove_annotation(ann)
         self.assertEqual(len(task['annotations']), 0)
 
+    def test_annotation_after_modification(self):
+         task = self.tw.tasks.get()
+         task['project'] = 'test'
+         task.add_annotation('I should really do this task')
+         self.assertEqual(task['project'], 'test')
+         task.save()
+         self.assertEqual(task['project'], 'test')
+
 
 class UnicodeTest(TasklibTest):
 
