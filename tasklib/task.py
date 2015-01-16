@@ -467,7 +467,9 @@ class Task(TaskResource):
         """
 
         # We need to remove spaces for TW-1504, use custom separators
-        return json.dumps(self._data, separators=(',',':'))
+        data = dict((key, self._serialize(key, value))
+                    for key, value in six.iteritems(self._data))
+        return json.dumps(data, separators=(',',':'))
 
 class TaskFilter(SerializingObject):
     """
