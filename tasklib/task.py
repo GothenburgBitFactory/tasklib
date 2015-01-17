@@ -471,8 +471,13 @@ class Task(TaskResource):
         """
 
         # We need to remove spaces for TW-1504, use custom separators
-        data = dict((key, self._serialize(key, value))
-                    for key, value in six.iteritems(self._data))
+        data_tuples = ((key, self._serialize(key, value))
+                       for key, value in six.iteritems(self._data))
+
+        # Empty string denotes empty serialized value, we do not want
+        # to pass that to TaskWarrior.
+        data_tuples = filter(lambda t: t[1] is not '', data_tuples)
+        data = dict(data_tuples)
         return json.dumps(data, separators=(',',':'))
 
 class TaskFilter(SerializingObject):
