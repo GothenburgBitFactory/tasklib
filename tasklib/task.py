@@ -7,7 +7,6 @@ import os
 import six
 import sys
 import subprocess
-import sys
 
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
 REPR_OUTPUT_SIZE = 10
