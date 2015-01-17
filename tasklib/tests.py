@@ -477,6 +477,23 @@ class TaskTest(TasklibTest):
         t.save()
         self.assertEqual(t['tags'], ['test'])
 
+    def test_serializers_returning_empty_string_for_none(self):
+        # Test that any serializer returns '' when passed None
+        t = Task(self.tw)
+        serializers = [getattr(t, serializer_name) for serializer_name in
+                       filter(lambda x: x.startswith('serialize_'), dir(t))]
+        for serializer in serializers:
+            self.assertEqual(serializer(None), '')
+
+    def test_deserializer_returning_empty_value_for_empty_string(self):
+        # Test that any deserializer returns empty value when passed ''
+        t = Task(self.tw)
+        deserializers = [getattr(t, deserializer_name) for deserializer_name in
+                        filter(lambda x: x.startswith('deserialize_'), dir(t))]
+        for deserializer in deserializers:
+            self.assertTrue(deserializer('') in (None, [], set()))
+
+
 
 class TaskFromHookTest(TasklibTest):
 
