@@ -1,6 +1,8 @@
 # coding=utf-8
 
 import datetime
+import itertools
+import six
 import shutil
 import tempfile
 import unittest
@@ -474,6 +476,57 @@ class TaskTest(TasklibTest):
         t['tags'].append('test')
         t.save()
         self.assertEqual(t['tags'], ['test'])
+
+
+class TaskFromHookTest(TasklibTest):
+
+    input_add_data = six.StringIO(
+        '{"description":"Buy some milk",'
+        '"entry":"20141118T050231Z",'
+        '"status":"pending",'
+        '"uuid":"a360fc44-315c-4366-b70c-ea7e7520b749"}')
+
+    input_modify_data = six.StringIO(input_add_data.getvalue() + '\n' +
+        '{"description":"Buy some milk finally",'
+        '"entry":"20141118T050231Z",'
+        '"status":"completed",'
+        '"uuid":"a360fc44-315c-4366-b70c-ea7e7520b749"}')
+
+    exported_raw_data = (
+        '{"project":"Home",'
+         '"due":"20150101T232323Z",'
+         '"description":"test task"}')
+
+    def test_setting_up_from_add_hook_input(self):
+        t = Task.from_input(input_file=self.input_add_data)
+        self.assertEqual(t['description'], "Buy some milk")
+        self.assertEqual(t.pending, True)
+
+    def test_setting_up_from_modified_hook_input(self):
+        t = Task.from_input(input_file=self.input_modify_data, modify=True)
+        self.assertEqual(t['description'], "Buy some milk finally")
+        self.assertEqual(t.pending, False)
+        self.assertEqual(t.completed, True)
+
+        self.assertEqual(t._original_data['status'], "pending")
+        self.assertEqual(t._original_data['description'], "Buy some milk")
+        self.assertEqual(set(t._modified_fields),
+                         set(['status', 'description']))
+
+    def test_export_data(self):
+        t = Task(self.tw, description="test task",
+            project="Home", due=datetime.datetime(2015,1,1,23,23,23))
+
+        # Check that the output is a permutation of:
+        # {"project":"Home","description":"test task","due":"20150101232323Z"}
+        allowed_segments = self.exported_raw_data[1:-1].split(',')
+        allowed_output = [
+            '{' + ','.join(segments) + '}'
+            for segments in itertools.permutations(allowed_segments)
+        ]
+
+        self.assertTrue(any(t.export_data() == expected
+                            for expected in allowed_output))
 
 
 class AnnotationTest(TasklibTest):

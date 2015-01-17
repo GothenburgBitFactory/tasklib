@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import six
+import sys
 import subprocess
 
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
@@ -205,6 +206,40 @@ class Task(TaskResource):
         """
         pass
 
+    @classmethod
+    def from_input(cls, input_file=sys.stdin, modify=None):
+        """
+        Creates a Task object, directly from the stdin, by reading one line.
+        If modify=True, two lines are used, first line interpreted as the
+        original state of the Task object, and second line as its new,
+        modified value. This is consistent with the TaskWarrior's hook
+        system.
+
+        Object created by this method should not be saved, deleted
+        or refreshed, as t could create a infinite loop. For this
+        reason, TaskWarrior instance is set to None.
+
+        Input_file argument can be used to specify the input file,
+        but defaults to sys.stdin.
+        """
+
+        # TaskWarrior instance is set to None
+        task = cls(None)
+
+        # Detect the hook type if not given directly
+        name = os.path.basename(sys.argv[0])
+        modify = name.startswith('on-modify') if modify is None else modify
+
+        # Load the data from the input
+        task._load_data(json.loads(input_file.readline().strip()))
+
+        # If this is a on-modify event, we are provided with additional
+        # line of input, which provides updated data
+        if modify:
+            task._update_data(json.loads(input_file.readline().strip()))
+
+        return task
+
     def __init__(self, warrior, **kwargs):
         self.warrior = warrior
 
@@ -257,7 +292,7 @@ class Task(TaskResource):
                 yield key
 
     @property
-    def _is_modified(self):
+    def modified(self):
         return bool(list(self._modified_fields))
 
     @property
@@ -350,7 +385,7 @@ class Task(TaskResource):
         self.refresh(only_fields=['status'])
 
     def save(self):
-        if self.saved and not self._is_modified:
+        if self.saved and not self.modified:
             return
 
         args = [self['uuid'], 'modify'] if self.saved else ['add']
@@ -370,6 +405,9 @@ class Task(TaskResource):
             # Circumvent the ID storage, since ID is considered read-only
             self._data['id'] = int(id_lines[0].split(' ')[2].rstrip('.'))
 
+        # Refreshing is very important here, as not only modification time
+        # is updated, but arbitrary attribute may have changed due hooks
+        # altering the data before saving
         self.refresh()
 
     def add_annotation(self, annotation):
@@ -435,6 +473,20 @@ class Task(TaskResource):
         else:
             self._load_data(new_data)
 
+    def export_data(self):
+        """
+        Exports current data contained in the Task as JSON
+        """
+
+        # We need to remove spaces for TW-1504, use custom separators
+        data_tuples = ((key, self._serialize(key, value))
+                       for key, value in six.iteritems(self._data))
+
+        # Empty string denotes empty serialized value, we do not want
+        # to pass that to TaskWarrior.
+        data_tuples = filter(lambda t: t[1] is not '', data_tuples)
+        data = dict(data_tuples)
+        return json.dumps(data, separators=(',',':'))
 
 class TaskFilter(SerializingObject):
     """

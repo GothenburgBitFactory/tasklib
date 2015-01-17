@@ -309,6 +309,44 @@ To pass your own configuration, you just need to update this dictionary::
 
     >>> tw.config.update({'hooks': 'off'})  # tasklib will not trigger hooks
 
+Creating hook scripts
+---------------------
+
+From version 2.4.0, TaskWarrior has support for hook scripts. Tasklib provides
+some very useful helpers to write those. With tasklib, writing these becomes
+a breeze::
+
+    #!/usr/bin/python
+
+    from tasklib.task import Task
+    task = Task.from_input()
+    # ... <custom logic>
+    print task.export_data()
+
+For example, plugin which would assign the priority "H" to any task containing
+three exclamation marks in the description, would go like this::
+
+    #!/usr/bin/python
+
+    from tasklib.task import Task
+    task = Task.from_input()
+
+    if "!!!" in task['description']:
+        task['priority'] = "H"
+
+    print task.export_data()
+
+Tasklib can automatically detect whether it's running in the ``on-modify`` event,
+which provides more input than ``on-add`` event and reads the data accordingly.
+
+This means the example above works both for ``on-add`` and ``on-modify`` events!
+
+Consenquently, you can create just one hook file for both ``on-add`` and
+``on-modify`` events, and you just need to create a symlink for the other one.
+This removes the need for maintaining two copies of the same code base and/or
+boilerplate code.
+
+
 Working with UDAs
 -----------------
 
