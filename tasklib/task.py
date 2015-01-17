@@ -110,9 +110,10 @@ class SerializingObject(object):
             return tags.split(',') if tags else []
         return tags or []
 
-    def serialize_depends(self, cur_dependencies):
+    def serialize_depends(self, value):
         # Return the list of uuids
-        return ','.join(task['uuid'] for task in cur_dependencies)
+        value = value if value is not None else set()
+        return ','.join(task['uuid'] for task in value)
 
     def deserialize_depends(self, raw_uuids):
         raw_uuids = raw_uuids or ''  # Convert None to empty string
@@ -329,7 +330,7 @@ class Task(TaskResource):
 
     def serialize_depends(self, cur_dependencies):
         # Check that all the tasks are saved
-        for task in cur_dependencies:
+        for task in (cur_dependencies or set()):
             if not task.saved:
                 raise Task.NotSaved('Task \'%s\' needs to be saved before '
                                     'it can be set as dependency.' % task)
