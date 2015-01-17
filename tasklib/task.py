@@ -29,6 +29,18 @@ class SerializingObject(object):
     """
     Common ancestor for TaskResource & TaskFilter, since they both
     need to serialize arguments.
+
+    Serializing method should hold the following contract:
+      - any empty value (meaning removal of the attribute)
+        is deserialized into a empty string
+      - None denotes a empty value for any attribute
+
+    Deserializing method should hold the following contract:
+      - None denotes a empty value for any attribute (however,
+        this is here as a safeguard, TaskWarrior currently does
+        not export empty-valued attributes) if the attribute
+        is not iterable (e.g. list or set), in which case
+        a empty iterable should be used.
     """
 
     def _deserialize(self, key, value):
@@ -43,7 +55,7 @@ class SerializingObject(object):
 
     def timestamp_serializer(self, date):
         if not date:
-            return None
+            return ''
         return date.strftime(DATE_FORMAT)
 
     def timestamp_deserializer(self, date_str):
@@ -98,9 +110,10 @@ class SerializingObject(object):
             return tags.split(',') if tags else []
         return tags or []
 
-    def serialize_depends(self, cur_dependencies):
+    def serialize_depends(self, value):
         # Return the list of uuids
-        return ','.join(task['uuid'] for task in cur_dependencies)
+        value = value if value is not None else set()
+        return ','.join(task['uuid'] for task in value)
 
     def deserialize_depends(self, raw_uuids):
         raw_uuids = raw_uuids or ''  # Convert None to empty string
@@ -317,7 +330,7 @@ class Task(TaskResource):
 
     def serialize_depends(self, cur_dependencies):
         # Check that all the tasks are saved
-        for task in cur_dependencies:
+        for task in (cur_dependencies or set()):
             if not task.saved:
                 raise Task.NotSaved('Task \'%s\' needs to be saved before '
                                     'it can be set as dependency.' % task)
@@ -434,13 +447,21 @@ class Task(TaskResource):
         def add_field(field):
             # Add the output of format_field method to args list (defaults to
             # field:value)
-            serialized_value = self._serialize(field, self._data[field]) or ''
-            format_default = lambda: "{0}:{1}".format(
-                field,
-                "'{0}'".format(serialized_value) if serialized_value else ''
-            )
+            serialized_value = self._serialize(field, self._data[field])
+
+            # Empty values should not be enclosed in quotation marks, see
+            # TW-1510
+            if serialized_value is '':
+                escaped_serialized_value = ''
+            else:
+                escaped_serialized_value = "'{0}'".format(serialized_value)
+
+            format_default = lambda: "{0}:{1}".format(field,
+                                                      escaped_serialized_value)
+
             format_func = getattr(self, 'format_{0}'.format(field),
                                   format_default)
+
             args.append(format_func())
 
         # If we're modifying saved task, simply pass on all modified fields
