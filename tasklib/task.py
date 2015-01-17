@@ -29,6 +29,18 @@ class SerializingObject(object):
     """
     Common ancestor for TaskResource & TaskFilter, since they both
     need to serialize arguments.
+
+    Serializing method should hold the following contract:
+      - any empty value (meaning removal of the attribute)
+        is deserialized into a empty string
+      - None denotes a empty value for any attribute
+
+    Deserializing method should hold the following contract:
+      - None denotes a empty value for any attribute (however,
+        this is here as a safeguard, TaskWarrior currently does
+        not export empty-valued attributes) if the attribute
+        is not iterable (e.g. list or set), in which case
+        a empty iterable should be used.
     """
 
     def _deserialize(self, key, value):
@@ -43,7 +55,7 @@ class SerializingObject(object):
 
     def timestamp_serializer(self, date):
         if not date:
-            return None
+            return ''
         return date.strftime(DATE_FORMAT)
 
     def timestamp_deserializer(self, date_str):
