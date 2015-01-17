@@ -434,13 +434,21 @@ class Task(TaskResource):
         def add_field(field):
             # Add the output of format_field method to args list (defaults to
             # field:value)
-            serialized_value = self._serialize(field, self._data[field]) or ''
-            format_default = lambda: "{0}:{1}".format(
-                field,
-                "'{0}'".format(serialized_value) if serialized_value else ''
-            )
+            serialized_value = self._serialize(field, self._data[field])
+
+            # Empty values should not be enclosed in quotation marks, see
+            # TW-1510
+            if serialized_value is '':
+                escaped_serialized_value = ''
+            else:
+                escaped_serialized_value = "'{0}'".format(serialized_value)
+
+            format_default = lambda: "{0}:{1}".format(field,
+                                                      escaped_serialized_value)
+
             format_func = getattr(self, 'format_{0}'.format(field),
                                   format_default)
+
             args.append(format_func())
 
         # If we're modifying saved task, simply pass on all modified fields
