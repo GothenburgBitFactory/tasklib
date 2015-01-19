@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import six
+import sys
 import subprocess
 
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
@@ -28,6 +29,18 @@ class SerializingObject(object):
     """
     Common ancestor for TaskResource & TaskFilter, since they both
     need to serialize arguments.
+
+    Serializing method should hold the following contract:
+      - any empty value (meaning removal of the attribute)
+        is deserialized into a empty string
+      - None denotes a empty value for any attribute
+
+    Deserializing method should hold the following contract:
+      - None denotes a empty value for any attribute (however,
+        this is here as a safeguard, TaskWarrior currently does
+        not export empty-valued attributes) if the attribute
+        is not iterable (e.g. list or set), in which case
+        a empty iterable should be used.
     """
 
     def _deserialize(self, key, value):
@@ -42,7 +55,7 @@ class SerializingObject(object):
 
     def timestamp_serializer(self, date):
         if not date:
-            return None
+            return ''
         return date.strftime(DATE_FORMAT)
 
     def timestamp_deserializer(self, date_str):
@@ -93,13 +106,14 @@ class SerializingObject(object):
         return ','.join(tags) if tags else ''
 
     def deserialize_tags(self, tags):
-        if isinstance(tags, basestring):
+        if isinstance(tags, six.string_types):
             return tags.split(',') if tags else []
-        return tags
+        return tags or []
 
-    def serialize_depends(self, cur_dependencies):
+    def serialize_depends(self, value):
         # Return the list of uuids
-        return ','.join(task['uuid'] for task in cur_dependencies)
+        value = value if value is not None else set()
+        return ','.join(task['uuid'] for task in value)
 
     def deserialize_depends(self, raw_uuids):
         raw_uuids = raw_uuids or ''  # Convert None to empty string
@@ -111,11 +125,11 @@ class TaskResource(SerializingObject):
     read_only_fields = []
 
     def _load_data(self, data):
-        self._data = data
+        self._data = dict((key, self._deserialize(key, value))
+                          for key, value in data.items())
         # We need to use a copy for original data, so that changes
-        # are not propagated. Shallow copy is alright, since data dict uses only
-        # primitive data types
-        self._original_data = data.copy()
+        # are not propagated.
+        self._original_data = copy.deepcopy(self._data)
 
     def _update_data(self, data, update_original=False):
         """
@@ -123,11 +137,12 @@ class TaskResource(SerializingObject):
         updates should already be serialized. If update_original is True, the
         original_data dict is updated as well.
         """
-
-        self._data.update(data)
+        self._data.update(dict((key, self._deserialize(key, value))
+                               for key, value in data.items()))
 
         if update_original:
-            self._original_data.update(data)
+            self._original_data = copy.deepcopy(self._data)
+
 
     def __getitem__(self, key):
         # This is a workaround to make TaskResource non-iterable
@@ -138,12 +153,15 @@ class TaskResource(SerializingObject):
         except ValueError:
             pass
 
-        return self._deserialize(key, self._data.get(key))
+        if key not in self._data:
+            self._data[key] = self._deserialize(key, None)
+
+        return self._data.get(key)
 
     def __setitem__(self, key, value):
         if key in self.read_only_fields:
             raise RuntimeError('Field \'%s\' is read-only' % key)
-        self._data[key] = self._serialize(key, value)
+        self._data[key] = value
 
     def __str__(self):
         s = six.text_type(self.__unicode__())
@@ -167,6 +185,11 @@ class TaskAnnotation(TaskResource):
 
     def __unicode__(self):
         return self['description']
+
+    def __eq__(self, other):
+        # consider 2 annotations equal if they belong to the same task, and
+        # their data dics are the same
+        return self.task == other.task and self._data == other._data
 
     __repr__ = __unicode__
 
@@ -195,6 +218,40 @@ class Task(TaskResource):
         it has not been saved to TaskWarrior yet.
         """
         pass
+
+    @classmethod
+    def from_input(cls, input_file=sys.stdin, modify=None):
+        """
+        Creates a Task object, directly from the stdin, by reading one line.
+        If modify=True, two lines are used, first line interpreted as the
+        original state of the Task object, and second line as its new,
+        modified value. This is consistent with the TaskWarrior's hook
+        system.
+
+        Object created by this method should not be saved, deleted
+        or refreshed, as t could create a infinite loop. For this
+        reason, TaskWarrior instance is set to None.
+
+        Input_file argument can be used to specify the input file,
+        but defaults to sys.stdin.
+        """
+
+        # TaskWarrior instance is set to None
+        task = cls(None)
+
+        # Detect the hook type if not given directly
+        name = os.path.basename(sys.argv[0])
+        modify = name.startswith('on-modify') if modify is None else modify
+
+        # Load the data from the input
+        task._load_data(json.loads(input_file.readline().strip()))
+
+        # If this is a on-modify event, we are provided with additional
+        # line of input, which provides updated data
+        if modify:
+            task._update_data(json.loads(input_file.readline().strip()))
+
+        return task
 
     def __init__(self, warrior, **kwargs):
         self.warrior = warrior
@@ -236,8 +293,20 @@ class Task(TaskResource):
     def _modified_fields(self):
         writable_fields = set(self._data.keys()) - set(self.read_only_fields)
         for key in writable_fields:
-            if self._data.get(key) != self._original_data.get(key):
+            new_value = self._data.get(key)
+            old_value = self._original_data.get(key)
+
+            # Make sure not to mark data removal as modified field if the
+            # field originally had some empty value
+            if key in self._data and not new_value and not old_value:
+                continue
+
+            if new_value != old_value:
                 yield key
+
+    @property
+    def modified(self):
+        return bool(list(self._modified_fields))
 
     @property
     def completed(self):
@@ -261,7 +330,7 @@ class Task(TaskResource):
 
     def serialize_depends(self, cur_dependencies):
         # Check that all the tasks are saved
-        for task in cur_dependencies:
+        for task in (cur_dependencies or set()):
             if not task.saved:
                 raise Task.NotSaved('Task \'%s\' needs to be saved before '
                                     'it can be set as dependency.' % task)
@@ -276,8 +345,7 @@ class Task(TaskResource):
         # to keep a list of all depedencies in the _data dictionary,
         # not just currently added/removed ones
 
-        old_dependencies_raw = self._original_data.get('depends','')
-        old_dependencies = self.deserialize_depends(old_dependencies_raw)
+        old_dependencies = self._original_data.get('depends', set())
 
         added = self['depends'] - old_dependencies
         removed = old_dependencies - self['depends']
@@ -330,6 +398,9 @@ class Task(TaskResource):
         self.refresh(only_fields=['status'])
 
     def save(self):
+        if self.saved and not self.modified:
+            return
+
         args = [self['uuid'], 'modify'] if self.saved else ['add']
         args.extend(self._get_modified_fields_as_args())
         output = self.warrior.execute_command(args)
@@ -347,6 +418,9 @@ class Task(TaskResource):
             # Circumvent the ID storage, since ID is considered read-only
             self._data['id'] = int(id_lines[0].split(' ')[2].rstrip('.'))
 
+        # Refreshing is very important here, as not only modification time
+        # is updated, but arbitrary attribute may have changed due hooks
+        # altering the data before saving
         self.refresh()
 
     def add_annotation(self, annotation):
@@ -372,13 +446,22 @@ class Task(TaskResource):
 
         def add_field(field):
             # Add the output of format_field method to args list (defaults to
-            # field:'value')
-            format_default = lambda k: "{0}:{1}".format(k,
-                                           "'{0}'".format(self._data[k])
-                                           if self._data[k] is not None
-                                           else '')
+            # field:value)
+            serialized_value = self._serialize(field, self._data[field])
+
+            # Empty values should not be enclosed in quotation marks, see
+            # TW-1510
+            if serialized_value is '':
+                escaped_serialized_value = ''
+            else:
+                escaped_serialized_value = "'{0}'".format(serialized_value)
+
+            format_default = lambda: "{0}:{1}".format(field,
+                                                      escaped_serialized_value)
+
             format_func = getattr(self, 'format_{0}'.format(field),
-                                  lambda: format_default(field))
+                                  format_default)
+
             args.append(format_func())
 
         # If we're modifying saved task, simply pass on all modified fields
@@ -411,6 +494,20 @@ class Task(TaskResource):
         else:
             self._load_data(new_data)
 
+    def export_data(self):
+        """
+        Exports current data contained in the Task as JSON
+        """
+
+        # We need to remove spaces for TW-1504, use custom separators
+        data_tuples = ((key, self._serialize(key, value))
+                       for key, value in six.iteritems(self._data))
+
+        # Empty string denotes empty serialized value, we do not want
+        # to pass that to TaskWarrior.
+        data_tuples = filter(lambda t: t[1] is not '', data_tuples)
+        data = dict(data_tuples)
+        return json.dumps(data, separators=(',',':'))
 
 class TaskFilter(SerializingObject):
     """
