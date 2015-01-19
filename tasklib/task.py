@@ -670,7 +670,8 @@ class TaskWarrior(object):
         self.config = {
             'data.location': os.path.expanduser(data_location),
             'confirmation': 'no',
-            'dependency.confirmation': 'no', # See TW-1483 or taskrc man page
+            'dependency.confirmation': 'no',  # See TW-1483 or taskrc man page
+            'recurrence.confirmation': 'no',  # Necessary for modifying R tasks
         }
         self.tasks = TaskQuerySet(self)
         self.version = self._get_version()
