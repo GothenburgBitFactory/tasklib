@@ -172,6 +172,40 @@ class TaskResource(SerializingObject):
     def __repr__(self):
         return str(self)
 
+    def export_data(self):
+        """
+        Exports current data contained in the Task as JSON
+        """
+
+        # We need to remove spaces for TW-1504, use custom separators
+        data_tuples = ((key, self._serialize(key, value))
+                       for key, value in six.iteritems(self._data))
+
+        # Empty string denotes empty serialized value, we do not want
+        # to pass that to TaskWarrior.
+        data_tuples = filter(lambda t: t[1] is not '', data_tuples)
+        data = dict(data_tuples)
+        return json.dumps(data, separators=(',',':'))
+
+    @property
+    def _modified_fields(self):
+        writable_fields = set(self._data.keys()) - set(self.read_only_fields)
+        for key in writable_fields:
+            new_value = self._data.get(key)
+            old_value = self._original_data.get(key)
+
+            # Make sure not to mark data removal as modified field if the
+            # field originally had some empty value
+            if key in self._data and not new_value and not old_value:
+                continue
+
+            if new_value != old_value:
+                yield key
+
+    @property
+    def modified(self):
+        return bool(list(self._modified_fields))
+
 
 class TaskAnnotation(TaskResource):
     read_only_fields = ['entry', 'description']
@@ -288,25 +322,6 @@ class Task(TaskResource):
         else:
             # If the tasks are not saved, return hash of instance id
             return id(self).__hash__()
-
-    @property
-    def _modified_fields(self):
-        writable_fields = set(self._data.keys()) - set(self.read_only_fields)
-        for key in writable_fields:
-            new_value = self._data.get(key)
-            old_value = self._original_data.get(key)
-
-            # Make sure not to mark data removal as modified field if the
-            # field originally had some empty value
-            if key in self._data and not new_value and not old_value:
-                continue
-
-            if new_value != old_value:
-                yield key
-
-    @property
-    def modified(self):
-        return bool(list(self._modified_fields))
 
     @property
     def completed(self):
@@ -493,21 +508,6 @@ class Task(TaskResource):
             self._update_data(to_update, update_original=True)
         else:
             self._load_data(new_data)
-
-    def export_data(self):
-        """
-        Exports current data contained in the Task as JSON
-        """
-
-        # We need to remove spaces for TW-1504, use custom separators
-        data_tuples = ((key, self._serialize(key, value))
-                       for key, value in six.iteritems(self._data))
-
-        # Empty string denotes empty serialized value, we do not want
-        # to pass that to TaskWarrior.
-        data_tuples = filter(lambda t: t[1] is not '', data_tuples)
-        data = dict(data_tuples)
-        return json.dumps(data, separators=(',',':'))
 
 class TaskFilter(SerializingObject):
     """
