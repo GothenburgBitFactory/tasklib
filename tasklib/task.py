@@ -99,6 +99,15 @@ class SerializingObject(object):
     def deserialize_wait(self, value):
         return self.timestamp_deserializer(value)
 
+    def serialize_annotations(self, value):
+        value = value if value is not None else []
+        serialized_annotations = [annotation.export_data() for annotation in value]
+
+        if serialized_annotations:
+            return '[' + ','.join(serialized_annotations) + ']'
+        else:
+            return ''
+
     def deserialize_annotations(self, data):
         return [TaskAnnotation(self, d) for d in data] if data else []
 
