@@ -2,6 +2,7 @@
 
 import datetime
 import itertools
+import json
 import six
 import shutil
 import tempfile
@@ -30,7 +31,7 @@ TASK_STANDARD_ATTRS = (
     'priority',
     'depends',
     'tags',
-    'annotation',
+    'annotations',
 )
 
 class TasklibTest(unittest.TestCase):
@@ -494,7 +495,6 @@ class TaskTest(TasklibTest):
             self.assertTrue(deserializer('') in (None, [], set()))
 
 
-
 class TaskFromHookTest(TasklibTest):
 
     input_add_data = six.StringIO(
@@ -586,6 +586,23 @@ class AnnotationTest(TasklibTest):
          self.assertEqual(task['project'], 'test')
          task.save()
          self.assertEqual(task['project'], 'test')
+
+    def test_serialize_annotations(self):
+        # Test that serializing annotations is possible
+        t = Task(self.tw, description="test")
+        t.save()
+
+        t.add_annotation("annotation1")
+        t.add_annotation("annotation2")
+
+        data = json.loads(t._serialize('annotations', t._data['annotations']))
+
+        self.assertEqual(len(data), 2)
+        self.assertEqual(type(data[0]), dict)
+        self.assertEqual(type(data[1]), dict)
+
+        self.assertEqual(data[0]['description'], "annotation1")
+        self.assertEqual(data[1]['description'], "annotation2")
 
 
 class UnicodeTest(TasklibTest):
