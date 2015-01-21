@@ -595,7 +595,7 @@ class AnnotationTest(TasklibTest):
         t.add_annotation("annotation1")
         t.add_annotation("annotation2")
 
-        data = json.loads(t._serialize('annotations', t._data['annotations']))
+        data = t._serialize('annotations', t._data['annotations'])
 
         self.assertEqual(len(data), 2)
         self.assertEqual(type(data[0]), dict)

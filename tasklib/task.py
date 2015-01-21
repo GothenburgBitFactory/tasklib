@@ -101,12 +101,12 @@ class SerializingObject(object):
 
     def serialize_annotations(self, value):
         value = value if value is not None else []
-        serialized_annotations = [annotation.export_data() for annotation in value]
 
-        if serialized_annotations:
-            return '[' + ','.join(serialized_annotations) + ']'
-        else:
-            return ''
+        # This may seem weird, but it's correct, we want to export
+        # a list of dicts as serialized value
+        serialized_annotations = [json.loads(annotation.export_data())
+                                  for annotation in value]
+        return serialized_annotations if serialized_annotations else ''
 
     def deserialize_annotations(self, data):
         return [TaskAnnotation(self, d) for d in data] if data else []
