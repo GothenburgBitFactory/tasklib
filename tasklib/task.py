@@ -93,11 +93,17 @@ class SerializingObject(object):
     def deserialize_entry(self, value):
         return self.timestamp_deserializer(value)
 
+    def normalize_entry(self, value):
+        return self.datetime_normalizer(value)
+
     def serialize_modified(self, value):
         return self.timestamp_serializer(value)
 
     def deserialize_modified(self, value):
         return self.timestamp_deserializer(value)
+
+    def normalize_modified(self, value):
+        return self.datetime_normalizer(value)
 
     def serialize_due(self, value):
         return self.timestamp_serializer(value)
@@ -105,11 +111,17 @@ class SerializingObject(object):
     def deserialize_due(self, value):
         return self.timestamp_deserializer(value)
 
+    def normalize_due(self, value):
+        return self.datetime_normalizer(value)
+
     def serialize_scheduled(self, value):
         return self.timestamp_serializer(value)
 
     def deserialize_scheduled(self, value):
         return self.timestamp_deserializer(value)
+
+    def normalize_scheduled(self, value):
+        return self.datetime_normalizer(value)
 
     def serialize_until(self, value):
         return self.timestamp_serializer(value)
@@ -117,11 +129,17 @@ class SerializingObject(object):
     def deserialize_until(self, value):
         return self.timestamp_deserializer(value)
 
+    def normalize_until(self, value):
+        return self.datetime_normalizer(value)
+
     def serialize_wait(self, value):
         return self.timestamp_serializer(value)
 
     def deserialize_wait(self, value):
         return self.timestamp_deserializer(value)
+
+    def normalize_wait(self, value):
+        return self.datetime_normalizer(value)
 
     def serialize_annotations(self, value):
         value = value if value is not None else []
@@ -153,7 +171,7 @@ class SerializingObject(object):
         uuids = raw_uuids.split(',')
         return set(self.warrior.tasks.get(uuid=uuid) for uuid in uuids if uuid)
 
-    def normalize_datetime(self, value):
+    def datetime_normalizer(self, value):
         """
         Normalizes date/datetime value (considered to come from user input)
         to localized datetime value. Following conversions happen:
@@ -221,11 +239,8 @@ class TaskResource(SerializingObject):
         if key in self.read_only_fields:
             raise RuntimeError('Field \'%s\' is read-only' % key)
 
-        # Localize any naive date/datetime to the detected timezone
-        if (isinstance(value, datetime.datetime) or
-            isinstance(value, datetime.date)):
-            value = self.normalize_datetime(value)
-
+        # Normalize the user input before saving it
+        value = self._normalize(key, value)
         self._data[key] = value
 
     def __str__(self):
@@ -593,12 +608,8 @@ class TaskFilter(SerializingObject):
         # convention in TW for empty values
         attribute_key = key.split('.')[0]
 
-        # Since this is user input, we need to normalize datetime
-        # objects
-        if (isinstance(value, datetime.datetime) or
-            isinstance(value, datetime.date)):
-            value = self.normalize_datetime(value)
-
+        # Since this is user input, we need to normalize before we serialize
+        value = self._normalize(key, value)
         value = self._serialize(attribute_key, value)
 
         # If we are filtering by uuid:, do not use uuid keyword
