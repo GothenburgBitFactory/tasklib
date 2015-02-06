@@ -3,6 +3,7 @@
 import datetime
 import itertools
 import json
+import pytz
 import six
 import shutil
 import tempfile
@@ -532,7 +533,8 @@ class TaskFromHookTest(TasklibTest):
 
     def test_export_data(self):
         t = Task(self.tw, description="test task",
-            project="Home", due=datetime.datetime(2015,1,1,23,23,23))
+            project="Home",
+            due=pytz.utc.localize(datetime.datetime(2015,1,1,23,23,23)))
 
         # Check that the output is a permutation of:
         # {"project":"Home","description":"test task","due":"20150101232323Z"}
