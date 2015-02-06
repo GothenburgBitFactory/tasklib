@@ -239,6 +239,72 @@ same Python object::
     >>> task3 == task1
     True
 
+Dealing with dates and time
+---------------------------
+
+Any timestamp-like attributes of the tasks are converted to timezone-aware
+datetime objects. To achieve this, Tasklib leverages ``pytz`` Python module,
+which brings the Olsen timezone databaze to Python.
+
+This shields you from annoying details of Daylight Saving Time shifts
+or conversion between different timezones. For example, to list all the
+tasks which are due midnight if you're currently in Berlin:
+
+    >>> myzone = pytz.timezone('Europe/Berlin')
+    >>> midnight = myzone.localize(datetime(2015,2,2,0,0,0))
+    >>> tw.tasks.filter(due__before=midnight)
+
+However, this is still a little bit tedious. That's why TaskWarrior object
+is capable of automatic timezone detection, using the ``tzlocal`` Python
+module. If your system timezone is set to 'Europe/Berlin', following example
+will work the same way as the previous one:
+
+    >>> tw.tasks.filter(due__before=datetime(2015,2,2,0,0,0))
+
+You can also use simple dates when filtering:
+
+    >>> tw.tasks.filter(due__before=date(2015,2,2))
+
+In such case, a 00:00:00 is used as the time component.
+
+To specify the timezone explicitly, pass the ``timezone`` argument to
+TaskWarrior object during the initialization:
+
+    >>> tw = TaskWarrior(timezone='Europe/Berlin')
+
+Or later using the ``set_timezone`` method:
+
+    >>> tw.set_timezone('Europe/Berlin')
+
+You can check what timezone is being used by inspecting the timezone attribute:
+
+    >>> tw.timezone
+    <DstTzInfo 'Europe/Berlin' LMT+0:53:00 STD>
+
+This can be particularly useful when dealing with automatic timezone detection:
+
+    >>> tw = TaskWarrior()
+    >>> tw.timezone
+    <DstTzInfo 'US/Eastern' LMT-1 day, 19:04:00 STD>
+
+However, since timezone-aware and timezone-naive datetimes are not comparable
+in Python, this can cause some unexpected behaviour:
+
+    >>> from datetime import datetime
+    >>> now = datetime.utcnow()
+    >>> t = Task(tw, description="take out the trash now") 
+    >>> t['due'] = now
+    >>> now
+    datetime.datetime(2015, 2, 1, 19, 44, 4, 770001)
+    >>> t['due']
+    datetime.datetime(2015, 2, 1, 19, 44, 4, 770001, tzinfo=<UTC>)
+    >>> t['due'] == now
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+      TypeError: can't compare offset-naive and offset-aware datetimes
+
+You have two options how to deal with this issue.
+
 Working with annotations
 ------------------------
 
