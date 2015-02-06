@@ -15,7 +15,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     test_suite='tasklib.tests',
-    install_requires=['six==1.5.2', 'pytz'],
+    install_requires=['six==1.5.2', 'pytz', 'tzlocal'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Programming Language :: Python',
