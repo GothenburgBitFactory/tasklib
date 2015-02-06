@@ -9,7 +9,7 @@ import shutil
 import tempfile
 import unittest
 
-from .task import TaskWarrior, Task
+from .task import TaskWarrior, Task, local_zone, DATE_FORMAT
 
 # http://taskwarrior.org/docs/design/task.html , Section: The Attributes
 TASK_STANDARD_ATTRS = (
@@ -495,6 +495,14 @@ class TaskTest(TasklibTest):
         for deserializer in deserializers:
             self.assertTrue(deserializer('') in (None, [], set()))
 
+    def test_normalizers_returning_empty_string_for_none(self):
+        # Test that any normalizer can handle None as a valid value
+        t = Task(self.tw)
+        normalizers = [getattr(t, normalizer_name) for normalizer_name in
+                       filter(lambda x: x.startswith('normalize_'), dir(t))]
+        for normalizer in normalizers:
+            normalizer(None)
+
 
 class TaskFromHookTest(TasklibTest):
 
@@ -547,6 +555,75 @@ class TaskFromHookTest(TasklibTest):
         self.assertTrue(any(t.export_data() == expected
                             for expected in allowed_output))
 
+class TimezoneAwareDatetimeTest(TasklibTest):
+
+    def setUp(self):
+        super(TimezoneAwareDatetimeTest, self).setUp()
+        self.zone = local_zone
+        self.localdate_naive = datetime.datetime(2015,2,2)
+        self.localtime_naive = datetime.datetime(2015,2,2,0,0,0)
+        self.localtime_aware = self.zone.localize(self.localtime_naive)
+        self.utctime_aware = self.localtime_aware.astimezone(pytz.utc)
+
+    def test_timezone_naive_datetime_setitem(self):
+        t = Task(self.tw, description="test task")
+        t['due'] = self.localtime_naive
+        self.assertEqual(t['due'], self.localtime_aware)
+
+    def test_timezone_naive_datetime_using_init(self):
+        t = Task(self.tw, description="test task", due=self.localtime_naive)
+        self.assertEqual(t['due'], self.localtime_aware)
+
+    def test_filter_by_naive_datetime(self):
+        t = Task(self.tw, description="task1", due=self.localtime_naive)
+        t.save()
+        matching_tasks = self.tw.tasks.filter(due=self.localtime_naive)
+        self.assertEqual(len(matching_tasks), 1)
+
+    def test_serialize_naive_datetime(self):
+        t = Task(self.tw, description="task1", due=self.localtime_naive)
+        self.assertEqual(json.loads(t.export_data())['due'], 
+                         self.utctime_aware.strftime(DATE_FORMAT))
+
+    def test_timezone_naive_date_setitem(self):
+        t = Task(self.tw, description="test task")
+        t['due'] = self.localdate_naive
+        self.assertEqual(t['due'], self.localtime_aware)
+
+    def test_timezone_naive_date_using_init(self):
+        t = Task(self.tw, description="test task", due=self.localdate_naive)
+        self.assertEqual(t['due'], self.localtime_aware)
+
+    def test_filter_by_naive_date(self):
+        t = Task(self.tw, description="task1", due=self.localdate_naive)
+        t.save()
+        matching_tasks = self.tw.tasks.filter(due=self.localdate_naive)
+        self.assertEqual(len(matching_tasks), 1)
+
+    def test_serialize_naive_date(self):
+        t = Task(self.tw, description="task1", due=self.localdate_naive)
+        self.assertEqual(json.loads(t.export_data())['due'], 
+                         self.utctime_aware.strftime(DATE_FORMAT))
+
+    def test_timezone_aware_datetime_setitem(self):
+        t = Task(self.tw, description="test task")
+        t['due'] = self.localtime_aware
+        self.assertEqual(t['due'], self.localtime_aware)
+
+    def test_timezone_aware_datetime_using_init(self):
+        t = Task(self.tw, description="test task", due=self.localtime_aware)
+        self.assertEqual(t['due'], self.localtime_aware)
+
+    def test_filter_by_aware_datetime(self):
+        t = Task(self.tw, description="task1", due=self.localtime_aware)
+        t.save()
+        matching_tasks = self.tw.tasks.filter(due=self.localtime_aware)
+        self.assertEqual(len(matching_tasks), 1)
+
+    def test_serialize_aware_datetime(self):
+        t = Task(self.tw, description="task1", due=self.localtime_aware)
+        self.assertEqual(json.loads(t.export_data())['due'], 
+                         self.utctime_aware.strftime(DATE_FORMAT))
 
 class AnnotationTest(TasklibTest):
 
