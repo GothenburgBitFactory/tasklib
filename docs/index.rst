@@ -84,7 +84,7 @@ Attributes of task objects are accessible through indices, like so::
     >>> task['id']
     15
     >>> task['due']
-    datetime.datetime(2013, 12, 5, 0, 0)
+    datetime.datetime(2015, 2, 5, 0, 0, tzinfo=<DstTzInfo 'Europe/Berlin' CET+1:00:00 STD>)
     >>> task['tags']
     ['work', 'servers']
 
@@ -239,6 +239,84 @@ same Python object::
     >>> task3 == task1
     True
 
+Dealing with dates and time
+---------------------------
+
+Any timestamp-like attributes of the tasks are converted to timezone-aware
+datetime objects. To achieve this, Tasklib leverages ``pytz`` Python module,
+which brings the Olsen timezone databaze to Python.
+
+This shields you from annoying details of Daylight Saving Time shifts
+or conversion between different timezones. For example, to list all the
+tasks which are due midnight if you're currently in Berlin:
+
+    >>> myzone = pytz.timezone('Europe/Berlin')
+    >>> midnight = myzone.localize(datetime(2015,2,2,0,0,0))
+    >>> tw.tasks.filter(due__before=midnight)
+
+However, this is still a little bit tedious. That's why TaskWarrior object
+is capable of automatic timezone detection, using the ``tzlocal`` Python
+module. If your system timezone is set to 'Europe/Berlin', following example
+will work the same way as the previous one:
+
+    >>> tw.tasks.filter(due__before=datetime(2015,2,2,0,0,0))
+
+You can also use simple dates when filtering:
+
+    >>> tw.tasks.filter(due__before=date(2015,2,2))
+
+In such case, a 00:00:00 is used as the time component.
+
+Of course, you can use datetime naive objects when initializing Task object
+or assigning values to datetime atrributes:
+
+    >>> t = Task(tw, description="Buy new shoes", due=date(2015,2,5))
+    >>> t['due']
+    datetime.datetime(2015, 2, 5, 0, 0, tzinfo=<DstTzInfo 'Europe/Berlin' CET+1:00:00 STD>)
+    >>> t['due'] = date(2015,2,6,15,15,15)
+    >>> t['due']
+    datetime.datetime(2015, 2, 6, 15, 15, 15, tzinfo=<DstTzInfo 'Europe/Berlin' CET+1:00:00 STD>)
+
+However, since timezone-aware and timezone-naive datetimes are not comparable
+in Python, this can cause some unexpected behaviour:
+
+    >>> from datetime import datetime
+    >>> now = datetime.now()
+    >>> t = Task(tw, description="take out the trash now") 
+    >>> t['due'] = now
+    >>> now
+    datetime.datetime(2015, 2, 1, 19, 44, 4, 770001)
+    >>> t['due']
+    datetime.datetime(2015, 2, 1, 19, 44, 4, 770001, tzinfo=<DstTzInfo 'Europe/Berlin' CET+1:00:00 STD>)
+    >>> t['due'] == now
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+      TypeError: can't compare offset-naive and offset-aware datetimes
+
+If you want to compare datetime aware value with datetime naive value, you need
+to localize the naive value first:
+
+    >>> from datetime import datetime
+    >>> from tasklib.task import local_zone
+    >>> now = local_zone.localize(datetime.now())
+    >>> t['due'] = now
+    >>> now
+    datetime.datetime(2015, 2, 1, 19, 44, 4, 770001, tzinfo=<DstTzInfo 'Europe/Berlin' CET+1:00:00 STD>)
+    >>> t['due'] == now
+    True
+
+Also, note that it does not matter whether the timezone aware datetime objects
+are set in the same timezone:
+
+    >>> import pytz
+    >>> t['due']
+    datetime.datetime(2015, 2, 1, 19, 44, 4, 770001, tzinfo=<DstTzInfo 'Europe/Berlin' CET+1:00:00 STD>)
+    >>> now.astimezone(pytz.utc)
+    datetime.datetime(2015, 2, 1, 18, 44, 4, 770001, tzinfo=<DstTzInfo 'Europe/Berlin' CET+1:00:00 STD>)
+    >>> t['due'] == now.astimezone(pytz.utc)
+    True
+
+
 Working with annotations
 ------------------------
 
@@ -253,7 +331,7 @@ Annotations have only defined ``entry`` and ``description`` values::
 
     >>> annotation = annotated_task['annotations'][0]
     >>> annotation['entry']
-    datetime.datetime(2015, 1, 3, 21, 13, 55)
+    datetime.datetime(2015, 1, 3, 21, 13, 55, tzinfo=<DstTzInfo 'Europe/Berlin' CET+1:00:00 STD>)
     >>> annotation['description']
     u'Yeah, I am annotated!'
 
