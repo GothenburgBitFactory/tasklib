@@ -53,6 +53,18 @@ class SerializingObject(object):
                                  lambda x: x if x is not None else '')
         return dehydrate_func(value)
 
+    def _normalize(self, key, value):
+        """
+        Use normalize_<key> methods to normalize user input. Any user
+        input will be normalized at the moment it is used as filter,
+        or entered as a value of Task attribute.
+        """
+
+        normalize_func = getattr(self, 'normalize_{0}'.format(key),
+                                 lambda x: x)
+
+        return normalize_func(value)
+
     def timestamp_serializer(self, date):
         if not date:
             return ''
@@ -309,8 +321,9 @@ class Task(TaskResource):
         # __init__ methods, that would be confusing
 
         # Rather unfortunate syntax due to python2.6 comaptiblity
-        self._load_data(dict((key, self._serialize(key, value))
-                        for (key, value) in six.iteritems(kwargs)))
+        self._data = dict((key, self._normalize(key, value))
+                          for (key, value) in six.iteritems(kwargs))
+        self._original_data = copy.deepcopy(self._data)
 
     def __unicode__(self):
         return self['description']
