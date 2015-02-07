@@ -777,14 +777,14 @@ class TaskWarrior(object):
         stdout, stderr = [x.decode('utf-8') for x in p.communicate()]
         return stdout.strip('\n')
 
-    def execute_command(self, args, config_override={}):
+    def execute_command(self, args, config_override={}, allow_failure=True):
         command_args = self._get_command_args(
             args, config_override=config_override)
         logger.debug(' '.join(command_args))
         p = subprocess.Popen(command_args, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
         stdout, stderr = [x.decode('utf-8') for x in p.communicate()]
-        if p.returncode:
+        if p.returncode and allow_failure:
             if stderr.strip():
                 error_msg = stderr.strip().splitlines()[-1]
             else:
