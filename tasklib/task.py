@@ -195,7 +195,13 @@ class SerializingObject(object):
             localized = value
         
         return localized
-            
+
+    def normalize_uuid(self, value):
+        # Enforce sane UUID
+        if not isinstance(value, six.text_type) or value == '':
+            raise ValueError("UUID must be a valid non-empty string.")
+
+        return value
 
 
 class TaskResource(SerializingObject):
