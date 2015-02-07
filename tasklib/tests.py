@@ -125,6 +125,8 @@ class TaskFilterTest(TasklibTest):
         filtered_task = self.tw.tasks.get(project="random")
         self.assertEqual(filtered_task['project'], "random")
 
+    def test_filter_with_empty_uuid(self):
+        self.assertRaises(ValueError, lambda: self.tw.tasks.get(uuid=''))
 
 class TaskTest(TasklibTest):
 
@@ -495,11 +497,17 @@ class TaskTest(TasklibTest):
         for deserializer in deserializers:
             self.assertTrue(deserializer('') in (None, [], set()))
 
-    def test_normalizers_returning_empty_string_for_none(self):
+    def test_normalizers_handling_none(self):
         # Test that any normalizer can handle None as a valid value
         t = Task(self.tw)
+
+        # These normalizers are not supposed to handle None
+        exempt_normalizers = ('normalize_uuid', )
+
         normalizers = [getattr(t, normalizer_name) for normalizer_name in
-                       filter(lambda x: x.startswith('normalize_'), dir(t))]
+                       filter(lambda x: x.startswith('normalize_'), dir(t))
+                       if normalizer_name not in exempt_normalizers]
+
         for normalizer in normalizers:
             normalizer(None)
 
