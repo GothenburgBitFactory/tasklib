@@ -1,5 +1,6 @@
 # coding=utf-8
 
+import copy
 import datetime
 import itertools
 import json
@@ -9,7 +10,7 @@ import shutil
 import tempfile
 import unittest
 
-from .task import TaskWarrior, Task, local_zone, DATE_FORMAT
+from .task import TaskWarrior, Task, ReadOnlyDictView, local_zone, DATE_FORMAT
 
 # http://taskwarrior.org/docs/design/task.html , Section: The Attributes
 TASK_STANDARD_ATTRS = (
@@ -707,3 +708,83 @@ class UnicodeTest(TasklibTest):
     def test_non_unicode_task(self):
         Task(self.tw, description="test task").save()
         self.tw.tasks.get()
+
+class ReadOnlyDictViewTest(unittest.TestCase):
+
+    def setUp(self):
+        self.sample = dict(l=[1,2,3], d={'k':'v'})
+        self.original_sample = copy.deepcopy(self.sample)
+        self.view = ReadOnlyDictView(self.sample)
+
+    def test_readonlydictview_getitem(self):
+        l = self.view['l']
+        self.assertEqual(l, self.sample['l'])
+
+        # Assert that modification changed only copied value
+        l.append(4)
+        self.assertNotEqual(l, self.sample['l'])
+
+        # Assert that viewed dict is not changed
+        self.assertEqual(self.sample, self.original_sample)
+
+    def test_readonlydictview_contains(self):
+        self.assertEqual('l' in self.view, 'l' in self.sample)
+        self.assertEqual('d' in self.view, 'd' in self.sample)
+        self.assertEqual('k' in self.view, 'k' in self.sample)
+
+        # Assert that viewed dict is not changed
+        self.assertEqual(self.sample, self.original_sample)
+
+    def test_readonlydictview_iter(self):
+        self.assertEqual(list(k for k in self.view),
+                         list(k for k in self.sample))
+
+        # Assert the view is correct after modification
+        self.sample['new'] = 'value'
+        self.assertEqual(list(k for k in self.view),
+                         list(k for k in self.sample))
+
+    def test_readonlydictview_len(self):
+        self.assertEqual(len(self.view), len(self.sample))
+
+        # Assert the view is correct after modification
+        self.sample['new'] = 'value'
+        self.assertEqual(len(self.view), len(self.sample))
+
+    def test_readonlydictview_get(self):
+        l = self.view.get('l')
+        self.assertEqual(l, self.sample.get('l'))
+
+        # Assert that modification changed only copied value
+        l.append(4)
+        self.assertNotEqual(l, self.sample.get('l'))
+
+        # Assert that viewed dict is not changed
+        self.assertEqual(self.sample, self.original_sample)
+
+    def test_readonlydictview_contains(self):
+        self.assertEqual(self.view.has_key('l'), self.sample.has_key('l'))
+        self.assertEqual(self.view.has_key('k'), self.sample.has_key('k'))
+        self.assertEqual(self.view.has_key('d'), self.sample.has_key('d'))
+
+        # Assert that viewed dict is not changed
+        self.assertEqual(self.sample, self.original_sample)
+
+    def test_readonlydict_items(self):
+        view_items = self.view.items()
+        sample_items = self.sample.items()
+        self.assertEqual(view_items, sample_items)
+
+        view_items.append('newkey')
+        self.assertNotEqual(view_items, sample_items)
+        self.assertEqual(self.sample, self.original_sample)
+
+    def test_readonlydict_values(self):
+        view_values = self.view.values()
+        sample_values = self.sample.values()
+        self.assertEqual(view_values, sample_values)
+
+        view_list_item = filter(lambda x: type(x) is list, view_values)[0]
+        view_list_item.append(4)
+        self.assertNotEqual(view_values, sample_values)
+        self.assertEqual(self.sample, self.original_sample)
