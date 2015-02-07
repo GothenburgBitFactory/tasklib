@@ -792,7 +792,15 @@ class TaskWarrior(object):
             raise TaskWarriorException(error_msg)
         return stdout.strip().split('\n')
 
+    def enforce_recurrence(self):
+        # Run arbitrary report command which will trigger generation
+        # of recurrent tasks.
+        # TODO: Make a version dependant enforcement once
+        #       TW-1531 is handled
+        self.execute_command(['next'], allow_failure=False)
+
     def filter_tasks(self, filter_obj):
+        self.enforce_recurrence()
         args = ['export', '--'] + filter_obj.get_filter_params()
         tasks = []
         for line in self.execute_command(args):
