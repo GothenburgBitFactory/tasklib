@@ -239,6 +239,27 @@ same Python object::
     >>> task3 == task1
     True
 
+Accessing original values
+-------------------------
+
+To access the saved state of the Task, use dict-like access using the
+``original`` attribute:
+
+    >>> t = Task(tw, description="tidy up")
+    >>> t.save()
+    >>> t['description'] = "tidy up the kitchen and bathroom"
+    >>> t['description']
+    "tidy up the kitchen and bathroom"
+    >>> t.original['description']
+    "tidy up"
+
+When you save the task, original values are refreshed to reflect the
+saved state of the task:
+
+    >>> t.save()
+    >>> t.original['description']
+    "tidy up the kitchen and bathroom"
+
 Dealing with dates and time
 ---------------------------
 
@@ -424,6 +445,15 @@ Consenquently, you can create just one hook file for both ``on-add`` and
 This removes the need for maintaining two copies of the same code base and/or
 boilerplate code.
 
+In ``on-modify`` events, tasklib loads both the original version and the modified
+version of the task to the returned ``Task`` object. To access the original data
+(in read-only manner), use ``original`` dict-like attribute:
+
+    >>> t = Task.from_input()
+    >>> t['description']
+    "Modified description"
+    >>> t.original['description']
+    "Original description"
 
 Working with UDAs
 -----------------
