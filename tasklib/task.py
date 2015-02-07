@@ -78,6 +78,15 @@ class SerializingObject(object):
         not export empty-valued attributes) if the attribute
         is not iterable (e.g. list or set), in which case
         a empty iterable should be used.
+
+    Normalizing methods should hold the following contract:
+      - They are used to validate and normalize the user input.
+        Any attribute value that comes from the user (during Task
+        initialization, assignign values to Task attributes, or
+        filtering by user-provided values of attributes) is first
+        validated and normalized using the normalize_{key} method.
+      - If validation or normalization fails, normalizer is expected
+        to raise ValueError.
     """
 
     def _deserialize(self, key, value):
