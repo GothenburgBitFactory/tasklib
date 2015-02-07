@@ -28,6 +28,40 @@ class TaskWarriorException(Exception):
     pass
 
 
+class ReadOnlyDictView(object):
+    """
+    Provides simplified read-only view upon dict object.
+    """
+
+    def __init__(self, viewed_dict):
+        self.viewed_dict = viewed_dict
+
+    def __getitem__(self, key):
+        return copy.deepcopy(self.viewed_dict.__getitem__(key))
+
+    def __contains__(self, k):
+        return self.viewed_dict.__contains__(k)
+
+    def __iter__(self):
+        for value in self.viewed_dict:
+            yield copy.deepcopy(value)
+
+    def __len__(self):
+        return len(self.viewed_dict)
+
+    def get(self, key, default=None):
+        return copy.deepcopy(self.viewed_dict.get(key, default))
+
+    def has_key(self, key):
+        return self.viewed_dict.has_key(key)
+
+    def items(self):
+        return [copy.deepcopy(v) for v in self.viewed_dict.items()]
+
+    def values(self):
+        return [copy.deepcopy(v) for v in self.viewed_dict.values()]
+
+
 class SerializingObject(object):
     """
     Common ancestor for TaskResource & TaskFilter, since they both
