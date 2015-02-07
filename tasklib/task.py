@@ -52,9 +52,6 @@ class ReadOnlyDictView(object):
     def get(self, key, default=None):
         return copy.deepcopy(self.viewed_dict.get(key, default))
 
-    def has_key(self, key):
-        return self.viewed_dict.has_key(key)
-
     def items(self):
         return [copy.deepcopy(v) for v in self.viewed_dict.items()]
 

@@ -762,17 +762,9 @@ class ReadOnlyDictViewTest(unittest.TestCase):
         # Assert that viewed dict is not changed
         self.assertEqual(self.sample, self.original_sample)
 
-    def test_readonlydictview_contains(self):
-        self.assertEqual(self.view.has_key('l'), self.sample.has_key('l'))
-        self.assertEqual(self.view.has_key('k'), self.sample.has_key('k'))
-        self.assertEqual(self.view.has_key('d'), self.sample.has_key('d'))
-
-        # Assert that viewed dict is not changed
-        self.assertEqual(self.sample, self.original_sample)
-
     def test_readonlydict_items(self):
         view_items = self.view.items()
-        sample_items = self.sample.items()
+        sample_items = list(self.sample.items())
         self.assertEqual(view_items, sample_items)
 
         view_items.append('newkey')
@@ -781,10 +773,11 @@ class ReadOnlyDictViewTest(unittest.TestCase):
 
     def test_readonlydict_values(self):
         view_values = self.view.values()
-        sample_values = self.sample.values()
+        sample_values = list(self.sample.values())
         self.assertEqual(view_values, sample_values)
 
-        view_list_item = filter(lambda x: type(x) is list, view_values)[0]
+        view_list_item = list(filter(lambda x: type(x) is list,
+                                     view_values))[0]
         view_list_item.append(4)
         self.assertNotEqual(view_values, sample_values)
         self.assertEqual(self.sample, self.original_sample)
