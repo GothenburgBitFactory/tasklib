@@ -424,6 +424,9 @@ class Task(TaskResource):
                           for (key, value) in six.iteritems(kwargs))
         self._original_data = copy.deepcopy(self._data)
 
+        # Provide read only access to the original data
+        self.original = ReadOnlyDictView(self._original_data)
+
     def __unicode__(self):
         return self['description']
 
