@@ -503,6 +503,12 @@ class TaskTest(TasklibTest):
         for normalizer in normalizers:
             normalizer(None)
 
+    def test_recurrent_task_generation(self):
+        today = datetime.date.today()
+        t = Task(self.tw, description="brush teeth",
+                 due=today, recur="daily")
+        t.save()
+        self.assertEqual(len(self.tw.tasks.pending()), 2)
 
 class TaskFromHookTest(TasklibTest):
 
