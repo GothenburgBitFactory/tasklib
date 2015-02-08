@@ -333,7 +333,7 @@ are set in the same timezone:
     >>> t['due']
     datetime.datetime(2015, 2, 1, 19, 44, 4, 770001, tzinfo=<DstTzInfo 'Europe/Berlin' CET+1:00:00 STD>)
     >>> now.astimezone(pytz.utc)
-    datetime.datetime(2015, 2, 1, 18, 44, 4, 770001, tzinfo=<DstTzInfo 'Europe/Berlin' CET+1:00:00 STD>)
+    datetime.datetime(2015, 2, 1, 18, 44, 4, 770001, tzinfo=<UTC>)
     >>> t['due'] == now.astimezone(pytz.utc)
     True
 
