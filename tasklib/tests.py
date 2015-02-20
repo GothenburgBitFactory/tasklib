@@ -1,13 +1,16 @@
 # coding=utf-8
 
+import copy
 import datetime
 import itertools
+import json
+import pytz
 import six
 import shutil
 import tempfile
 import unittest
 
-from .task import TaskWarrior, Task
+from .task import TaskWarrior, Task, ReadOnlyDictView, local_zone, DATE_FORMAT
 
 # http://taskwarrior.org/docs/design/task.html , Section: The Attributes
 TASK_STANDARD_ATTRS = (
@@ -30,7 +33,7 @@ TASK_STANDARD_ATTRS = (
     'priority',
     'depends',
     'tags',
-    'annotation',
+    'annotations',
 )
 
 class TasklibTest(unittest.TestCase):
@@ -123,6 +126,112 @@ class TaskFilterTest(TasklibTest):
         filtered_task = self.tw.tasks.get(project="random")
         self.assertEqual(filtered_task['project'], "random")
 
+    def test_filter_with_empty_uuid(self):
+        self.assertRaises(ValueError, lambda: self.tw.tasks.get(uuid=''))
+
+    def test_filter_dummy_by_status(self):
+        t = Task(self.tw, description="test")
+        t.save()
+
+        tasks = self.tw.tasks.filter(status=t['status'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_uuid(self):
+        t = Task(self.tw, description="test")
+        t.save()
+
+        tasks = self.tw.tasks.filter(uuid=t['uuid'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_entry(self):
+        t = Task(self.tw, description="test")
+        t.save()
+
+        tasks = self.tw.tasks.filter(entry=t['entry'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_description(self):
+        t = Task(self.tw, description="test")
+        t.save()
+
+        tasks = self.tw.tasks.filter(description=t['description'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_start(self):
+        t = Task(self.tw, description="test")
+        t.save()
+        t.start()
+
+        tasks = self.tw.tasks.filter(start=t['start'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_end(self):
+        t = Task(self.tw, description="test")
+        t.save()
+        t.done()
+
+        tasks = self.tw.tasks.filter(end=t['end'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_due(self):
+        t = Task(self.tw, description="test", due=datetime.datetime.now())
+        t.save()
+
+        tasks = self.tw.tasks.filter(due=t['due'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_until(self):
+        t = Task(self.tw, description="test")
+        t.save()
+
+        tasks = self.tw.tasks.filter(until=t['until'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_modified(self):
+        # Older TW version does not support bumping modified
+        # on save
+        if self.tw.version < six.text_type('2.2.0'):
+            # Python2.6 does not support SkipTest. As a workaround
+            # mark the test as passed by exiting.
+            if getattr(unittest, 'SkipTest', None) is not None:
+                raise unittest.SkipTest()
+            else:
+                return
+
+        t = Task(self.tw, description="test")
+        t.save()
+
+        tasks = self.tw.tasks.filter(modified=t['modified'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_scheduled(self):
+        t = Task(self.tw, description="test")
+        t.save()
+
+        tasks = self.tw.tasks.filter(scheduled=t['scheduled'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_tags(self):
+        t = Task(self.tw, description="test", tags=["home"])
+        t.save()
+
+        tasks = self.tw.tasks.filter(tags=t['tags'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_projects(self):
+        t = Task(self.tw, description="test", project="random")
+        t.save()
+
+        tasks = self.tw.tasks.filter(project=t['project'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_by_priority(self):
+        t = Task(self.tw, description="test", priority="H")
+        t.save()
+
+        tasks = self.tw.tasks.filter(priority=t['priority'])
+        self.assertEqual(list(tasks), [t])
+
 
 class TaskTest(TasklibTest):
 
@@ -146,6 +255,10 @@ class TaskTest(TasklibTest):
         t = Task(self.tw, description="test task")
         self.assertRaises(Task.NotSaved, t.refresh)
 
+    def test_start_unsaved_task(self):
+        t = Task(self.tw, description="test task")
+        self.assertRaises(Task.NotSaved, t.start)
+
     def test_delete_deleted_task(self):
         t = Task(self.tw, description="test task")
         t.save()
@@ -160,12 +273,53 @@ class TaskTest(TasklibTest):
 
         self.assertRaises(Task.CompletedTask, t.done)
 
+    def test_start_completed_task(self):
+        t = Task(self.tw, description="test task")
+        t.save()
+        t.done()
+
+        self.assertRaises(Task.CompletedTask, t.start)
+
     def test_complete_deleted_task(self):
         t = Task(self.tw, description="test task")
         t.save()
         t.delete()
 
         self.assertRaises(Task.DeletedTask, t.done)
+
+    def test_start_completed_task(self):
+        t = Task(self.tw, description="test task")
+        t.save()
+        t.done()
+
+        self.assertRaises(Task.CompletedTask, t.start)
+
+    def test_starting_task(self):
+        t = Task(self.tw, description="test task")
+        now = t.datetime_normalizer(datetime.datetime.now())
+        t.save()
+        t.start()
+
+        self.assertTrue(now.replace(microsecond=0) <= t['start'])
+        self.assertEqual(t['status'], 'pending')
+
+    def test_completing_task(self):
+        t = Task(self.tw, description="test task")
+        now = t.datetime_normalizer(datetime.datetime.now())
+        t.save()
+        t.done()
+
+        self.assertTrue(now.replace(microsecond=0) <= t['end'])
+        self.assertEqual(t['status'], 'completed')
+
+    def test_deleting_task(self):
+        t = Task(self.tw, description="test task")
+        now = t.datetime_normalizer(datetime.datetime.now())
+        t.save()
+        t.delete()
+
+        self.assertTrue(now.replace(microsecond=0) <= t['end'])
+        self.assertEqual(t['status'], 'deleted')
 
     def test_modify_simple_attribute_without_space(self):
         t = Task(self.tw, description="test")
@@ -493,7 +647,19 @@ class TaskTest(TasklibTest):
         for deserializer in deserializers:
             self.assertTrue(deserializer('') in (None, [], set()))
 
+    def test_normalizers_handling_none(self):
+        # Test that any normalizer can handle None as a valid value
+        t = Task(self.tw)
 
+        for key in TASK_STANDARD_ATTRS:
+            t._normalize(key, None)
+
+    def test_recurrent_task_generation(self):
+        today = datetime.date.today()
+        t = Task(self.tw, description="brush teeth",
+                 due=today, recur="daily")
+        t.save()
+        self.assertEqual(len(self.tw.tasks.pending()), 2)
 
 class TaskFromHookTest(TasklibTest):
 
@@ -515,12 +681,13 @@ class TaskFromHookTest(TasklibTest):
          '"description":"test task"}')
 
     def test_setting_up_from_add_hook_input(self):
-        t = Task.from_input(input_file=self.input_add_data)
+        t = Task.from_input(input_file=self.input_add_data, warrior=self.tw)
         self.assertEqual(t['description'], "Buy some milk")
         self.assertEqual(t.pending, True)
 
     def test_setting_up_from_modified_hook_input(self):
-        t = Task.from_input(input_file=self.input_modify_data, modify=True)
+        t = Task.from_input(input_file=self.input_modify_data, modify=True,
+                            warrior=self.tw)
         self.assertEqual(t['description'], "Buy some milk finally")
         self.assertEqual(t.pending, False)
         self.assertEqual(t.completed, True)
@@ -532,7 +699,8 @@ class TaskFromHookTest(TasklibTest):
 
     def test_export_data(self):
         t = Task(self.tw, description="test task",
-            project="Home", due=datetime.datetime(2015,1,1,23,23,23))
+            project="Home",
+            due=pytz.utc.localize(datetime.datetime(2015,1,1,23,23,23)))
 
         # Check that the output is a permutation of:
         # {"project":"Home","description":"test task","due":"20150101232323Z"}
@@ -545,6 +713,75 @@ class TaskFromHookTest(TasklibTest):
         self.assertTrue(any(t.export_data() == expected
                             for expected in allowed_output))
 
+class TimezoneAwareDatetimeTest(TasklibTest):
+
+    def setUp(self):
+        super(TimezoneAwareDatetimeTest, self).setUp()
+        self.zone = local_zone
+        self.localdate_naive = datetime.datetime(2015,2,2)
+        self.localtime_naive = datetime.datetime(2015,2,2,0,0,0)
+        self.localtime_aware = self.zone.localize(self.localtime_naive)
+        self.utctime_aware = self.localtime_aware.astimezone(pytz.utc)
+
+    def test_timezone_naive_datetime_setitem(self):
+        t = Task(self.tw, description="test task")
+        t['due'] = self.localtime_naive
+        self.assertEqual(t['due'], self.localtime_aware)
+
+    def test_timezone_naive_datetime_using_init(self):
+        t = Task(self.tw, description="test task", due=self.localtime_naive)
+        self.assertEqual(t['due'], self.localtime_aware)
+
+    def test_filter_by_naive_datetime(self):
+        t = Task(self.tw, description="task1", due=self.localtime_naive)
+        t.save()
+        matching_tasks = self.tw.tasks.filter(due=self.localtime_naive)
+        self.assertEqual(len(matching_tasks), 1)
+
+    def test_serialize_naive_datetime(self):
+        t = Task(self.tw, description="task1", due=self.localtime_naive)
+        self.assertEqual(json.loads(t.export_data())['due'], 
+                         self.utctime_aware.strftime(DATE_FORMAT))
+
+    def test_timezone_naive_date_setitem(self):
+        t = Task(self.tw, description="test task")
+        t['due'] = self.localdate_naive
+        self.assertEqual(t['due'], self.localtime_aware)
+
+    def test_timezone_naive_date_using_init(self):
+        t = Task(self.tw, description="test task", due=self.localdate_naive)
+        self.assertEqual(t['due'], self.localtime_aware)
+
+    def test_filter_by_naive_date(self):
+        t = Task(self.tw, description="task1", due=self.localdate_naive)
+        t.save()
+        matching_tasks = self.tw.tasks.filter(due=self.localdate_naive)
+        self.assertEqual(len(matching_tasks), 1)
+
+    def test_serialize_naive_date(self):
+        t = Task(self.tw, description="task1", due=self.localdate_naive)
+        self.assertEqual(json.loads(t.export_data())['due'], 
+                         self.utctime_aware.strftime(DATE_FORMAT))
+
+    def test_timezone_aware_datetime_setitem(self):
+        t = Task(self.tw, description="test task")
+        t['due'] = self.localtime_aware
+        self.assertEqual(t['due'], self.localtime_aware)
+
+    def test_timezone_aware_datetime_using_init(self):
+        t = Task(self.tw, description="test task", due=self.localtime_aware)
+        self.assertEqual(t['due'], self.localtime_aware)
+
+    def test_filter_by_aware_datetime(self):
+        t = Task(self.tw, description="task1", due=self.localtime_aware)
+        t.save()
+        matching_tasks = self.tw.tasks.filter(due=self.localtime_aware)
+        self.assertEqual(len(matching_tasks), 1)
+
+    def test_serialize_aware_datetime(self):
+        t = Task(self.tw, description="task1", due=self.localtime_aware)
+        self.assertEqual(json.loads(t.export_data())['due'], 
+                         self.utctime_aware.strftime(DATE_FORMAT))
 
 class AnnotationTest(TasklibTest):
 
@@ -587,6 +824,23 @@ class AnnotationTest(TasklibTest):
          task.save()
          self.assertEqual(task['project'], 'test')
 
+    def test_serialize_annotations(self):
+        # Test that serializing annotations is possible
+        t = Task(self.tw, description="test")
+        t.save()
+
+        t.add_annotation("annotation1")
+        t.add_annotation("annotation2")
+
+        data = t._serialize('annotations', t._data['annotations'])
+
+        self.assertEqual(len(data), 2)
+        self.assertEqual(type(data[0]), dict)
+        self.assertEqual(type(data[1]), dict)
+
+        self.assertEqual(data[0]['description'], "annotation1")
+        self.assertEqual(data[1]['description'], "annotation2")
+
 
 class UnicodeTest(TasklibTest):
 
@@ -597,3 +851,76 @@ class UnicodeTest(TasklibTest):
     def test_non_unicode_task(self):
         Task(self.tw, description="test task").save()
         self.tw.tasks.get()
+
+class ReadOnlyDictViewTest(unittest.TestCase):
+
+    def setUp(self):
+        self.sample = dict(l=[1,2,3], d={'k':'v'})
+        self.original_sample = copy.deepcopy(self.sample)
+        self.view = ReadOnlyDictView(self.sample)
+
+    def test_readonlydictview_getitem(self):
+        l = self.view['l']
+        self.assertEqual(l, self.sample['l'])
+
+        # Assert that modification changed only copied value
+        l.append(4)
+        self.assertNotEqual(l, self.sample['l'])
+
+        # Assert that viewed dict is not changed
+        self.assertEqual(self.sample, self.original_sample)
+
+    def test_readonlydictview_contains(self):
+        self.assertEqual('l' in self.view, 'l' in self.sample)
+        self.assertEqual('d' in self.view, 'd' in self.sample)
+        self.assertEqual('k' in self.view, 'k' in self.sample)
+
+        # Assert that viewed dict is not changed
+        self.assertEqual(self.sample, self.original_sample)
+
+    def test_readonlydictview_iter(self):
+        self.assertEqual(list(k for k in self.view),
+                         list(k for k in self.sample))
+
+        # Assert the view is correct after modification
+        self.sample['new'] = 'value'
+        self.assertEqual(list(k for k in self.view),
+                         list(k for k in self.sample))
+
+    def test_readonlydictview_len(self):
+        self.assertEqual(len(self.view), len(self.sample))
+
+        # Assert the view is correct after modification
+        self.sample['new'] = 'value'
+        self.assertEqual(len(self.view), len(self.sample))
+
+    def test_readonlydictview_get(self):
+        l = self.view.get('l')
+        self.assertEqual(l, self.sample.get('l'))
+
+        # Assert that modification changed only copied value
+        l.append(4)
+        self.assertNotEqual(l, self.sample.get('l'))
+
+        # Assert that viewed dict is not changed
+        self.assertEqual(self.sample, self.original_sample)
+
+    def test_readonlydict_items(self):
+        view_items = self.view.items()
+        sample_items = list(self.sample.items())
+        self.assertEqual(view_items, sample_items)
+
+        view_items.append('newkey')
+        self.assertNotEqual(view_items, sample_items)
+        self.assertEqual(self.sample, self.original_sample)
+
+    def test_readonlydict_values(self):
+        view_values = self.view.values()
+        sample_values = list(self.sample.values())
+        self.assertEqual(view_values, sample_values)
+
+        view_list_item = list(filter(lambda x: type(x) is list,
+                                     view_values))[0]
+        view_list_item.append(4)
+        self.assertNotEqual(view_values, sample_values)
+        self.assertEqual(self.sample, self.original_sample)
