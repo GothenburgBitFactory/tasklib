@@ -191,7 +191,12 @@ class TaskFilterTest(TasklibTest):
         # Older TW version does not support bumping modified
         # on save
         if self.tw.version < six.text_type('2.2.0'):
-            raise unittest.SkipTest()
+            # Python2.6 does not support SkipTest. As a workaround
+            # mark the test as passed by exiting.
+            if getattr(unittest, 'SkipTest', None) is not None:
+                raise unittest.SkipTest()
+            else:
+                return
 
         t = Task(self.tw, description="test")
         t.save()
