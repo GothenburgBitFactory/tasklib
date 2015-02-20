@@ -534,6 +534,22 @@ class Task(TaskResource):
         # Refresh the status again, so that we have updated info stored
         self.refresh(only_fields=['status'])
 
+    def start(self):
+        if not self.saved:
+            raise Task.NotSaved("Task needs to be saved before it can be started")
+
+        # Refresh, and raise exception if task is already completed/deleted
+        self.refresh(only_fields=['status'])
+
+        if self.completed:
+            raise Task.CompletedTask("Cannot start a completed task")
+        elif self.deleted:
+            raise Task.DeletedTask("Deleted task cannot be started")
+
+        self.warrior.execute_command([self['uuid'], 'start'])
+
+        # Refresh the status again, so that we have updated info stored
+        self.refresh(only_fields=['status'])
 
     def done(self):
         if not self.saved:
