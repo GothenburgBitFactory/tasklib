@@ -188,6 +188,11 @@ class TaskFilterTest(TasklibTest):
         self.assertEqual(list(tasks), [t])
 
     def test_filter_dummy_by_modified(self):
+        # Older TW version does not support bumping modified
+        # on save
+        if self.tw.version < six.text_type('2.2.0'):
+            raise unittest.SkipTest()
+
         t = Task(self.tw, description="test")
         t.save()
 
