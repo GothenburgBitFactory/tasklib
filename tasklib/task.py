@@ -532,7 +532,7 @@ class Task(TaskResource):
         self.warrior.execute_command([self['uuid'], 'delete'])
 
         # Refresh the status again, so that we have updated info stored
-        self.refresh(only_fields=['status'])
+        self.refresh(only_fields=['status', 'start', 'end'])
 
     def start(self):
         if not self.saved:
@@ -549,7 +549,7 @@ class Task(TaskResource):
         self.warrior.execute_command([self['uuid'], 'start'])
 
         # Refresh the status again, so that we have updated info stored
-        self.refresh(only_fields=['status'])
+        self.refresh(only_fields=['status', 'start'])
 
     def done(self):
         if not self.saved:
@@ -566,7 +566,7 @@ class Task(TaskResource):
         self.warrior.execute_command([self['uuid'], 'done'])
 
         # Refresh the status again, so that we have updated info stored
-        self.refresh(only_fields=['status'])
+        self.refresh(only_fields=['status', 'start', 'end'])
 
     def save(self):
         if self.saved and not self.modified:
