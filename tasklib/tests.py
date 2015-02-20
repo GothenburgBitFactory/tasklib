@@ -535,12 +535,13 @@ class TaskFromHookTest(TasklibTest):
          '"description":"test task"}')
 
     def test_setting_up_from_add_hook_input(self):
-        t = Task.from_input(input_file=self.input_add_data)
+        t = Task.from_input(input_file=self.input_add_data, warrior=self.tw)
         self.assertEqual(t['description'], "Buy some milk")
         self.assertEqual(t.pending, True)
 
     def test_setting_up_from_modified_hook_input(self):
-        t = Task.from_input(input_file=self.input_modify_data, modify=True)
+        t = Task.from_input(input_file=self.input_modify_data, modify=True,
+                            warrior=self.tw)
         self.assertEqual(t['description'], "Buy some milk finally")
         self.assertEqual(t.pending, False)
         self.assertEqual(t.completed, True)
