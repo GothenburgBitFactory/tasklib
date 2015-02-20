@@ -149,6 +149,24 @@ class SerializingObject(object):
     def normalize_modified(self, value):
         return self.datetime_normalizer(value)
 
+    def serialize_start(self, value):
+        return self.timestamp_serializer(value)
+
+    def deserialize_start(self, value):
+        return self.timestamp_deserializer(value)
+
+    def normalize_start(self, value):
+        return self.datetime_normalizer(value)
+
+    def serialize_end(self, value):
+        return self.timestamp_serializer(value)
+
+    def deserialize_end(self, value):
+        return self.timestamp_deserializer(value)
+
+    def normalize_end(self, value):
+        return self.datetime_normalizer(value)
+
     def serialize_due(self, value):
         return self.timestamp_serializer(value)
 
