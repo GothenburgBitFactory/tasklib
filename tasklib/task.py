@@ -385,7 +385,7 @@ class Task(TaskResource):
         pass
 
     @classmethod
-    def from_input(cls, input_file=sys.stdin, modify=None):
+    def from_input(cls, input_file=sys.stdin, modify=None, warrior=None):
         """
         Creates a Task object, directly from the stdin, by reading one line.
         If modify=True, two lines are used, first line interpreted as the
@@ -401,12 +401,17 @@ class Task(TaskResource):
         but defaults to sys.stdin.
         """
 
-        # TaskWarrior instance is set to None
-        task = cls(None)
-
         # Detect the hook type if not given directly
         name = os.path.basename(sys.argv[0])
         modify = name.startswith('on-modify') if modify is None else modify
+
+        # Create the TaskWarrior instance if none passed
+        if warrior is None:
+            hook_parent_dir = os.path.dirname(os.path.dirname(sys.argv[0]))
+            warrior = TaskWarrior(data_location=hook_parent_dir)
+
+        # TaskWarrior instance is set to None
+        task = cls(warrior)
 
         # Load the data from the input
         task._load_data(json.loads(input_file.readline().strip()))
