@@ -502,11 +502,8 @@ class TaskTest(TasklibTest):
         # Test that any normalizer can handle None as a valid value
         t = Task(self.tw)
 
-        normalizers = [getattr(t, normalizer_name) for normalizer_name in
-                       filter(lambda x: x.startswith('normalize_'), dir(t))]
-
-        for normalizer in normalizers:
-            normalizer(None)
+        for key in TASK_STANDARD_ATTRS:
+            t._normalize(key, None)
 
     def test_recurrent_task_generation(self):
         today = datetime.date.today()
