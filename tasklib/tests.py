@@ -129,6 +129,100 @@ class TaskFilterTest(TasklibTest):
     def test_filter_with_empty_uuid(self):
         self.assertRaises(ValueError, lambda: self.tw.tasks.get(uuid=''))
 
+    def test_filter_dummy_by_status(self):
+        t = Task(self.tw, description="test")
+        t.save()
+
+        tasks = self.tw.tasks.filter(status=t['status'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_uuid(self):
+        t = Task(self.tw, description="test")
+        t.save()
+
+        tasks = self.tw.tasks.filter(uuid=t['uuid'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_entry(self):
+        t = Task(self.tw, description="test")
+        t.save()
+
+        tasks = self.tw.tasks.filter(entry=t['entry'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_description(self):
+        t = Task(self.tw, description="test")
+        t.save()
+
+        tasks = self.tw.tasks.filter(description=t['description'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_start(self):
+        t = Task(self.tw, description="test")
+        t.save()
+        t.start()
+
+        tasks = self.tw.tasks.filter(start=t['start'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_end(self):
+        t = Task(self.tw, description="test")
+        t.save()
+        t.done()
+
+        tasks = self.tw.tasks.filter(end=t['end'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_due(self):
+        t = Task(self.tw, description="test", due=datetime.datetime.now())
+        t.save()
+
+        tasks = self.tw.tasks.filter(due=t['due'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_until(self):
+        t = Task(self.tw, description="test")
+        t.save()
+
+        tasks = self.tw.tasks.filter(until=t['until'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_modified(self):
+        t = Task(self.tw, description="test")
+        t.save()
+
+        tasks = self.tw.tasks.filter(modified=t['modified'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_scheduled(self):
+        t = Task(self.tw, description="test")
+        t.save()
+
+        tasks = self.tw.tasks.filter(scheduled=t['scheduled'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_tags(self):
+        t = Task(self.tw, description="test", tags=["home"])
+        t.save()
+
+        tasks = self.tw.tasks.filter(tags=t['tags'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_dummy_by_projects(self):
+        t = Task(self.tw, description="test", project="random")
+        t.save()
+
+        tasks = self.tw.tasks.filter(project=t['project'])
+        self.assertEqual(list(tasks), [t])
+
+    def test_filter_by_priority(self):
+        t = Task(self.tw, description="test", priority="H")
+        t.save()
+
+        tasks = self.tw.tasks.filter(priority=t['priority'])
+        self.assertEqual(list(tasks), [t])
+
+
 class TaskTest(TasklibTest):
 
     def test_create_unsaved_task(self):
