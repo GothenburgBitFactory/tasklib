@@ -103,6 +103,10 @@ class SerializingObject(object):
         or entered as a value of Task attribute.
         """
 
+        # None value should not be converted by normalizer
+        if value is None:
+            return None
+
         normalize_func = getattr(self, 'normalize_{0}'.format(key),
                                  lambda x: x)
 
@@ -233,7 +237,7 @@ class SerializingObject(object):
             # If the value is already localized, there is no need to change
             # time zone at this point. Also None is a valid value too.
             localized = value
-        
+
         return localized
 
     def normalize_uuid(self, value):

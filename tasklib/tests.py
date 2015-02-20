@@ -502,12 +502,8 @@ class TaskTest(TasklibTest):
         # Test that any normalizer can handle None as a valid value
         t = Task(self.tw)
 
-        # These normalizers are not supposed to handle None
-        exempt_normalizers = ('normalize_uuid', )
-
         normalizers = [getattr(t, normalizer_name) for normalizer_name in
-                       filter(lambda x: x.startswith('normalize_'), dir(t))
-                       if normalizer_name not in exempt_normalizers]
+                       filter(lambda x: x.startswith('normalize_'), dir(t))]
 
         for normalizer in normalizers:
             normalizer(None)
