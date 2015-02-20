@@ -242,7 +242,7 @@ class SerializingObject(object):
 
     def normalize_uuid(self, value):
         # Enforce sane UUID
-        if not isinstance(value, six.text_type) or value == '':
+        if not isinstance(value, six.string_types) or value == '':
             raise ValueError("UUID must be a valid non-empty string, "
                              "not: {}".format(value))
 
