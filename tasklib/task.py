@@ -845,7 +845,7 @@ class TaskWarrior(object):
         stdout, stderr = [x.decode('utf-8') for x in p.communicate()]
         if p.returncode and allow_failure:
             if stderr.strip():
-                error_msg = stderr.strip().splitlines()[-1]
+                error_msg = stderr.strip()
             else:
                 error_msg = stdout.strip()
             raise TaskWarriorException(error_msg)
