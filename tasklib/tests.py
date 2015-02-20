@@ -245,6 +245,10 @@ class TaskTest(TasklibTest):
         t = Task(self.tw, description="test task")
         self.assertRaises(Task.NotSaved, t.refresh)
 
+    def test_start_unsaved_task(self):
+        t = Task(self.tw, description="test task")
+        self.assertRaises(Task.NotSaved, t.start)
+
     def test_delete_deleted_task(self):
         t = Task(self.tw, description="test task")
         t.save()
@@ -259,12 +263,53 @@ class TaskTest(TasklibTest):
 
         self.assertRaises(Task.CompletedTask, t.done)
 
+    def test_start_completed_task(self):
+        t = Task(self.tw, description="test task")
+        t.save()
+        t.done()
+
+        self.assertRaises(Task.CompletedTask, t.start)
+
     def test_complete_deleted_task(self):
         t = Task(self.tw, description="test task")
         t.save()
         t.delete()
 
         self.assertRaises(Task.DeletedTask, t.done)
+
+    def test_start_completed_task(self):
+        t = Task(self.tw, description="test task")
+        t.save()
+        t.done()
+
+        self.assertRaises(Task.CompletedTask, t.start)
+
+    def test_starting_task(self):
+        t = Task(self.tw, description="test task")
+        now = t.datetime_normalizer(datetime.datetime.now())
+        t.save()
+        t.start()
+
+        self.assertTrue(now.replace(microsecond=0) <= t['start'])
+        self.assertEqual(t['status'], 'pending')
+
+    def test_completing_task(self):
+        t = Task(self.tw, description="test task")
+        now = t.datetime_normalizer(datetime.datetime.now())
+        t.save()
+        t.done()
+
+        self.assertTrue(now.replace(microsecond=0) <= t['end'])
+        self.assertEqual(t['status'], 'completed')
+
+    def test_deleting_task(self):
+        t = Task(self.tw, description="test task")
+        now = t.datetime_normalizer(datetime.datetime.now())
+        t.save()
+        t.delete()
+
+        self.assertTrue(now.replace(microsecond=0) <= t['end'])
+        self.assertEqual(t['status'], 'deleted')
 
     def test_modify_simple_attribute_without_space(self):
         t = Task(self.tw, description="test")
