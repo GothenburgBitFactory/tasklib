@@ -19,6 +19,8 @@ VERSION_2_1_0 = six.u('2.1.0')
 VERSION_2_2_0 = six.u('2.2.0')
 VERSION_2_3_0 = six.u('2.3.0')
 VERSION_2_4_0 = six.u('2.4.0')
+VERSION_2_4_1 = six.u('2.4.1')
+VERSION_2_4_2 = six.u('2.4.2')
 
 logger = logging.getLogger(__name__)
 local_zone = tzlocal.get_localzone()
@@ -888,9 +890,10 @@ class TaskWarrior(object):
     def enforce_recurrence(self):
         # Run arbitrary report command which will trigger generation
         # of recurrent tasks.
-        # TODO: Make a version dependant enforcement once
-        #       TW-1531 is handled
-        self.execute_command(['next'], allow_failure=False)
+
+        # Only necessary for TW up to 2.4.1, fixed in 2.4.2.
+        if self.version < VERSION_2_4_2:
+            self.execute_command(['next'], allow_failure=False)
 
     def filter_tasks(self, filter_obj):
         self.enforce_recurrence()
