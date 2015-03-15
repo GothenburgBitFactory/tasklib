@@ -704,7 +704,7 @@ class TaskFilter(SerializingObject):
         attribute_key = key.split('.')[0]
 
         # Since this is user input, we need to normalize before we serialize
-        value = self._normalize(key, value)
+        value = self._normalize(attribute_key, value)
         value = self._serialize(attribute_key, value)
 
         # If we are filtering by uuid:, do not use uuid keyword
