@@ -40,7 +40,7 @@ class TasklibTest(unittest.TestCase):
 
     def setUp(self):
         self.tmp = tempfile.mkdtemp(dir='.')
-        self.tw = TaskWarrior(data_location=self.tmp)
+        self.tw = TaskWarrior(data_location=self.tmp, taskrc_location='/')
 
     def tearDown(self):
         shutil.rmtree(self.tmp)
