@@ -842,8 +842,15 @@ class TaskQuerySet(object):
 
 
 class TaskWarrior(object):
-    def __init__(self, data_location='~/.task', create=True):
+    def __init__(self, data_location='~/.task', create=True, taskrc_location='~/.taskrc'):
         data_location = os.path.expanduser(data_location)
+        self.taskrc_location = os.path.expanduser(taskrc_location)
+
+        # If taskrc does not exist, pass / to use defaults and avoid creating
+        # dummy .taskrc file by TaskWarrior
+        if not os.path.exists(self.taskrc_location):
+            self.taskrc_location = '/'
+
         if create and not os.path.exists(data_location):
             os.makedirs(data_location)
         self.config = {
@@ -856,7 +863,7 @@ class TaskWarrior(object):
         self.version = self._get_version()
 
     def _get_command_args(self, args, config_override={}):
-        command_args = ['task', 'rc:/']
+        command_args = ['task', 'rc:{0}'.format(self.taskrc_location)]
         config = self.config.copy()
         config.update(config_override)
         for item in config.items():
