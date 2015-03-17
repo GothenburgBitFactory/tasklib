@@ -36,6 +36,11 @@ The default location is the same as taskwarrior's::
 
     >>> tw = TaskWarrior(data_location='~/.task', create=True)
 
+The ``TaskWarrior`` instance will also use your .taskrc configuration (so that
+it recognizes the same UDAs as your task binary, uses the same configuration,
+etc.). To override the location of the .taskrc, use
+``taskrc_location=~/some/different/path``.
+
 Creating Tasks
 --------------
 
@@ -397,14 +402,14 @@ You can use ``config_override`` keyword argument to specify a dictionary of conf
 Setting custom configuration values
 -----------------------------------
 
-By default, TaskWarrior does not use any of configuration values stored in
-your .taskrc. To see what configuration values are passed to each executed
+By default, TaskWarrior uses configuration values stored in your .taskrc.
+To see what configuration value overrides are passed to each executed
 task command, have a peek into ``config`` attribute of ``TaskWarrior`` object::
 
     >>> tw.config
     {'confirmation': 'no', 'data.location': '/home/tbabej/.task'}
 
-To pass your own configuration, you just need to update this dictionary::
+To pass your own configuration overrides, you just need to update this dictionary::
 
     >>> tw.config.update({'hooks': 'off'})  # tasklib will not trigger hooks
 
@@ -458,16 +463,15 @@ version of the task to the returned ``Task`` object. To access the original data
 Working with UDAs
 -----------------
 
-Since TaskWarrior does not read your .taskrc, you need to define any UDAs
-in the TaskWarrior's config dictionary, as described above.
+Since TaskWarrior does read your .taskrc, you need not to define any UDAs
+in the TaskWarrior's config dictionary, as described above. Suppose we have
+a estimate UDA in the .taskrc::
 
-Let us demonstrate this on the same example as in the TaskWarrior's docs::
+    uda.estimate.type = numeric
+
+We can simply filter and create tasks using the estimate UDA out of the box::
 
     >>> tw = TaskWarrior()
-    >>> tw.config.update({'uda.estimate.type': 'numeric'})
-
-Now we can filter and create tasks using the estimate UDA::
-
     >>> task = Task(tw, description="Long task", estimate=1000)
     >>> task.save()
     >>> task['id']
@@ -478,7 +482,7 @@ This is saved as UDA in the TaskWarrior::
     $ task 1 export
     {"id":1,"description":"Long task","estimate":1000, ...}
 
-As long as ``TaskWarrior``'s config is updated, we can approach UDAs as built in attributes::
+We can also speficy UDAs as arguments in the TaskFilter::
 
     >>> tw.tasks.filter(estimate=1000)
     Long task
@@ -486,9 +490,16 @@ As long as ``TaskWarrior``'s config is updated, we can approach UDAs as built in
 Syncing
 -------
 
-Syncing is not directly supported by tasklib, but it can be made to work in a similiar way
-as the UDAs. First we need to update the ``config`` dictionary by the values required for
-sync to work, and then we can run the sync command using the ``execute_command()`` method::
+If you have configurated the needed config variables in your .taskrc, syncing
+is as easy as::
+
+    >>> tw = TaskWarrior()
+    >>> tw.execute_command(['sync'])
+
+If you want to use non-standard server/credentials, you'll need to provide configuration
+overrides to the ``TaskWarrior`` instance. Update the ``config`` dictionary with the
+values you desire to override, and then we can run the sync command using
+the ``execute_command()`` method::
 
     >>> tw = TaskWarrior()
     >>> sync_config = {
