@@ -11,6 +11,7 @@ import subprocess
 import tzlocal
 
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
+DATE_FORMAT_CALC = '%Y-%m-%dT%H:%M:%S'
 REPR_OUTPUT_SIZE = 10
 PENDING = 'pending'
 COMPLETED = 'completed'
@@ -250,13 +251,24 @@ class SerializingObject(object):
             # Convert to local midnight
             value_full = datetime.datetime.combine(value, datetime.time.min)
             localized = local_zone.localize(value_full)
-        elif isinstance(value, datetime.datetime) and value.tzinfo is None:
-            # Convert to localized datetime object
-            localized = local_zone.localize(value)
+        elif isinstance(value, datetime.datetime):
+            if value.tzinfo is None:
+                # Convert to localized datetime object
+                localized = local_zone.localize(value)
+            else:
+                # If the value is already localized, there is no need to change
+                # time zone at this point. Also None is a valid value too.
+                localized = value
+        elif isinstance(value, six.string_types):
+            # For strings, use 'task calc' to evaluate the string to datetime
+            args = value.split()
+            result = self.warrior.execute_command(['calc'] + args)
+            naive = datetime.datetime.strptime(result[0], DATE_FORMAT_CALC)
+            localized = local_zone.localize(naive)
         else:
-            # If the value is already localized, there is no need to change
-            # time zone at this point. Also None is a valid value too.
-            localized = value
+            raise ValueError("Provided value could not be converted to "
+                             "datetime, its type is not supported: {}"
+                             .format(type(value)))
 
         return localized
 
