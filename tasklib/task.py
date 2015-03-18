@@ -89,6 +89,9 @@ class SerializingObject(object):
         to raise ValueError.
     """
 
+    def __init__(self, warrior):
+        self.warrior = warrior
+
     def _deserialize(self, key, value):
         hydrate_func = getattr(self, 'deserialize_{0}'.format(key),
                                lambda x: x if x != '' else None)
@@ -376,6 +379,7 @@ class TaskAnnotation(TaskResource):
     def __init__(self, task, data={}):
         self.task = task
         self._load_data(data)
+        super(TaskAnnotation, self).__init__(task.warrior)
 
     def remove(self):
         self.task.remove_annotation(self)
@@ -456,7 +460,7 @@ class Task(TaskResource):
         return task
 
     def __init__(self, warrior, **kwargs):
-        self.warrior = warrior
+        super(Task, self).__init__(warrior)
 
         # Check that user is not able to set read-only value in __init__
         for key in kwargs.keys():
@@ -702,8 +706,9 @@ class TaskFilter(SerializingObject):
     A set of parameters to filter the task list with.
     """
 
-    def __init__(self, filter_params=[]):
+    def __init__(self, warrior, filter_params=[]):
         self.filter_params = filter_params
+        super(TaskFilter, self).__init__(warrior)
 
     def add_filter(self, filter_str):
         self.filter_params.append(filter_str)
@@ -738,7 +743,7 @@ class TaskFilter(SerializingObject):
         return [f for f in self.filter_params if f]
 
     def clone(self):
-        c = self.__class__()
+        c = self.__class__(self.warrior)
         c.filter_params = list(self.filter_params)
         return c
 
@@ -751,7 +756,7 @@ class TaskQuerySet(object):
     def __init__(self, warrior=None, filter_obj=None):
         self.warrior = warrior
         self._result_cache = None
-        self.filter_obj = filter_obj or TaskFilter()
+        self.filter_obj = filter_obj or TaskFilter(warrior)
 
     def __deepcopy__(self, memo):
         """
