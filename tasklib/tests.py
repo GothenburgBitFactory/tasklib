@@ -740,7 +740,7 @@ class TimezoneAwareDatetimeTest(TasklibTest):
 
     def test_serialize_naive_datetime(self):
         t = Task(self.tw, description="task1", due=self.localtime_naive)
-        self.assertEqual(json.loads(t.export_data())['due'], 
+        self.assertEqual(json.loads(t.export_data())['due'],
                          self.utctime_aware.strftime(DATE_FORMAT))
 
     def test_timezone_naive_date_setitem(self):
@@ -760,7 +760,7 @@ class TimezoneAwareDatetimeTest(TasklibTest):
 
     def test_serialize_naive_date(self):
         t = Task(self.tw, description="task1", due=self.localdate_naive)
-        self.assertEqual(json.loads(t.export_data())['due'], 
+        self.assertEqual(json.loads(t.export_data())['due'],
                          self.utctime_aware.strftime(DATE_FORMAT))
 
     def test_timezone_aware_datetime_setitem(self):
@@ -780,7 +780,7 @@ class TimezoneAwareDatetimeTest(TasklibTest):
 
     def test_serialize_aware_datetime(self):
         t = Task(self.tw, description="task1", due=self.localtime_aware)
-        self.assertEqual(json.loads(t.export_data())['due'], 
+        self.assertEqual(json.loads(t.export_data())['due'],
                          self.utctime_aware.strftime(DATE_FORMAT))
 
 class AnnotationTest(TasklibTest):
