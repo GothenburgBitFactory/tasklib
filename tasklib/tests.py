@@ -783,6 +783,72 @@ class TimezoneAwareDatetimeTest(TasklibTest):
         self.assertEqual(json.loads(t.export_data())['due'],
                          self.utctime_aware.strftime(DATE_FORMAT))
 
+class DatetimeStringTest(TasklibTest):
+
+    def test_simple_now_conversion(self):
+        if self.tw.version < six.text_type('2.4.0'):
+            # Python2.6 does not support SkipTest. As a workaround
+            # mark the test as passed by exiting.
+            if getattr(unittest, 'SkipTest', None) is not None:
+                raise unittest.SkipTest()
+            else:
+                return
+
+        t = Task(self.tw, description="test task", due="now")
+        now = local_zone.localize(datetime.datetime.now())
+
+        # Assert that both times are not more than 5 seconds apart
+        self.assertTrue((now - t['due']).total_seconds() < 5)
+        self.assertTrue((t['due'] - now).total_seconds() < 5)
+
+    def test_simple_eoy_conversion(self):
+        if self.tw.version < six.text_type('2.4.0'):
+            # Python2.6 does not support SkipTest. As a workaround
+            # mark the test as passed by exiting.
+            if getattr(unittest, 'SkipTest', None) is not None:
+                raise unittest.SkipTest()
+            else:
+                return
+
+        t = Task(self.tw, description="test task", due="eoy")
+        now = local_zone.localize(datetime.datetime.now())
+        eoy = local_zone.localize(datetime.datetime(
+            year=now.year,
+            month=12,
+            day=31,
+            hour=23,
+            minute=59,
+            second=59
+            ))
+        self.assertEqual(eoy, t['due'])
+
+    def test_complex_eoy_conversion(self):
+        if self.tw.version < six.text_type('2.4.0'):
+            # Python2.6 does not support SkipTest. As a workaround
+            # mark the test as passed by exiting.
+            if getattr(unittest, 'SkipTest', None) is not None:
+                raise unittest.SkipTest()
+            else:
+                return
+
+        t = Task(self.tw, description="test task", due="eoy - 4 months")
+        now = local_zone.localize(datetime.datetime.now())
+        due_date = local_zone.localize(datetime.datetime(
+            year=now.year,
+            month=9,
+            day=3,
+            hour=0,
+            minute=59,
+            second=59
+            ))
+        self.assertEqual(due_date, t['due'])
+
+    def test_filtering_with_string_datetime(self):
+        t = Task(self.tw, description="test task",
+                 due=datetime.datetime.now() - datetime.timedelta(0,2))
+        t.save()
+        self.assertEqual(len(self.tw.tasks.filter(due__before="now")), 1)
+
 class AnnotationTest(TasklibTest):
 
     def setUp(self):
