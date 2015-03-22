@@ -683,7 +683,8 @@ class TaskTest(TasklibTest):
 
     def test_return_all_from_failed_executed_command(self):
         Task(self.tw, description="test task", tags=['test']).save()
-        out, err, rc = self.tw.execute_command(['countinvalid'], return_all=True)
+        out, err, rc = self.tw.execute_command(['countinvalid'],
+            return_all=True, allow_failure=False)
         self.assertNotEqual(rc, 0)
 
 
