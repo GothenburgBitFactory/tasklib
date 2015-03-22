@@ -885,7 +885,7 @@ class TaskWarrior(object):
             data_location = os.path.expanduser(data_location)
             if create and not os.path.exists(data_location):
                 os.makedirs(data_location)
-            self.config['data.location'] = data_location,
+            self.config['data.location'] = data_location
 
         self.tasks = TaskQuerySet(self)
 
