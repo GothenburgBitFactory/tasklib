@@ -661,6 +661,13 @@ class TaskTest(TasklibTest):
         t.save()
         self.assertEqual(len(self.tw.tasks.pending()), 2)
 
+    def test_modify_number_of_tasks_at_once(self):
+        for i in range(1, 100):
+            Task(self.tw, description="test task %d" % i, tags=['test']).save()
+
+        self.tw.execute_command(['+test', 'mod', 'unified', 'description'])
+
+
 class TaskFromHookTest(TasklibTest):
 
     input_add_data = six.StringIO(
