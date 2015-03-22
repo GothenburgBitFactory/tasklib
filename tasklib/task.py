@@ -881,7 +881,7 @@ class TaskWarrior(object):
             'recurrence.confirmation': 'no',  # Necessary for modifying R tasks
             # 2.4.3 onwards supports 0 as infite bulk, otherwise set just
             # arbitrary big number which is likely to be large enough
-            'bulk': 0 if self.version > VERSION_2_4_3 else 100000,
+            'bulk': 0 if self.version >= VERSION_2_4_3 else 100000,
         }
 
         # Set data.location override if passed via kwarg
