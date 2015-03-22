@@ -939,12 +939,12 @@ class AnnotationTest(TasklibTest):
 class UnicodeTest(TasklibTest):
 
     def test_unicode_task(self):
-        Task(self.tw, description="†åßk").save()
+        Task(self.tw, description=six.u("†åßk")).save()
         self.tw.tasks.get()
 
     def test_filter_by_unicode_task(self):
-        Task(self.tw, description="†åßk").save()
-        tasks = self.tw.tasks.filter(description="†åßk")
+        Task(self.tw, description=six.u("†åßk")).save()
+        tasks = self.tw.tasks.filter(description=six.u("†åßk"))
         self.assertEqual(len(tasks), 1)
 
     def test_non_unicode_task(self):
