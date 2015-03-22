@@ -942,6 +942,11 @@ class UnicodeTest(TasklibTest):
         Task(self.tw, description="†åßk").save()
         self.tw.tasks.get()
 
+    def test_filter_by_unicode_task(self):
+        Task(self.tw, description="†åßk").save()
+        tasks = self.tw.tasks.filter(description="†åßk")
+        self.assertEqual(len(tasks), 1)
+
     def test_non_unicode_task(self):
         Task(self.tw, description="test task").save()
         self.tw.tasks.get()
