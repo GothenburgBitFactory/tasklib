@@ -912,7 +912,7 @@ class TaskWarrior(object):
             else:
                 error_msg = stdout.strip()
             raise TaskWarriorException(error_msg)
-        return stdout.strip().split('\n')
+        return stdout.rstrip().split('\n')
 
     def enforce_recurrence(self):
         # Run arbitrary report command which will trigger generation
