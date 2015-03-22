@@ -802,12 +802,12 @@ class DatetimeStringTest(TasklibTest):
         now = local_zone.localize(datetime.datetime.now())
 
         # Assert that both times are not more than 5 seconds apart
-        if sys.version > (2,6):
-            self.assertTrue((now - t['due']).total_seconds() < 5)
-            self.assertTrue((t['due'] - now).total_seconds() < 5)
-        else:
+        if sys.version_info < (2,7):
             self.assertTrue(total_seconds_2_6(now - t['due']) < 5)
             self.assertTrue(total_seconds_2_6(t['due'] - now) < 5)
+        else:
+            self.assertTrue((now - t['due']).total_seconds() < 5)
+            self.assertTrue((t['due'] - now).total_seconds() < 5)
 
     def test_simple_eoy_conversion(self):
         if self.tw.version < six.text_type('2.4.0'):
