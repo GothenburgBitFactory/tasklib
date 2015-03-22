@@ -676,6 +676,16 @@ class TaskTest(TasklibTest):
 
         self.tw.execute_command(['+test', 'mod', 'unified', 'description'])
 
+    def test_return_all_from_executed_command(self):
+        Task(self.tw, description="test task", tags=['test']).save()
+        out, err, rc = self.tw.execute_command(['count'], return_all=True)
+        self.assertEqual(rc, 0)
+
+    def test_return_all_from_failed_executed_command(self):
+        Task(self.tw, description="test task", tags=['test']).save()
+        out, err, rc = self.tw.execute_command(['countinvalid'], return_all=True)
+        self.assertNotEqual(rc, 0)
+
 
 class TaskFromHookTest(TasklibTest):
 
