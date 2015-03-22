@@ -519,6 +519,10 @@ class Task(TaskResource):
         return self['status'] == six.text_type('pending')
 
     @property
+    def active(self):
+        return self['start'] is not None
+
+    @property
     def saved(self):
         return self['uuid'] is not None or self['id'] is not None
 
