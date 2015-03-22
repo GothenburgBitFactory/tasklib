@@ -318,6 +318,18 @@ class TaskTest(TasklibTest):
         self.assertTrue(now.replace(microsecond=0) <= t['end'])
         self.assertEqual(t['status'], 'deleted')
 
+    def test_started_task_active(self):
+        t = Task(self.tw, description="test task")
+        t.save()
+        t.start()
+        self.assertTrue(t.active)
+
+    def test_unstarted_task_inactive(self):
+        t = Task(self.tw, description="test task")
+        self.assertFalse(t.active)
+        t.save()
+        self.assertFalse(t.active)
+
     def test_modify_simple_attribute_without_space(self):
         t = Task(self.tw, description="test")
         t.save()
