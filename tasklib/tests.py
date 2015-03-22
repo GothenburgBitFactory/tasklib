@@ -291,13 +291,6 @@ class TaskTest(TasklibTest):
 
         self.assertRaises(Task.DeletedTask, t.done)
 
-    def test_start_completed_task(self):
-        t = Task(self.tw, description="test task")
-        t.save()
-        t.done()
-
-        self.assertRaises(Task.CompletedTask, t.start)
-
     def test_starting_task(self):
         t = Task(self.tw, description="test task")
         now = t.datetime_normalizer(datetime.datetime.now())
