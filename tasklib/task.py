@@ -22,6 +22,7 @@ VERSION_2_3_0 = six.u('2.3.0')
 VERSION_2_4_0 = six.u('2.4.0')
 VERSION_2_4_1 = six.u('2.4.1')
 VERSION_2_4_2 = six.u('2.4.2')
+VERSION_2_4_3 = six.u('2.4.3')
 
 logger = logging.getLogger(__name__)
 local_zone = tzlocal.get_localzone()
@@ -873,14 +874,17 @@ class TaskWarrior(object):
         if create and not os.path.exists(data_location):
             os.makedirs(data_location)
 
+        self.version = self._get_version()
         self.config = {
             'data.location': data_location,
             'confirmation': 'no',
             'dependency.confirmation': 'no',  # See TW-1483 or taskrc man page
             'recurrence.confirmation': 'no',  # Necessary for modifying R tasks
+            # 2.4.3 onwards supports 0 as infite bulk, otherwise set just
+            # arbitrary big number which is likely to be large enough
+            'bulk': 0 if self.version > VERSION_2_4_3 else 100000,
         }
         self.tasks = TaskQuerySet(self)
-        self.version = self._get_version()
 
     def _get_command_args(self, args, config_override={}):
         command_args = ['task', 'rc:{0}'.format(self.taskrc_location)]
