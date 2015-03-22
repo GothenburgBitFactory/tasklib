@@ -862,8 +862,7 @@ class TaskQuerySet(object):
 
 
 class TaskWarrior(object):
-    def __init__(self, data_location='~/.task', create=True, taskrc_location='~/.taskrc'):
-        data_location = os.path.expanduser(data_location)
+    def __init__(self, data_location=None, create=True, taskrc_location='~/.taskrc'):
         self.taskrc_location = os.path.expanduser(taskrc_location)
 
         # If taskrc does not exist, pass / to use defaults and avoid creating
@@ -871,12 +870,8 @@ class TaskWarrior(object):
         if not os.path.exists(self.taskrc_location):
             self.taskrc_location = '/'
 
-        if create and not os.path.exists(data_location):
-            os.makedirs(data_location)
-
         self.version = self._get_version()
         self.config = {
-            'data.location': data_location,
             'confirmation': 'no',
             'dependency.confirmation': 'no',  # See TW-1483 or taskrc man page
             'recurrence.confirmation': 'no',  # Necessary for modifying R tasks
@@ -884,6 +879,14 @@ class TaskWarrior(object):
             # arbitrary big number which is likely to be large enough
             'bulk': 0 if self.version > VERSION_2_4_3 else 100000,
         }
+
+        # Set data.location override if passed via kwarg
+        if data_location is not None:
+            data_location = os.path.expanduser(data_location)
+            if create and not os.path.exists(data_location):
+                os.makedirs(data_location)
+            self.config['data.location'] = data_location,
+
         self.tasks = TaskQuerySet(self)
 
     def _get_command_args(self, args, config_override={}):
