@@ -264,7 +264,7 @@ class SerializingObject(object):
                 # time zone at this point. Also None is a valid value too.
                 localized = value
         elif (isinstance(value, six.string_types)
-                and self.warrior.version > VERSION_2_4_0):
+                and self.warrior.version >= VERSION_2_4_0):
             # For strings, use 'task calc' to evaluate the string to datetime
             # available since TW 2.4.0
             args = value.split()
