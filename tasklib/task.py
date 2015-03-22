@@ -560,7 +560,7 @@ class Task(TaskResource):
         if self.warrior.version < VERSION_2_4_0:
             return self._data['description']
         else:
-            return "description:'{0}'".format(self._data['description'] or '')
+            return six.u("description:'{0}'").format(self._data['description'] or '')
 
     def delete(self):
         if not self.saved:
@@ -668,9 +668,9 @@ class Task(TaskResource):
             if serialized_value is '':
                 escaped_serialized_value = ''
             else:
-                escaped_serialized_value = "'{0}'".format(serialized_value)
+                escaped_serialized_value = six.u("'{0}'").format(serialized_value)
 
-            format_default = lambda: "{0}:{1}".format(field,
+            format_default = lambda: six.u("{0}:{1}").format(field,
                                                       escaped_serialized_value)
 
             format_func = getattr(self, 'format_{0}'.format(field),
@@ -744,7 +744,7 @@ class TaskFilter(SerializingObject):
             modifier = '.is' if value else '.none'
             key = key + modifier if '.' not in key else key
 
-            self.filter_params.append("{0}:{1}".format(key, value))
+            self.filter_params.append(six.u("{0}:{1}").format(key, value))
 
     def get_filter_params(self):
         return [f for f in self.filter_params if f]
@@ -899,7 +899,7 @@ class TaskWarrior(object):
         config.update(config_override)
         for item in config.items():
             command_args.append('rc.{0}={1}'.format(*item))
-        command_args.extend(map(str, args))
+        command_args.extend(map(six.text_type, args))
         return command_args
 
     def _get_version(self):
