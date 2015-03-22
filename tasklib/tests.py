@@ -851,6 +851,14 @@ class DatetimeStringTest(TasklibTest):
         self.assertEqual(due_date, t['due'])
 
     def test_filtering_with_string_datetime(self):
+        if self.tw.version < six.text_type('2.4.0'):
+            # Python2.6 does not support SkipTest. As a workaround
+            # mark the test as passed by exiting.
+            if getattr(unittest, 'SkipTest', None) is not None:
+                raise unittest.SkipTest()
+            else:
+                return
+
         t = Task(self.tw, description="test task",
                  due=datetime.datetime.now() - datetime.timedelta(0,2))
         t.save()
