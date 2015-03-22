@@ -7,6 +7,7 @@ import json
 import pytz
 import six
 import shutil
+import sys
 import tempfile
 import unittest
 
@@ -35,6 +36,9 @@ TASK_STANDARD_ATTRS = (
     'tags',
     'annotations',
 )
+
+total_seconds_2_6 = lambda x: x.microseconds / 1e6 + x.seconds + x.days * 24 * 3600
+
 
 class TasklibTest(unittest.TestCase):
 
@@ -805,8 +809,12 @@ class DatetimeStringTest(TasklibTest):
         now = local_zone.localize(datetime.datetime.now())
 
         # Assert that both times are not more than 5 seconds apart
-        self.assertTrue((now - t['due']).total_seconds() < 5)
-        self.assertTrue((t['due'] - now).total_seconds() < 5)
+        if sys.version > (2,6):
+            self.assertTrue((now - t['due']).total_seconds() < 5)
+            self.assertTrue((t['due'] - now).total_seconds() < 5)
+        else:
+            self.assertTrue(total_seconds_2_6(now - t['due']) < 5)
+            self.assertTrue(total_seconds_2_6(t['due'] - now) < 5)
 
     def test_simple_eoy_conversion(self):
         if self.tw.version < six.text_type('2.4.0'):
