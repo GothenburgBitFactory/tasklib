@@ -910,7 +910,8 @@ class TaskWarrior(object):
         stdout, stderr = [x.decode('utf-8') for x in p.communicate()]
         return stdout.strip('\n')
 
-    def execute_command(self, args, config_override={}, allow_failure=True):
+    def execute_command(self, args, config_override={}, allow_failure=True,
+                        return_all=False):
         command_args = self._get_command_args(
             args, config_override=config_override)
         logger.debug(' '.join(command_args))
@@ -923,7 +924,14 @@ class TaskWarrior(object):
             else:
                 error_msg = stdout.strip()
             raise TaskWarriorException(error_msg)
-        return stdout.rstrip().split('\n')
+
+        # Return all whole triplet only if explicitly asked for
+        if not return_all:
+            return stdout.rstrip().split('\n')
+        else:
+            return (stdout.rstrip().split('\n'),
+                    stderr.rstrip().split('\n'),
+                    p.returncode)
 
     def enforce_recurrence(self):
         # Run arbitrary report command which will trigger generation
