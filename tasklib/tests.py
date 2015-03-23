@@ -739,6 +739,7 @@ class TaskFromHookTest(TasklibTest):
         '{"description":"Buy some milk",'
         '"entry":"20141118T050231Z",'
         '"status":"pending",'
+        '"start":"20141119T152233Z",'
         '"uuid":"a360fc44-315c-4366-b70c-ea7e7520b749"}')
 
     input_modify_data = six.StringIO(input_add_data.getvalue() + '\n' +
@@ -767,7 +768,7 @@ class TaskFromHookTest(TasklibTest):
         self.assertEqual(t._original_data['status'], "pending")
         self.assertEqual(t._original_data['description'], "Buy some milk")
         self.assertEqual(set(t._modified_fields),
-                         set(['status', 'description']))
+                         set(['status', 'description', 'start']))
 
     def test_export_data(self):
         t = Task(self.tw, description="test task",
