@@ -297,7 +297,7 @@ class TaskResource(SerializingObject):
         # are not propagated.
         self._original_data = copy.deepcopy(self._data)
 
-    def _update_data(self, data, update_original=False):
+    def _update_data(self, data, update_original=False, remove_missing=False):
         """
         Low level update of the internal _data dict. Data which are coming as
         updates should already be serialized. If update_original is True, the
@@ -305,6 +305,11 @@ class TaskResource(SerializingObject):
         """
         self._data.update(dict((key, self._deserialize(key, value))
                                for key, value in data.items()))
+
+        # In certain situations, we want to treat missing keys as removals
+        if remove_missing:
+            for key in set(self._data.keys()) - set(data.keys()):
+                self._data[key] = None
 
         if update_original:
             self._original_data = copy.deepcopy(self._data)
@@ -464,7 +469,8 @@ class Task(TaskResource):
         # If this is a on-modify event, we are provided with additional
         # line of input, which provides updated data
         if modify:
-            task._update_data(json.loads(input_file.readline().strip()))
+            task._update_data(json.loads(input_file.readline().strip()),
+                              remove_missing=True)
 
         return task
 
