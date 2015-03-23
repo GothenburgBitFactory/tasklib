@@ -330,6 +330,51 @@ class TaskTest(TasklibTest):
         t.save()
         self.assertFalse(t.active)
 
+    def test_stop_completed_task(self):
+        t = Task(self.tw, description="test task")
+        t.save()
+        t.start()
+        t.done()
+
+        self.assertRaises(Task.InactiveTask, t.stop)
+
+        t = Task(self.tw, description="test task")
+        t.save()
+        t.done()
+
+        self.assertRaises(Task.InactiveTask, t.stop)
+
+    def test_stop_deleted_task(self):
+        t = Task(self.tw, description="test task")
+        t.save()
+        t.start()
+        t.delete()
+        t.stop()
+
+    def test_stop_inactive_task(self):
+        t = Task(self.tw, description="test task")
+        t.save()
+
+        self.assertRaises(Task.InactiveTask, t.stop)
+
+        t = Task(self.tw, description="test task")
+        t.save()
+        t.start()
+        t.stop()
+
+        self.assertRaises(Task.InactiveTask, t.stop)
+
+    def test_stopping_task(self):
+        t = Task(self.tw, description="test task")
+        now = t.datetime_normalizer(datetime.datetime.now())
+        t.save()
+        t.start()
+        t.stop()
+
+        self.assertEqual(t['end'], None)
+        self.assertEqual(t['status'], 'pending')
+        self.assertFalse(t.active)
+
     def test_modify_simple_attribute_without_space(self):
         t = Task(self.tw, description="test")
         t.save()
