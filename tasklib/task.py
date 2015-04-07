@@ -421,6 +421,12 @@ class Task(TaskResource):
         """
         pass
 
+    class ActiveTask(Exception):
+        """
+        Raised when the operation cannot be performed on the active task.
+        """
+        pass
+
     class InactiveTask(Exception):
         """
         Raised when the operation cannot be performed on an inactive task.
@@ -600,6 +606,8 @@ class Task(TaskResource):
             raise Task.CompletedTask("Cannot start a completed task")
         elif self.deleted:
             raise Task.DeletedTask("Deleted task cannot be started")
+        elif self.active:
+            raise Task.ActiveTask("Task is already active")
 
         self.warrior.execute_command([self['uuid'], 'start'])
 
