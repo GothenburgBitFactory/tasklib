@@ -330,6 +330,12 @@ class TaskTest(TasklibTest):
         t.save()
         self.assertFalse(t.active)
 
+    def test_start_active_task(self):
+        t = Task(self.tw, description="test task")
+        t.save()
+        t.start()
+        self.assertRaises(Task.ActiveTask, t.start)
+
     def test_stop_completed_task(self):
         t = Task(self.tw, description="test task")
         t.save()
