@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import pytz
+import re
 import six
 import sys
 import subprocess
@@ -948,6 +949,22 @@ class TaskWarrior(object):
                 stderr=subprocess.PIPE)
         stdout, stderr = [x.decode('utf-8') for x in p.communicate()]
         return stdout.strip('\n')
+
+    def get_config(self):
+        raw_output = self.execute_command(
+                ['show'],
+                config_override={'verbose': 'nothing'}
+            )
+
+        config = dict()
+        config_regex = re.compile(r'^(?P<key>[_a-z\.]+)\s+(?P<value>[^\s].+$)')
+
+        for line in raw_output:
+            match = config_regex.match(line)
+            if match:
+                config[match.group('key')] = match.group('value').strip()
+
+        return config
 
     def execute_command(self, args, config_override={}, allow_failure=True,
                         return_all=False):
