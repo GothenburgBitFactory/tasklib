@@ -957,7 +957,7 @@ class TaskWarrior(object):
             )
 
         config = dict()
-        config_regex = re.compile(r'^(?P<key>[_a-z\.]+)\s+(?P<value>[^\s].+$)')
+        config_regex = re.compile(r'^(?P<key>[^\s]+)\s+(?P<value>[^\s].+$)')
 
         for line in raw_output:
             match = config_regex.match(line)
