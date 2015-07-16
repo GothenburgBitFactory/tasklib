@@ -10,7 +10,7 @@ Older versions of taskwarrior are untested and may not work.
 Requirements
 ------------
 
-* taskwarrior_ v2.1.x or above.
+* taskwarrior_ v2.1.x or above, although newest minor release is recommended.
 
 Installation
 ------------
@@ -103,6 +103,30 @@ The following fields are deserialized into Python objects:
 Attributes should be set using the correct Python representation, which will be
 serialized into the correct format when the task is saved.
 
+Task properties
+---------------
+
+Tasklib defines several properties upon ``Task`` object, for convenience::
+
+    >>> t.save()
+    >>> t.saved
+    True
+    >>> t.pending
+    True
+    >>> t.active
+    False
+    >>> t.start()
+    >>> t.active
+    True
+    >>> t.done()
+    >>> t.completed
+    True
+    >>> t.pending
+    False
+    >>> t.delete()
+    >>> t.deleted
+    True
+
 Operations on Tasks
 -------------------
 
@@ -146,6 +170,18 @@ Switching back to the open python process::
    >>> task.refresh()
    >>> task['tags']
    ['someday']
+
+Tasks can also be started and stopped. Use ``start()`` and ``stop()``
+respectively::
+
+    >>> task.start()
+    >>> task['start']
+    datetime.datetime(2015, 7, 16, 18, 48, 28, tzinfo=<DstTzInfo 'Europe/Prague' CEST+2:00:00 DST>)
+    >>> task.stop()
+    >>> task['start']
+    >>> task.done()
+    >>> task['end']
+    datetime.datetime(2015, 7, 16, 18, 49, 2, tzinfo=<DstTzInfo 'Europe/Prague' CEST+2:00:00 DST>)
 
 
 Retrieving Tasks
@@ -342,6 +378,32 @@ are set in the same timezone:
     >>> t['due'] == now.astimezone(pytz.utc)
     True
 
+*Note*: Following behaviour is available only for TaskWarrior >= 2.4.0.
+
+There is a third approach to setting up date time values, which leverages
+the 'task calc' command. You can simply set any datetime attribute to
+any string that contains an acceptable TaskWarrior-formatted time expression::
+
+    $ task calc now + 1d
+    2015-07-17T21:17:54
+
+This syntax can be leveraged in the python interpreter as follows::
+
+    >>> t['due'] = "now + 1d"
+    >>> t['due']
+    datetime.datetime(2015, 7, 17, 21, 19, 31, tzinfo=<DstTzInfo 'Europe/Berlin' CEST+2:00:00 DST>)
+
+It can be easily seen that the string with TaskWarrior-formatted time expression
+is automatically converted to native datetime in the local time zone.
+
+For the list of acceptable formats and keywords, please consult:
+
+* http://taskwarrior.org/docs/dates.html
+* http://taskwarrior.org/docs/named_dates.html
+
+However, as each such assigment involves call to 'task calc' for conversion,
+it might cause some performance issues when assigning strings to datetime
+attributes repeatedly, in a automated manner.
 
 Working with annotations
 ------------------------
@@ -398,6 +460,26 @@ To run a custom commands, use ``execute_command()`` method of ``TaskWarrior`` ob
 You can use ``config_override`` keyword argument to specify a dictionary of configuration overrides::
 
     >>> tw.execute_command(['3', 'done'], config_override={'gc': 'off'}) # Will mark 3 as completed and it will retain its ID
+
+
+Additionally, you can use ``return_all=True`` flag, which returns
+``(stdout, sterr, return_code)`` triplet, and ``allow_failure=False``, which will
+prevent tasklib from raising an exception if the task binary returned non-zero
+return code::
+
+    >>> tw.execute_command(['invalidcommand'], allow_failure=False, return_all=True)
+    ([u''],
+     [u'Using alternate .taskrc file /home/tbabej/.taskrc',
+      u"[task next rc:/home/tbabej/.taskrc rc.recurrence.confirmation=no rc.json.array=off rc.confirmation=no rc.bulk=0 rc.dependency.confirmation=no description ~ 'invalidcommand']",
+      u'Configuration override rc.recurrence.confirmation:no',
+      u'Configuration override rc.json.array:off',
+      u'Configuration override rc.confirmation:no',
+      u'Configuration override rc.bulk:0',
+      u'Configuration override rc.dependency.confirmation:no',
+      u'No matches.',
+      u'There are local changes.  Sync required.'],
+     1)
+
 
 Setting custom configuration values
 -----------------------------------
