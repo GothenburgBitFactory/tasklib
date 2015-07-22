@@ -10,7 +10,7 @@ Older versions of taskwarrior are untested and may not work.
 Requirements
 ------------
 
-* taskwarrior_ v2.1.x or above.
+* taskwarrior_ v2.1.x or above, although newest minor release is recommended.
 
 Installation
 ------------
@@ -35,6 +35,11 @@ automatically unless ``create=False``.
 The default location is the same as taskwarrior's::
 
     >>> tw = TaskWarrior(data_location='~/.task', create=True)
+
+The ``TaskWarrior`` instance will also use your .taskrc configuration (so that
+it recognizes the same UDAs as your task binary, uses the same configuration,
+etc.). To override the location of the .taskrc, use
+``taskrc_location=~/some/different/path``.
 
 Creating Tasks
 --------------
@@ -98,6 +103,30 @@ The following fields are deserialized into Python objects:
 Attributes should be set using the correct Python representation, which will be
 serialized into the correct format when the task is saved.
 
+Task properties
+---------------
+
+Tasklib defines several properties upon ``Task`` object, for convenience::
+
+    >>> t.save()
+    >>> t.saved
+    True
+    >>> t.pending
+    True
+    >>> t.active
+    False
+    >>> t.start()
+    >>> t.active
+    True
+    >>> t.done()
+    >>> t.completed
+    True
+    >>> t.pending
+    False
+    >>> t.delete()
+    >>> t.deleted
+    True
+
 Operations on Tasks
 -------------------
 
@@ -141,6 +170,18 @@ Switching back to the open python process::
    >>> task.refresh()
    >>> task['tags']
    ['someday']
+
+Tasks can also be started and stopped. Use ``start()`` and ``stop()``
+respectively::
+
+    >>> task.start()
+    >>> task['start']
+    datetime.datetime(2015, 7, 16, 18, 48, 28, tzinfo=<DstTzInfo 'Europe/Prague' CEST+2:00:00 DST>)
+    >>> task.stop()
+    >>> task['start']
+    >>> task.done()
+    >>> task['end']
+    datetime.datetime(2015, 7, 16, 18, 49, 2, tzinfo=<DstTzInfo 'Europe/Prague' CEST+2:00:00 DST>)
 
 
 Retrieving Tasks
@@ -337,6 +378,32 @@ are set in the same timezone:
     >>> t['due'] == now.astimezone(pytz.utc)
     True
 
+*Note*: Following behaviour is available only for TaskWarrior >= 2.4.0.
+
+There is a third approach to setting up date time values, which leverages
+the 'task calc' command. You can simply set any datetime attribute to
+any string that contains an acceptable TaskWarrior-formatted time expression::
+
+    $ task calc now + 1d
+    2015-07-17T21:17:54
+
+This syntax can be leveraged in the python interpreter as follows::
+
+    >>> t['due'] = "now + 1d"
+    >>> t['due']
+    datetime.datetime(2015, 7, 17, 21, 19, 31, tzinfo=<DstTzInfo 'Europe/Berlin' CEST+2:00:00 DST>)
+
+It can be easily seen that the string with TaskWarrior-formatted time expression
+is automatically converted to native datetime in the local time zone.
+
+For the list of acceptable formats and keywords, please consult:
+
+* http://taskwarrior.org/docs/dates.html
+* http://taskwarrior.org/docs/named_dates.html
+
+However, as each such assigment involves call to 'task calc' for conversion,
+it might cause some performance issues when assigning strings to datetime
+attributes repeatedly, in a automated manner.
 
 Working with annotations
 ------------------------
@@ -394,17 +461,37 @@ You can use ``config_override`` keyword argument to specify a dictionary of conf
 
     >>> tw.execute_command(['3', 'done'], config_override={'gc': 'off'}) # Will mark 3 as completed and it will retain its ID
 
+
+Additionally, you can use ``return_all=True`` flag, which returns
+``(stdout, sterr, return_code)`` triplet, and ``allow_failure=False``, which will
+prevent tasklib from raising an exception if the task binary returned non-zero
+return code::
+
+    >>> tw.execute_command(['invalidcommand'], allow_failure=False, return_all=True)
+    ([u''],
+     [u'Using alternate .taskrc file /home/tbabej/.taskrc',
+      u"[task next rc:/home/tbabej/.taskrc rc.recurrence.confirmation=no rc.json.array=off rc.confirmation=no rc.bulk=0 rc.dependency.confirmation=no description ~ 'invalidcommand']",
+      u'Configuration override rc.recurrence.confirmation:no',
+      u'Configuration override rc.json.array:off',
+      u'Configuration override rc.confirmation:no',
+      u'Configuration override rc.bulk:0',
+      u'Configuration override rc.dependency.confirmation:no',
+      u'No matches.',
+      u'There are local changes.  Sync required.'],
+     1)
+
+
 Setting custom configuration values
 -----------------------------------
 
-By default, TaskWarrior does not use any of configuration values stored in
-your .taskrc. To see what configuration values are passed to each executed
+By default, TaskWarrior uses configuration values stored in your .taskrc.
+To see what configuration value overrides are passed to each executed
 task command, have a peek into ``config`` attribute of ``TaskWarrior`` object::
 
     >>> tw.config
     {'confirmation': 'no', 'data.location': '/home/tbabej/.task'}
 
-To pass your own configuration, you just need to update this dictionary::
+To pass your own configuration overrides, you just need to update this dictionary::
 
     >>> tw.config.update({'hooks': 'off'})  # tasklib will not trigger hooks
 
@@ -458,16 +545,15 @@ version of the task to the returned ``Task`` object. To access the original data
 Working with UDAs
 -----------------
 
-Since TaskWarrior does not read your .taskrc, you need to define any UDAs
-in the TaskWarrior's config dictionary, as described above.
+Since TaskWarrior does read your .taskrc, you need not to define any UDAs
+in the TaskWarrior's config dictionary, as described above. Suppose we have
+a estimate UDA in the .taskrc::
 
-Let us demonstrate this on the same example as in the TaskWarrior's docs::
+    uda.estimate.type = numeric
+
+We can simply filter and create tasks using the estimate UDA out of the box::
 
     >>> tw = TaskWarrior()
-    >>> tw.config.update({'uda.estimate.type': 'numeric'})
-
-Now we can filter and create tasks using the estimate UDA::
-
     >>> task = Task(tw, description="Long task", estimate=1000)
     >>> task.save()
     >>> task['id']
@@ -478,7 +564,7 @@ This is saved as UDA in the TaskWarrior::
     $ task 1 export
     {"id":1,"description":"Long task","estimate":1000, ...}
 
-As long as ``TaskWarrior``'s config is updated, we can approach UDAs as built in attributes::
+We can also speficy UDAs as arguments in the TaskFilter::
 
     >>> tw.tasks.filter(estimate=1000)
     Long task
@@ -486,9 +572,16 @@ As long as ``TaskWarrior``'s config is updated, we can approach UDAs as built in
 Syncing
 -------
 
-Syncing is not directly supported by tasklib, but it can be made to work in a similiar way
-as the UDAs. First we need to update the ``config`` dictionary by the values required for
-sync to work, and then we can run the sync command using the ``execute_command()`` method::
+If you have configurated the needed config variables in your .taskrc, syncing
+is as easy as::
+
+    >>> tw = TaskWarrior()
+    >>> tw.execute_command(['sync'])
+
+If you want to use non-standard server/credentials, you'll need to provide configuration
+overrides to the ``TaskWarrior`` instance. Update the ``config`` dictionary with the
+values you desire to override, and then we can run the sync command using
+the ``execute_command()`` method::
 
     >>> tw = TaskWarrior()
     >>> sync_config = {

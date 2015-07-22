@@ -7,6 +7,7 @@ import json
 import pytz
 import six
 import shutil
+import sys
 import tempfile
 import unittest
 
@@ -36,11 +37,14 @@ TASK_STANDARD_ATTRS = (
     'annotations',
 )
 
+total_seconds_2_6 = lambda x: x.microseconds / 1e6 + x.seconds + x.days * 24 * 3600
+
+
 class TasklibTest(unittest.TestCase):
 
     def setUp(self):
         self.tmp = tempfile.mkdtemp(dir='.')
-        self.tw = TaskWarrior(data_location=self.tmp)
+        self.tw = TaskWarrior(data_location=self.tmp, taskrc_location='/')
 
     def tearDown(self):
         shutil.rmtree(self.tmp)
@@ -287,13 +291,6 @@ class TaskTest(TasklibTest):
 
         self.assertRaises(Task.DeletedTask, t.done)
 
-    def test_start_completed_task(self):
-        t = Task(self.tw, description="test task")
-        t.save()
-        t.done()
-
-        self.assertRaises(Task.CompletedTask, t.start)
-
     def test_starting_task(self):
         t = Task(self.tw, description="test task")
         now = t.datetime_normalizer(datetime.datetime.now())
@@ -320,6 +317,69 @@ class TaskTest(TasklibTest):
 
         self.assertTrue(now.replace(microsecond=0) <= t['end'])
         self.assertEqual(t['status'], 'deleted')
+
+    def test_started_task_active(self):
+        t = Task(self.tw, description="test task")
+        t.save()
+        t.start()
+        self.assertTrue(t.active)
+
+    def test_unstarted_task_inactive(self):
+        t = Task(self.tw, description="test task")
+        self.assertFalse(t.active)
+        t.save()
+        self.assertFalse(t.active)
+
+    def test_start_active_task(self):
+        t = Task(self.tw, description="test task")
+        t.save()
+        t.start()
+        self.assertRaises(Task.ActiveTask, t.start)
+
+    def test_stop_completed_task(self):
+        t = Task(self.tw, description="test task")
+        t.save()
+        t.start()
+        t.done()
+
+        self.assertRaises(Task.InactiveTask, t.stop)
+
+        t = Task(self.tw, description="test task")
+        t.save()
+        t.done()
+
+        self.assertRaises(Task.InactiveTask, t.stop)
+
+    def test_stop_deleted_task(self):
+        t = Task(self.tw, description="test task")
+        t.save()
+        t.start()
+        t.delete()
+        t.stop()
+
+    def test_stop_inactive_task(self):
+        t = Task(self.tw, description="test task")
+        t.save()
+
+        self.assertRaises(Task.InactiveTask, t.stop)
+
+        t = Task(self.tw, description="test task")
+        t.save()
+        t.start()
+        t.stop()
+
+        self.assertRaises(Task.InactiveTask, t.stop)
+
+    def test_stopping_task(self):
+        t = Task(self.tw, description="test task")
+        now = t.datetime_normalizer(datetime.datetime.now())
+        t.save()
+        t.start()
+        t.stop()
+
+        self.assertEqual(t['end'], None)
+        self.assertEqual(t['status'], 'pending')
+        self.assertFalse(t.active)
 
     def test_modify_simple_attribute_without_space(self):
         t = Task(self.tw, description="test")
@@ -661,12 +721,31 @@ class TaskTest(TasklibTest):
         t.save()
         self.assertEqual(len(self.tw.tasks.pending()), 2)
 
+    def test_modify_number_of_tasks_at_once(self):
+        for i in range(1, 100):
+            Task(self.tw, description="test task %d" % i, tags=['test']).save()
+
+        self.tw.execute_command(['+test', 'mod', 'unified', 'description'])
+
+    def test_return_all_from_executed_command(self):
+        Task(self.tw, description="test task", tags=['test']).save()
+        out, err, rc = self.tw.execute_command(['count'], return_all=True)
+        self.assertEqual(rc, 0)
+
+    def test_return_all_from_failed_executed_command(self):
+        Task(self.tw, description="test task", tags=['test']).save()
+        out, err, rc = self.tw.execute_command(['countinvalid'],
+            return_all=True, allow_failure=False)
+        self.assertNotEqual(rc, 0)
+
+
 class TaskFromHookTest(TasklibTest):
 
     input_add_data = six.StringIO(
         '{"description":"Buy some milk",'
         '"entry":"20141118T050231Z",'
         '"status":"pending",'
+        '"start":"20141119T152233Z",'
         '"uuid":"a360fc44-315c-4366-b70c-ea7e7520b749"}')
 
     input_modify_data = six.StringIO(input_add_data.getvalue() + '\n' +
@@ -695,7 +774,7 @@ class TaskFromHookTest(TasklibTest):
         self.assertEqual(t._original_data['status'], "pending")
         self.assertEqual(t._original_data['description'], "Buy some milk")
         self.assertEqual(set(t._modified_fields),
-                         set(['status', 'description']))
+                         set(['status', 'description', 'start']))
 
     def test_export_data(self):
         t = Task(self.tw, description="test task",
@@ -740,7 +819,7 @@ class TimezoneAwareDatetimeTest(TasklibTest):
 
     def test_serialize_naive_datetime(self):
         t = Task(self.tw, description="task1", due=self.localtime_naive)
-        self.assertEqual(json.loads(t.export_data())['due'], 
+        self.assertEqual(json.loads(t.export_data())['due'],
                          self.utctime_aware.strftime(DATE_FORMAT))
 
     def test_timezone_naive_date_setitem(self):
@@ -760,7 +839,7 @@ class TimezoneAwareDatetimeTest(TasklibTest):
 
     def test_serialize_naive_date(self):
         t = Task(self.tw, description="task1", due=self.localdate_naive)
-        self.assertEqual(json.loads(t.export_data())['due'], 
+        self.assertEqual(json.loads(t.export_data())['due'],
                          self.utctime_aware.strftime(DATE_FORMAT))
 
     def test_timezone_aware_datetime_setitem(self):
@@ -780,8 +859,86 @@ class TimezoneAwareDatetimeTest(TasklibTest):
 
     def test_serialize_aware_datetime(self):
         t = Task(self.tw, description="task1", due=self.localtime_aware)
-        self.assertEqual(json.loads(t.export_data())['due'], 
+        self.assertEqual(json.loads(t.export_data())['due'],
                          self.utctime_aware.strftime(DATE_FORMAT))
+
+class DatetimeStringTest(TasklibTest):
+
+    def test_simple_now_conversion(self):
+        if self.tw.version < six.text_type('2.4.0'):
+            # Python2.6 does not support SkipTest. As a workaround
+            # mark the test as passed by exiting.
+            if getattr(unittest, 'SkipTest', None) is not None:
+                raise unittest.SkipTest()
+            else:
+                return
+
+        t = Task(self.tw, description="test task", due="now")
+        now = local_zone.localize(datetime.datetime.now())
+
+        # Assert that both times are not more than 5 seconds apart
+        if sys.version_info < (2,7):
+            self.assertTrue(total_seconds_2_6(now - t['due']) < 5)
+            self.assertTrue(total_seconds_2_6(t['due'] - now) < 5)
+        else:
+            self.assertTrue((now - t['due']).total_seconds() < 5)
+            self.assertTrue((t['due'] - now).total_seconds() < 5)
+
+    def test_simple_eoy_conversion(self):
+        if self.tw.version < six.text_type('2.4.0'):
+            # Python2.6 does not support SkipTest. As a workaround
+            # mark the test as passed by exiting.
+            if getattr(unittest, 'SkipTest', None) is not None:
+                raise unittest.SkipTest()
+            else:
+                return
+
+        t = Task(self.tw, description="test task", due="eoy")
+        now = local_zone.localize(datetime.datetime.now())
+        eoy = local_zone.localize(datetime.datetime(
+            year=now.year,
+            month=12,
+            day=31,
+            hour=23,
+            minute=59,
+            second=59
+            ))
+        self.assertEqual(eoy, t['due'])
+
+    def test_complex_eoy_conversion(self):
+        if self.tw.version < six.text_type('2.4.0'):
+            # Python2.6 does not support SkipTest. As a workaround
+            # mark the test as passed by exiting.
+            if getattr(unittest, 'SkipTest', None) is not None:
+                raise unittest.SkipTest()
+            else:
+                return
+
+        t = Task(self.tw, description="test task", due="eoy - 4 months")
+        now = local_zone.localize(datetime.datetime.now())
+        due_date = local_zone.localize(datetime.datetime(
+            year=now.year,
+            month=12,
+            day=31,
+            hour=23,
+            minute=59,
+            second=59
+            )) - datetime.timedelta(0,4 * 30 * 86400)
+        self.assertEqual(due_date, t['due'])
+
+    def test_filtering_with_string_datetime(self):
+        if self.tw.version < six.text_type('2.4.0'):
+            # Python2.6 does not support SkipTest. As a workaround
+            # mark the test as passed by exiting.
+            if getattr(unittest, 'SkipTest', None) is not None:
+                raise unittest.SkipTest()
+            else:
+                return
+
+        t = Task(self.tw, description="test task",
+                 due=datetime.datetime.now() - datetime.timedelta(0,2))
+        t.save()
+        self.assertEqual(len(self.tw.tasks.filter(due__before="now")), 1)
 
 class AnnotationTest(TasklibTest):
 
@@ -845,8 +1002,13 @@ class AnnotationTest(TasklibTest):
 class UnicodeTest(TasklibTest):
 
     def test_unicode_task(self):
-        Task(self.tw, description="†åßk").save()
+        Task(self.tw, description=six.u("†åßk")).save()
         self.tw.tasks.get()
+
+    def test_filter_by_unicode_task(self):
+        Task(self.tw, description=six.u("†åßk")).save()
+        tasks = self.tw.tasks.filter(description=six.u("†åßk"))
+        self.assertEqual(len(tasks), 1)
 
     def test_non_unicode_task(self):
         Task(self.tw, description="test task").save()

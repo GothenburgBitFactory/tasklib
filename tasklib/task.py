@@ -5,12 +5,14 @@ import json
 import logging
 import os
 import pytz
+import re
 import six
 import sys
 import subprocess
 import tzlocal
 
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
+DATE_FORMAT_CALC = '%Y-%m-%dT%H:%M:%S'
 REPR_OUTPUT_SIZE = 10
 PENDING = 'pending'
 COMPLETED = 'completed'
@@ -19,6 +21,9 @@ VERSION_2_1_0 = six.u('2.1.0')
 VERSION_2_2_0 = six.u('2.2.0')
 VERSION_2_3_0 = six.u('2.3.0')
 VERSION_2_4_0 = six.u('2.4.0')
+VERSION_2_4_1 = six.u('2.4.1')
+VERSION_2_4_2 = six.u('2.4.2')
+VERSION_2_4_3 = six.u('2.4.3')
 
 logger = logging.getLogger(__name__)
 local_zone = tzlocal.get_localzone()
@@ -85,6 +90,9 @@ class SerializingObject(object):
       - If validation or normalization fails, normalizer is expected
         to raise ValueError.
     """
+
+    def __init__(self, warrior):
+        self.warrior = warrior
 
     def _deserialize(self, key, value):
         hydrate_func = getattr(self, 'deserialize_{0}'.format(key),
@@ -248,13 +256,26 @@ class SerializingObject(object):
             # Convert to local midnight
             value_full = datetime.datetime.combine(value, datetime.time.min)
             localized = local_zone.localize(value_full)
-        elif isinstance(value, datetime.datetime) and value.tzinfo is None:
-            # Convert to localized datetime object
-            localized = local_zone.localize(value)
+        elif isinstance(value, datetime.datetime):
+            if value.tzinfo is None:
+                # Convert to localized datetime object
+                localized = local_zone.localize(value)
+            else:
+                # If the value is already localized, there is no need to change
+                # time zone at this point. Also None is a valid value too.
+                localized = value
+        elif (isinstance(value, six.string_types)
+                and self.warrior.version >= VERSION_2_4_0):
+            # For strings, use 'task calc' to evaluate the string to datetime
+            # available since TW 2.4.0
+            args = value.split()
+            result = self.warrior.execute_command(['calc'] + args)
+            naive = datetime.datetime.strptime(result[0], DATE_FORMAT_CALC)
+            localized = local_zone.localize(naive)
         else:
-            # If the value is already localized, there is no need to change
-            # time zone at this point. Also None is a valid value too.
-            localized = value
+            raise ValueError("Provided value could not be converted to "
+                             "datetime, its type is not supported: {}"
+                             .format(type(value)))
 
         return localized
 
@@ -277,7 +298,7 @@ class TaskResource(SerializingObject):
         # are not propagated.
         self._original_data = copy.deepcopy(self._data)
 
-    def _update_data(self, data, update_original=False):
+    def _update_data(self, data, update_original=False, remove_missing=False):
         """
         Low level update of the internal _data dict. Data which are coming as
         updates should already be serialized. If update_original is True, the
@@ -285,6 +306,11 @@ class TaskResource(SerializingObject):
         """
         self._data.update(dict((key, self._deserialize(key, value))
                                for key, value in data.items()))
+
+        # In certain situations, we want to treat missing keys as removals
+        if remove_missing:
+            for key in set(self._data.keys()) - set(data.keys()):
+                self._data[key] = None
 
         if update_original:
             self._original_data = copy.deepcopy(self._data)
@@ -362,6 +388,7 @@ class TaskAnnotation(TaskResource):
     def __init__(self, task, data={}):
         self.task = task
         self._load_data(data)
+        super(TaskAnnotation, self).__init__(task.warrior)
 
     def remove(self):
         self.task.remove_annotation(self)
@@ -392,6 +419,18 @@ class Task(TaskResource):
     class DeletedTask(Exception):
         """
         Raised when the operation cannot be performed on the deleted task.
+        """
+        pass
+
+    class ActiveTask(Exception):
+        """
+        Raised when the operation cannot be performed on the active task.
+        """
+        pass
+
+    class InactiveTask(Exception):
+        """
+        Raised when the operation cannot be performed on an inactive task.
         """
         pass
 
@@ -437,12 +476,13 @@ class Task(TaskResource):
         # If this is a on-modify event, we are provided with additional
         # line of input, which provides updated data
         if modify:
-            task._update_data(json.loads(input_file.readline().strip()))
+            task._update_data(json.loads(input_file.readline().strip()),
+                              remove_missing=True)
 
         return task
 
     def __init__(self, warrior, **kwargs):
-        self.warrior = warrior
+        super(Task, self).__init__(warrior)
 
         # Check that user is not able to set read-only value in __init__
         for key in kwargs.keys():
@@ -498,6 +538,10 @@ class Task(TaskResource):
         return self['status'] == six.text_type('pending')
 
     @property
+    def active(self):
+        return self['start'] is not None
+
+    @property
     def saved(self):
         return self['uuid'] is not None or self['id'] is not None
 
@@ -535,7 +579,7 @@ class Task(TaskResource):
         if self.warrior.version < VERSION_2_4_0:
             return self._data['description']
         else:
-            return "description:'{0}'".format(self._data['description'] or '')
+            return six.u("description:'{0}'").format(self._data['description'] or '')
 
     def delete(self):
         if not self.saved:
@@ -563,8 +607,25 @@ class Task(TaskResource):
             raise Task.CompletedTask("Cannot start a completed task")
         elif self.deleted:
             raise Task.DeletedTask("Deleted task cannot be started")
+        elif self.active:
+            raise Task.ActiveTask("Task is already active")
 
         self.warrior.execute_command([self['uuid'], 'start'])
+
+        # Refresh the status again, so that we have updated info stored
+        self.refresh(only_fields=['status', 'start'])
+
+    def stop(self):
+        if not self.saved:
+            raise Task.NotSaved("Task needs to be saved before it can be stopped")
+
+        # Refresh, and raise exception if task is already completed/deleted
+        self.refresh(only_fields=['status'])
+
+        if not self.active:
+            raise Task.InactiveTask("Cannot stop an inactive task")
+
+        self.warrior.execute_command([self['uuid'], 'stop'])
 
         # Refresh the status again, so that we have updated info stored
         self.refresh(only_fields=['status', 'start'])
@@ -580,6 +641,10 @@ class Task(TaskResource):
             raise Task.CompletedTask("Cannot complete a completed task")
         elif self.deleted:
             raise Task.DeletedTask("Deleted task cannot be completed")
+
+        # Older versions of TW do not stop active task at completion
+        if self.warrior.version < VERSION_2_4_0 and self.active:
+            self.stop()
 
         self.warrior.execute_command([self['uuid'], 'done'])
 
@@ -643,9 +708,9 @@ class Task(TaskResource):
             if serialized_value is '':
                 escaped_serialized_value = ''
             else:
-                escaped_serialized_value = "'{0}'".format(serialized_value)
+                escaped_serialized_value = six.u("'{0}'").format(serialized_value)
 
-            format_default = lambda: "{0}:{1}".format(field,
+            format_default = lambda: six.u("{0}:{1}").format(field,
                                                       escaped_serialized_value)
 
             format_func = getattr(self, 'format_{0}'.format(field),
@@ -688,8 +753,9 @@ class TaskFilter(SerializingObject):
     A set of parameters to filter the task list with.
     """
 
-    def __init__(self, filter_params=[]):
+    def __init__(self, warrior, filter_params=[]):
         self.filter_params = filter_params
+        super(TaskFilter, self).__init__(warrior)
 
     def add_filter(self, filter_str):
         self.filter_params.append(filter_str)
@@ -702,7 +768,7 @@ class TaskFilter(SerializingObject):
         attribute_key = key.split('.')[0]
 
         # Since this is user input, we need to normalize before we serialize
-        value = self._normalize(key, value)
+        value = self._normalize(attribute_key, value)
         value = self._serialize(attribute_key, value)
 
         # If we are filtering by uuid:, do not use uuid keyword
@@ -718,13 +784,13 @@ class TaskFilter(SerializingObject):
             modifier = '.is' if value else '.none'
             key = key + modifier if '.' not in key else key
 
-            self.filter_params.append("{0}:{1}".format(key, value))
+            self.filter_params.append(six.u("{0}:{1}").format(key, value))
 
     def get_filter_params(self):
         return [f for f in self.filter_params if f]
 
     def clone(self):
-        c = self.__class__()
+        c = self.__class__(self.warrior)
         c.filter_params = list(self.filter_params)
         return c
 
@@ -737,7 +803,7 @@ class TaskQuerySet(object):
     def __init__(self, warrior=None, filter_obj=None):
         self.warrior = warrior
         self._result_cache = None
-        self.filter_obj = filter_obj or TaskFilter()
+        self.filter_obj = filter_obj or TaskFilter(warrior)
 
     def __deepcopy__(self, memo):
         """
@@ -840,26 +906,44 @@ class TaskQuerySet(object):
 
 
 class TaskWarrior(object):
-    def __init__(self, data_location='~/.task', create=True):
-        data_location = os.path.expanduser(data_location)
-        if create and not os.path.exists(data_location):
-            os.makedirs(data_location)
+    def __init__(self, data_location=None, create=True, taskrc_location='~/.taskrc'):
+        self.taskrc_location = os.path.expanduser(taskrc_location)
+
+        # If taskrc does not exist, pass / to use defaults and avoid creating
+        # dummy .taskrc file by TaskWarrior
+        if not os.path.exists(self.taskrc_location):
+            self.taskrc_location = '/'
+
+        self.version = self._get_version()
         self.config = {
-            'data.location': os.path.expanduser(data_location),
             'confirmation': 'no',
             'dependency.confirmation': 'no',  # See TW-1483 or taskrc man page
             'recurrence.confirmation': 'no',  # Necessary for modifying R tasks
+
+            # Defaults to on since 2.4.5, we expect off during parsing
+            'json.array': 'off',
+
+            # 2.4.3 onwards supports 0 as infite bulk, otherwise set just
+            # arbitrary big number which is likely to be large enough
+            'bulk': 0 if self.version >= VERSION_2_4_3 else 100000,
         }
+
+        # Set data.location override if passed via kwarg
+        if data_location is not None:
+            data_location = os.path.expanduser(data_location)
+            if create and not os.path.exists(data_location):
+                os.makedirs(data_location)
+            self.config['data.location'] = data_location
+
         self.tasks = TaskQuerySet(self)
-        self.version = self._get_version()
 
     def _get_command_args(self, args, config_override={}):
-        command_args = ['task', 'rc:/']
+        command_args = ['task', 'rc:{0}'.format(self.taskrc_location)]
         config = self.config.copy()
         config.update(config_override)
         for item in config.items():
             command_args.append('rc.{0}={1}'.format(*item))
-        command_args.extend(map(str, args))
+        command_args.extend(map(six.text_type, args))
         return command_args
 
     def _get_version(self):
@@ -870,7 +954,24 @@ class TaskWarrior(object):
         stdout, stderr = [x.decode('utf-8') for x in p.communicate()]
         return stdout.strip('\n')
 
-    def execute_command(self, args, config_override={}, allow_failure=True):
+    def get_config(self):
+        raw_output = self.execute_command(
+                ['show'],
+                config_override={'verbose': 'nothing'}
+            )
+
+        config = dict()
+        config_regex = re.compile(r'^(?P<key>[^\s]+)\s+(?P<value>[^\s].+$)')
+
+        for line in raw_output:
+            match = config_regex.match(line)
+            if match:
+                config[match.group('key')] = match.group('value').strip()
+
+        return config
+
+    def execute_command(self, args, config_override={}, allow_failure=True,
+                        return_all=False):
         command_args = self._get_command_args(
             args, config_override=config_override)
         logger.debug(' '.join(command_args))
@@ -883,14 +984,22 @@ class TaskWarrior(object):
             else:
                 error_msg = stdout.strip()
             raise TaskWarriorException(error_msg)
-        return stdout.strip().split('\n')
+
+        # Return all whole triplet only if explicitly asked for
+        if not return_all:
+            return stdout.rstrip().split('\n')
+        else:
+            return (stdout.rstrip().split('\n'),
+                    stderr.rstrip().split('\n'),
+                    p.returncode)
 
     def enforce_recurrence(self):
         # Run arbitrary report command which will trigger generation
         # of recurrent tasks.
-        # TODO: Make a version dependant enforcement once
-        #       TW-1531 is handled
-        self.execute_command(['next'], allow_failure=False)
+
+        # Only necessary for TW up to 2.4.1, fixed in 2.4.2.
+        if self.version < VERSION_2_4_2:
+            self.execute_command(['next'], allow_failure=False)
 
     def filter_tasks(self, filter_obj):
         self.enforce_recurrence()
