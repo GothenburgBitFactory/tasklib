@@ -688,7 +688,7 @@ class Task(TaskResource):
         # Refreshing is very important here, as not only modification time
         # is updated, but arbitrary attribute may have changed due hooks
         # altering the data before saving
-        self.refresh()
+        self.refresh(after_save=True)
 
     def add_annotation(self, annotation):
         if not self.saved:
@@ -744,7 +744,7 @@ class Task(TaskResource):
 
         return args
 
-    def refresh(self, only_fields=[]):
+    def refresh(self, only_fields=[], after_save=False):
         # Raise error when trying to refresh a task that has not been saved
         if not self.saved:
             raise Task.NotSaved("Task needs to be saved to be refreshed")
@@ -755,13 +755,37 @@ class Task(TaskResource):
         args = [self['uuid'] or self['id'], 'export']
         output = self.warrior.execute_command(args)
 
-        # If more than 1 task has been matched, raise exception
-        if len(output) > 1:
-            raise TaskWarriorException(
-                "Unique identifier {0} matches multiple tasks: {1}".format(
-                    self['uuid'] or self['id'], output))
+        def valid(output):
+            return len(output) == 1 and output[0].startswith('{')
 
-        new_data = json.loads(self.warrior.execute_command(args)[0])
+        # For older TW versions attempt to uniquely locate the task
+        # using the data we have if it has been just saved.
+        # This can happen when adding a completed task on older TW versions.
+        if (not valid(output) and self.warrior.version < six.text_type(u'2.4.5')
+                and after_save):
+
+            # Make a copy, removing ID and UUID. It's most likely invalid
+            # (ID 0) if it failed to match a unique task.
+            data = copy.deepcopy(self._data)
+            data.pop('id', None)
+            data.pop('uuid', None)
+
+            taskfilter = TaskFilter(self.warrior)
+            for key, value in data.items():
+                taskfilter.add_filter_param(key, value)
+
+            output = self.warrior.execute_command(['export', '--'] +
+                taskfilter.get_filter_params())
+
+        # If more than 1 task has been matched still, raise an exception
+        if not valid(output):
+            raise TaskWarriorException(
+                "Unique identifiers {0} with description: {1} matches "
+                "multiple tasks: {2}".format(
+                self['uuid'] or self['id'], self['description'], output)
+            )
+
+        new_data = json.loads(output[0])
         if only_fields:
             to_update = dict(
                 [(k, new_data.get(k)) for k in only_fields])
