@@ -744,7 +744,7 @@ class Task(TaskResource):
 
         return args
 
-    def refresh(self, only_fields=[], after_save=False):
+    def refresh(self, only_fields=None, after_save=False):
         # Raise error when trying to refresh a task that has not been saved
         if not self.saved:
             raise Task.NotSaved("Task needs to be saved to be refreshed")
@@ -798,8 +798,8 @@ class TaskFilter(SerializingObject):
     A set of parameters to filter the task list with.
     """
 
-    def __init__(self, warrior, filter_params=[]):
-        self.filter_params = filter_params
+    def __init__(self, warrior, filter_params=None):
+        self.filter_params = filter_params or []
         super(TaskFilter, self).__init__(warrior)
 
     def add_filter(self, filter_str):
