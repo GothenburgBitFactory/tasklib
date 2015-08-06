@@ -826,8 +826,10 @@ class TaskFilter(SerializingObject):
 
             # We enforce equality match by using 'is' (or 'none') modifier
             # Without using this syntax, filter fails due to TW-1479
-            modifier = '.is' if value else '.none'
-            key = key + modifier if '.' not in key else key
+            # which is, however, fixed in 2.4.5
+            if self.warrior.version < six.text_type(u'2.5.0'):
+                modifier = '.is' if value else '.none'
+                key = key + modifier if '.' not in key else key
 
             self.filter_params.append(six.u("{0}:{1}").format(key, value))
 
