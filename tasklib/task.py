@@ -677,7 +677,13 @@ class Task(TaskResource):
                                            "task: %s" % '\n'.join(id_lines))
 
             # Circumvent the ID storage, since ID is considered read-only
-            self._data['id'] = int(id_lines[0].split(' ')[2].rstrip('.'))
+            identifier = id_lines[0].split(' ')[2].rstrip('.')
+
+            # Identifier can be either ID or UUID for completed tasks
+            try:
+                self._data['id'] = int(identifier)
+            except ValueError:
+                self._data['uuid'] = identifier
 
         # Refreshing is very important here, as not only modification time
         # is updated, but arbitrary attribute may have changed due hooks
