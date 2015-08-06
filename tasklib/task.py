@@ -24,6 +24,8 @@ VERSION_2_4_0 = six.u('2.4.0')
 VERSION_2_4_1 = six.u('2.4.1')
 VERSION_2_4_2 = six.u('2.4.2')
 VERSION_2_4_3 = six.u('2.4.3')
+VERSION_2_4_4 = six.u('2.4.4')
+VERSION_2_4_5 = six.u('2.4.5')
 
 logger = logging.getLogger(__name__)
 local_zone = tzlocal.get_localzone()
@@ -761,7 +763,7 @@ class Task(TaskResource):
         # For older TW versions attempt to uniquely locate the task
         # using the data we have if it has been just saved.
         # This can happen when adding a completed task on older TW versions.
-        if (not valid(output) and self.warrior.version < six.text_type(u'2.4.5')
+        if (not valid(output) and self.warrior.version < VERSION_2_4_4
                 and after_save):
 
             # Make a copy, removing ID and UUID. It's most likely invalid
@@ -827,7 +829,7 @@ class TaskFilter(SerializingObject):
             # We enforce equality match by using 'is' (or 'none') modifier
             # Without using this syntax, filter fails due to TW-1479
             # which is, however, fixed in 2.4.5
-            if self.warrior.version < six.text_type(u'2.5.0'):
+            if self.warrior.version < VERSION_2_4_5:
                 modifier = '.is' if value else '.none'
                 key = key + modifier if '.' not in key else key
 
