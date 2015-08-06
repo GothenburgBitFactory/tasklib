@@ -289,6 +289,14 @@ class TaskTest(TasklibTest):
                  end=datetime.datetime.now())
         t.save()
 
+    def test_add_multiple_completed_tasks(self):
+        t1 = Task(self.tw, description="test1", status="completed",
+                 end=datetime.datetime.now())
+        t2 = Task(self.tw, description="test2", status="completed",
+                 end=datetime.datetime.now())
+        t1.save()
+        t2.save()
+
     def test_complete_deleted_task(self):
         t = Task(self.tw, description="test task")
         t.save()
