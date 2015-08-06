@@ -237,8 +237,15 @@ class SerializingObject(object):
         return ','.join(task['uuid'] for task in value)
 
     def deserialize_depends(self, raw_uuids):
-        raw_uuids = raw_uuids or ''  # Convert None to empty string
-        uuids = raw_uuids.split(',')
+        raw_uuids = raw_uuids or []  # Convert None to empty list
+
+        # TW 2.4.4 encodes list of dependencies as a single string
+        if type(raw_uuids) is not list:
+            uuids = raw_uuids.split(',')
+        # TW 2.4.5 and later exports them as a list, no conversion needed
+        else:
+            uuids = raw_uuids
+
         return set(self.warrior.tasks.get(uuid=uuid) for uuid in uuids if uuid)
 
     def datetime_normalizer(self, value):
