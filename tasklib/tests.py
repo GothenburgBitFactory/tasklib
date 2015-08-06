@@ -284,6 +284,10 @@ class TaskTest(TasklibTest):
 
         self.assertRaises(Task.CompletedTask, t.start)
 
+    def test_add_completed_task(self):
+        t = Task(self.tw, description="test", status="completed", end="now")
+        t.save()
+
     def test_complete_deleted_task(self):
         t = Task(self.tw, description="test task")
         t.save()
