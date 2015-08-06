@@ -753,6 +753,14 @@ class Task(TaskResource):
         # of newly saved tasks. Any other place in the code is fine
         # with using UUID only.
         args = [self['uuid'] or self['id'], 'export']
+        output = self.warrior.execute_command(args)
+
+        # If more than 1 task has been matched, raise exception
+        if len(output) > 1:
+            raise TaskWarriorException(
+                "Unique identifier {0} matches multiple tasks: {1}".format(
+                    self['uuid'] or self['id'], output))
+
         new_data = json.loads(self.warrior.execute_command(args)[0])
         if only_fields:
             to_update = dict(
