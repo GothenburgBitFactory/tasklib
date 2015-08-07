@@ -763,7 +763,7 @@ class Task(TaskResource):
         # For older TW versions attempt to uniquely locate the task
         # using the data we have if it has been just saved.
         # This can happen when adding a completed task on older TW versions.
-        if (not valid(output) and self.warrior.version < VERSION_2_4_4
+        if (not valid(output) and self.warrior.version < VERSION_2_4_5
                 and after_save):
 
             # Make a copy, removing ID and UUID. It's most likely invalid
