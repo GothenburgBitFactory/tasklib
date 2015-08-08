@@ -394,9 +394,9 @@ class TaskResource(SerializingObject):
 class TaskAnnotation(TaskResource):
     read_only_fields = ['entry', 'description']
 
-    def __init__(self, task, data={}):
+    def __init__(self, task, data=None):
         self.task = task
-        self._load_data(data)
+        self._load_data(data or dict())
         super(TaskAnnotation, self).__init__(task.warrior)
 
     def remove(self):
@@ -986,10 +986,10 @@ class TaskWarrior(object):
 
         self.tasks = TaskQuerySet(self)
 
-    def _get_command_args(self, args, config_override={}):
+    def _get_command_args(self, args, config_override=None):
         command_args = ['task', 'rc:{0}'.format(self.taskrc_location)]
         config = self.config.copy()
-        config.update(config_override)
+        config.update(config_override or dict())
         for item in config.items():
             command_args.append('rc.{0}={1}'.format(*item))
         command_args.extend(map(six.text_type, args))
@@ -1019,7 +1019,7 @@ class TaskWarrior(object):
 
         return config
 
-    def execute_command(self, args, config_override={}, allow_failure=True,
+    def execute_command(self, args, config_override=None, allow_failure=True,
                         return_all=False):
         command_args = self._get_command_args(
             args, config_override=config_override)
