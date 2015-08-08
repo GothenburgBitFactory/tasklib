@@ -159,6 +159,37 @@ class TaskWarrior(object):
                     raise TaskWarriorException('Invalid JSON: %s' % data)
         return tasks
 
+    def save_task(self, task):
+        """Save a task into TaskWarrior database using add/modify call"""
+
+        args = [task['uuid'], 'modify'] if task.saved else ['add']
+        args.extend(task._get_modified_fields_as_args())
+        output = self.execute_command(args)
+
+        # Parse out the new ID, if the task is being added for the first time
+        if not task.saved:
+            id_lines = [l for l in output if l.startswith('Created task ')]
+
+            # Complain loudly if it seems that more tasks were created
+            # Should not happen
+            if len(id_lines) != 1 or len(id_lines[0].split(' ')) != 3:
+                raise TaskWarriorException("Unexpected output when creating "
+                                           "task: %s" % '\n'.join(id_lines))
+
+            # Circumvent the ID storage, since ID is considered read-only
+            identifier = id_lines[0].split(' ')[2].rstrip('.')
+
+            # Identifier can be either ID or UUID for completed tasks
+            try:
+                task._data['id'] = int(identifier)
+            except ValueError:
+                task._data['uuid'] = identifier
+
+        # Refreshing is very important here, as not only modification time
+        # is updated, but arbitrary attribute may have changed due hooks
+        # altering the data before saving
+        task.refresh(after_save=True)
+
     def merge_with(self, path, push=False):
         path = path.rstrip('/') + '/'
         self.execute_command(['merge', path], config_override={

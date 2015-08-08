@@ -650,33 +650,8 @@ class Task(TaskResource):
         if self.saved and not self.modified:
             return
 
-        args = [self['uuid'], 'modify'] if self.saved else ['add']
-        args.extend(self._get_modified_fields_as_args())
-        output = self.warrior.execute_command(args)
-
-        # Parse out the new ID, if the task is being added for the first time
-        if not self.saved:
-            id_lines = [l for l in output if l.startswith('Created task ')]
-
-            # Complain loudly if it seems that more tasks were created
-            # Should not happen
-            if len(id_lines) != 1 or len(id_lines[0].split(' ')) != 3:
-                raise TaskWarriorException("Unexpected output when creating "
-                                           "task: %s" % '\n'.join(id_lines))
-
-            # Circumvent the ID storage, since ID is considered read-only
-            identifier = id_lines[0].split(' ')[2].rstrip('.')
-
-            # Identifier can be either ID or UUID for completed tasks
-            try:
-                self._data['id'] = int(identifier)
-            except ValueError:
-                self._data['uuid'] = identifier
-
-        # Refreshing is very important here, as not only modification time
-        # is updated, but arbitrary attribute may have changed due hooks
-        # altering the data before saving
-        self.refresh(after_save=True)
+        # All the actual work is done by the backend
+        self.backend.save_task(self)
 
     def add_annotation(self, annotation):
         if not self.saved:
