@@ -55,6 +55,14 @@ class Backend(object):
         pass
 
     @abc.abstractmethod
+    def annotate_task(self, task, annotation):
+        pass
+
+    @abc.abstractmethod
+    def denotate_task(self, task, annotation):
+        pass
+
+    @abc.abstractmethod
     def sync(self):
         """Syncs the backend database with the taskd server"""
         pass
