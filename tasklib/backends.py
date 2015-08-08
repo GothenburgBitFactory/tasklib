@@ -22,7 +22,10 @@ VERSION_2_4_5 = six.u('2.4.5')
 
 class Backend(object):
 
-    filter_class = TaskWarriorFilter
+    @abc.abstractproperty
+    def filter_class(self):
+        """Returns the TaskFilter class used by this backend"""
+        pass
 
     @abc.abstractmethod
     def filter_tasks(self, filter_obj):
@@ -207,6 +210,10 @@ class TaskWarrior(object):
             raise ValueError("Provided value could not be converted to "
                              "datetime, its type is not supported: {}"
                              .format(type(value)))
+
+    @property
+    def filter_class(self):
+        return TaskWarriorFilter
 
     # Public interface
 
