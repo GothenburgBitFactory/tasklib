@@ -64,7 +64,7 @@ class TaskWarriorFilter(TaskFilter, SerializingObject):
             # We enforce equality match by using 'is' (or 'none') modifier
             # Without using this syntax, filter fails due to TW-1479
             # which is, however, fixed in 2.4.5
-            if self.warrior.version < VERSION_2_4_5:
+            if self.warrior.version < warrior.VERSION_2_4_5:
                 modifier = '.is' if value else '.none'
                 key = key + modifier if '.' not in key else key
 

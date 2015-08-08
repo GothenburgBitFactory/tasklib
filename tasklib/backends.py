@@ -13,16 +13,6 @@ from .serializing import local_zone
 
 DATE_FORMAT_CALC = '%Y-%m-%dT%H:%M:%S'
 
-VERSION_2_1_0 = six.u('2.1.0')
-VERSION_2_2_0 = six.u('2.2.0')
-VERSION_2_3_0 = six.u('2.3.0')
-VERSION_2_4_0 = six.u('2.4.0')
-VERSION_2_4_1 = six.u('2.4.1')
-VERSION_2_4_2 = six.u('2.4.2')
-VERSION_2_4_3 = six.u('2.4.3')
-VERSION_2_4_4 = six.u('2.4.4')
-VERSION_2_4_5 = six.u('2.4.5')
-
 logger = logging.getLogger(__name__)
 
 class Backend(object):
@@ -91,6 +81,17 @@ class TaskWarriorException(Exception):
 
 
 class TaskWarrior(object):
+
+    VERSION_2_1_0 = six.u('2.1.0')
+    VERSION_2_2_0 = six.u('2.2.0')
+    VERSION_2_3_0 = six.u('2.3.0')
+    VERSION_2_4_0 = six.u('2.4.0')
+    VERSION_2_4_1 = six.u('2.4.1')
+    VERSION_2_4_2 = six.u('2.4.2')
+    VERSION_2_4_3 = six.u('2.4.3')
+    VERSION_2_4_4 = six.u('2.4.4')
+    VERSION_2_4_5 = six.u('2.4.5')
+
     def __init__(self, data_location=None, create=True, taskrc_location='~/.taskrc'):
         self.taskrc_location = os.path.expanduser(taskrc_location)
 
@@ -110,7 +111,7 @@ class TaskWarrior(object):
 
             # 2.4.3 onwards supports 0 as infite bulk, otherwise set just
             # arbitrary big number which is likely to be large enough
-            'bulk': 0 if self.version >= VERSION_2_4_3 else 100000,
+            'bulk': 0 if self.version >= self.VERSION_2_4_3 else 100000,
         }
 
         # Set data.location override if passed via kwarg
@@ -197,14 +198,14 @@ class TaskWarrior(object):
     def format_description(self, task):
         # Task version older than 2.4.0 ignores first word of the
         # task description if description: prefix is used
-        if self.version < VERSION_2_4_0:
+        if self.version < self.VERSION_2_4_0:
             return task._data['description']
         else:
             return six.u("description:'{0}'").format(task._data['description'] or '')
 
     def convert_datetime_string(self, value):
 
-        if self.version >= VERSION_2_4_0:
+        if self.version >= self.VERSION_2_4_0:
             # For strings, use 'task calc' to evaluate the string to datetime
             # available since TW 2.4.0
             args = value.split()
@@ -266,7 +267,7 @@ class TaskWarrior(object):
         # of recurrent tasks.
 
         # Only necessary for TW up to 2.4.1, fixed in 2.4.2.
-        if self.version < VERSION_2_4_2:
+        if self.version < self.VERSION_2_4_2:
             self.execute_command(['next'], allow_failure=False)
 
     def merge_with(self, path, push=False):
@@ -337,7 +338,7 @@ class TaskWarrior(object):
 
     def complete_task(self, task):
         # Older versions of TW do not stop active task at completion
-        if self.version < VERSION_2_4_0 and task.active:
+        if self.version < self.VERSION_2_4_0 and task.active:
             task.stop()
 
         self.execute_command([task['uuid'], 'done'])
@@ -363,7 +364,7 @@ class TaskWarrior(object):
         # For older TW versions attempt to uniquely locate the task
         # using the data we have if it has been just saved.
         # This can happen when adding a completed task on older TW versions.
-        if (not valid(output) and self.version < VERSION_2_4_5
+        if (not valid(output) and self.version < self.VERSION_2_4_5
                 and after_save):
 
             # Make a copy, removing ID and UUID. It's most likely invalid
