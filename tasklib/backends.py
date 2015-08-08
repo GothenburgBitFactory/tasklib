@@ -272,3 +272,5 @@ class TaskWarrior(object):
 
         return json.loads(output[0])
 
+    def sync(self):
+        self.execute_command(['sync'])
