@@ -4,6 +4,7 @@ import os
 import re
 import subprocess
 
+from tasklib.task import TaskQuerySet
 from tasklib.filters import TaskWarriorFilter
 from tasklib.serializing import local_zone
 
