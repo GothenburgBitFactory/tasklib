@@ -25,8 +25,8 @@ class SerializingObject(object):
         to raise ValueError.
     """
 
-    def __init__(self, warrior):
-        self.warrior = warrior
+    def __init__(self, backend):
+        self.backend = backend
 
     def _deserialize(self, key, value):
         hydrate_func = getattr(self, 'deserialize_{0}'.format(key),
@@ -180,7 +180,7 @@ class SerializingObject(object):
         else:
             uuids = raw_uuids
 
-        return set(self.warrior.tasks.get(uuid=uuid) for uuid in uuids if uuid)
+        return set(self.backend.tasks.get(uuid=uuid) for uuid in uuids if uuid)
 
     def datetime_normalizer(self, value):
         """
@@ -205,14 +205,8 @@ class SerializingObject(object):
                 # If the value is already localized, there is no need to change
                 # time zone at this point. Also None is a valid value too.
                 localized = value
-        elif (isinstance(value, six.string_types)
-                and self.warrior.version >= VERSION_2_4_0):
-            # For strings, use 'task calc' to evaluate the string to datetime
-            # available since TW 2.4.0
-            args = value.split()
-            result = self.warrior.execute_command(['calc'] + args)
-            naive = datetime.datetime.strptime(result[0], DATE_FORMAT_CALC)
-            localized = local_zone.localize(naive)
+        elif isinstance(value, six.string_types):
+            localized = self.backend.convert_datetime_string(value)
         else:
             raise ValueError("Provided value could not be converted to "
                              "datetime, its type is not supported: {}"

@@ -67,6 +67,13 @@ class Backend(object):
         """Syncs the backend database with the taskd server"""
         pass
 
+    def convert_datetime_string(self, value):
+        """
+        Converts TW syntax datetime string to a localized datetime
+        object. This method is not mandatory.
+        """
+        raise NotImplemented
+
 
 class TaskWarriorException(Exception):
     pass
@@ -184,6 +191,19 @@ class TaskWarrior(object):
         else:
             return six.u("description:'{0}'").format(task._data['description'] or '')
 
+    def convert_datetime_string(self, value):
+
+        if self.version >= VERSION_2_4_0:
+            # For strings, use 'task calc' to evaluate the string to datetime
+            # available since TW 2.4.0
+            args = value.split()
+            result = self.execute_command(['calc'] + args)
+            naive = datetime.datetime.strptime(result[0], DATE_FORMAT_CALC)
+            localized = local_zone.localize(naive)
+        else:
+            raise ValueError("Provided value could not be converted to "
+                             "datetime, its type is not supported: {}"
+                             .format(type(value)))
 
     # Public interface
 
