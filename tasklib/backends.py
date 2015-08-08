@@ -121,6 +121,43 @@ class TaskWarrior(object):
         stdout, stderr = [x.decode('utf-8') for x in p.communicate()]
         return stdout.strip('\n')
 
+    def _get_modified_task_fields_as_args(self, task):
+        args = []
+
+        def add_field(field):
+            # Add the output of format_field method to args list (defaults to
+            # field:value)
+            serialized_value = task._serialize(field, task._data[field])
+
+            # Empty values should not be enclosed in quotation marks, see
+            # TW-1510
+            if serialized_value is '':
+                escaped_serialized_value = ''
+            else:
+                escaped_serialized_value = six.u("'{0}'").format(serialized_value)
+
+            format_default = lambda: six.u("{0}:{1}").format(field,
+                                                      escaped_serialized_value)
+
+            format_func = getattr(task, 'format_{0}'.format(field),
+                                  format_default)
+
+            args.append(format_func())
+
+        # If we're modifying saved task, simply pass on all modified fields
+        if task.saved:
+            for field in task._modified_fields:
+                add_field(field)
+        # For new tasks, pass all fields that make sense
+        else:
+            for field in task._data.keys():
+                if field in task.read_only_fields:
+                    continue
+                add_field(field)
+
+        return args
+
+
     def get_config(self):
         raw_output = self.execute_command(
                 ['show'],
@@ -198,7 +235,7 @@ class TaskWarrior(object):
         """Save a task into TaskWarrior database using add/modify call"""
 
         args = [task['uuid'], 'modify'] if task.saved else ['add']
-        args.extend(task._get_modified_fields_as_args())
+        args.extend(self._get_modified_task_fields_as_args(task))
         output = self.execute_command(args)
 
         # Parse out the new ID, if the task is being added for the first time

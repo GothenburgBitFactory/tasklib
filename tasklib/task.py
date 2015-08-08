@@ -666,42 +666,6 @@ class Task(TaskResource):
         self.backend.denotate_task(self, annotation)
         self.refresh(only_fields=['annotations'])
 
-    def _get_modified_fields_as_args(self):
-        args = []
-
-        def add_field(field):
-            # Add the output of format_field method to args list (defaults to
-            # field:value)
-            serialized_value = self._serialize(field, self._data[field])
-
-            # Empty values should not be enclosed in quotation marks, see
-            # TW-1510
-            if serialized_value is '':
-                escaped_serialized_value = ''
-            else:
-                escaped_serialized_value = six.u("'{0}'").format(serialized_value)
-
-            format_default = lambda: six.u("{0}:{1}").format(field,
-                                                      escaped_serialized_value)
-
-            format_func = getattr(self, 'format_{0}'.format(field),
-                                  format_default)
-
-            args.append(format_func())
-
-        # If we're modifying saved task, simply pass on all modified fields
-        if self.saved:
-            for field in self._modified_fields:
-                add_field(field)
-        # For new tasks, pass all fields that make sense
-        else:
-            for field in self._data.keys():
-                if field in self.read_only_fields:
-                    continue
-                add_field(field)
-
-        return args
-
     def refresh(self, only_fields=None, after_save=False):
         # Raise error when trying to refresh a task that has not been saved
         if not self.saved:
