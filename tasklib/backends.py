@@ -241,6 +241,14 @@ class TaskWarrior(object):
 
         self.execute_command([task['uuid'], 'done'])
 
+    def annotate_task(self, task, annotation):
+        args = [task['uuid'], 'annotate', annotation]
+        self.execute_command(args)
+
+    def denotate_task(self, task, annotation):
+        args = [task['uuid'], 'denotate', annotation]
+        self.execute_command(args)
+
     def refresh_task(self, task, after_save=False):
         # We need to use ID as backup for uuid here for the refreshes
         # of newly saved tasks. Any other place in the code is fine

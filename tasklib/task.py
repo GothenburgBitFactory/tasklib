@@ -653,8 +653,7 @@ class Task(TaskResource):
         if not self.saved:
             raise Task.NotSaved("Task needs to be saved to add annotation")
 
-        args = [self['uuid'], 'annotate', annotation]
-        self.warrior.execute_command(args)
+        self.backend.annotate_task(self, annotation)
         self.refresh(only_fields=['annotations'])
 
     def remove_annotation(self, annotation):
@@ -663,8 +662,8 @@ class Task(TaskResource):
 
         if isinstance(annotation, TaskAnnotation):
             annotation = annotation['description']
-        args = [self['uuid'], 'denotate', annotation]
-        self.warrior.execute_command(args)
+
+        self.backend.denotate_task(self, annotation)
         self.refresh(only_fields=['annotations'])
 
     def _get_modified_fields_as_args(self):
