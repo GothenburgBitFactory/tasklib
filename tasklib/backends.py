@@ -43,6 +43,14 @@ class Backend(object):
         pass
 
     @abc.abstractmethod
+    def refresh_task(self, task):
+        """
+        Refreshes the given task. Returns new data dict with serialized
+        attributes.
+        """
+        pass
+
+    @abc.abstractmethod
     def sync(self):
         """Syncs the backend database with the taskd server"""
         pass
