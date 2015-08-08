@@ -54,7 +54,7 @@ class ReadOnlyDictView(object):
 
 class SerializingObject(object):
     """
-    Common ancestor for TaskResource & TaskFilter, since they both
+    Common ancestor for TaskResource & TaskWarriorFilter, since they both
     need to serialize arguments.
 
     Serializing method should hold the following contract:
@@ -661,7 +661,7 @@ class TaskQuerySet(object):
     def __init__(self, warrior=None, filter_obj=None):
         self.warrior = warrior
         self._result_cache = None
-        self.filter_obj = filter_obj or TaskFilter(warrior)
+        self.filter_obj = filter_obj or TaskWarriorFilter(warrior)
 
     def __deepcopy__(self, memo):
         """

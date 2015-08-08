@@ -4,7 +4,7 @@ import os
 import re
 import subprocess
 
-from tasklib.task import TaskFilter
+from tasklib.filters import TaskWarriorFilter
 
 VERSION_2_1_0 = six.u('2.1.0')
 VERSION_2_2_0 = six.u('2.2.0')
@@ -19,7 +19,7 @@ VERSION_2_4_5 = six.u('2.4.5')
 
 class Backend(object):
 
-    filter_class = TaskFilter
+    filter_class = TaskWarriorFilter
 
     @abc.abstractmethod
     def filter_tasks(self, filter_obj):

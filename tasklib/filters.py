@@ -1,7 +1,7 @@
 from tasklib.serializing import SerializingObject
 
 
-class TaskFilter(SerializingObject):
+class TaskWarriorFilter(SerializingObject):
     """
     A set of parameters to filter the task list with.
     """
