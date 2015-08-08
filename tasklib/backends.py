@@ -1,12 +1,14 @@
 import abc
+import datetime
 import json
 import os
 import re
+import six
 import subprocess
 
-from tasklib.task import TaskQuerySet
-from tasklib.filters import TaskWarriorFilter
-from tasklib.serializing import local_zone
+from .task import Task, TaskQuerySet
+from .filters import TaskWarriorFilter
+from .serializing import local_zone
 
 DATE_FORMAT_CALC = '%Y-%m-%dT%H:%M:%S'
 

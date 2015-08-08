@@ -1,5 +1,6 @@
 import abc
-from tasklib.serializing import SerializingObject
+import six
+from .serializing import SerializingObject
 
 
 class TaskFilter(object):

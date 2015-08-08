@@ -11,7 +11,9 @@ import sys
 import tempfile
 import unittest
 
-from .task import TaskWarrior, Task, ReadOnlyDictView, local_zone, DATE_FORMAT
+from .backends import TaskWarrior
+from .task import Task, ReadOnlyDictView
+from .serializing import DATE_FORMAT, local_zone
 
 # http://taskwarrior.org/docs/design/task.html , Section: The Attributes
 TASK_STANDARD_ATTRS = (

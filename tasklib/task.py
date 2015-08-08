@@ -1,14 +1,14 @@
 from __future__ import print_function
 import copy
 import datetime
+import importlib
 import json
 import logging
 import os
 import six
 import sys
 
-from backends import TaskWarrior, TaskWarriorException
-from serializing import SerializingObject
+from .serializing import SerializingObject
 
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
 REPR_OUTPUT_SIZE = 10
@@ -225,8 +225,9 @@ class Task(TaskResource):
 
         # Create the TaskWarrior instance if none passed
         if warrior is None:
+            backends = importlib.import_module('.backends')
             hook_parent_dir = os.path.dirname(os.path.dirname(sys.argv[0]))
-            warrior = TaskWarrior(data_location=hook_parent_dir)
+            warrior = backends.TaskWarrior(data_location=hook_parent_dir)
 
         # TaskWarrior instance is set to None
         task = cls(warrior)
