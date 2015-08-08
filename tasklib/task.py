@@ -637,11 +637,7 @@ class Task(TaskResource):
         elif self.deleted:
             raise Task.DeletedTask("Deleted task cannot be completed")
 
-        # Older versions of TW do not stop active task at completion
-        if self.warrior.version < VERSION_2_4_0 and self.active:
-            self.stop()
-
-        self.warrior.execute_command([self['uuid'], 'done'])
+        self.backend.complete_task(self)
 
         # Refresh the status again, so that we have updated info stored
         self.refresh(only_fields=['status', 'start', 'end'])

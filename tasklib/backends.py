@@ -213,3 +213,11 @@ class TaskWarrior(object):
 
     def stop_task(self, task):
         self.execute_command([task['uuid'], 'stop'])
+
+    def complete_task(self, task):
+        # Older versions of TW do not stop active task at completion
+        if self.version < VERSION_2_4_0 and task.active:
+            task.stop()
+
+        self.execute_command([task['uuid'], 'done'])
+
