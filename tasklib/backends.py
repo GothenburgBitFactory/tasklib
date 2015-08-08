@@ -144,6 +144,17 @@ class TaskWarrior(object):
         if self.version < VERSION_2_4_2:
             self.execute_command(['next'], allow_failure=False)
 
+    def merge_with(self, path, push=False):
+        path = path.rstrip('/') + '/'
+        self.execute_command(['merge', path], config_override={
+            'merge.autopush': 'yes' if push else 'no',
+        })
+
+    def undo(self):
+        self.execute_command(['undo'])
+
+    # Backend interface implementation
+
     def filter_tasks(self, filter_obj):
         self.enforce_recurrence()
         args = ['export', '--'] + filter_obj.get_filter_params()
@@ -190,11 +201,3 @@ class TaskWarrior(object):
         # altering the data before saving
         task.refresh(after_save=True)
 
-    def merge_with(self, path, push=False):
-        path = path.rstrip('/') + '/'
-        self.execute_command(['merge', path], config_override={
-            'merge.autopush': 'yes' if push else 'no',
-        })
-
-    def undo(self):
-        self.execute_command(['undo'])
