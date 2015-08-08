@@ -1,7 +1,35 @@
+import abc
 from tasklib.serializing import SerializingObject
 
 
-class TaskWarriorFilter(SerializingObject):
+class TaskFilter(object):
+    """
+    Abstract base class that defines interface of a TaskFilter.
+    """
+
+    @abc.abstractmethod
+    def add_filter(self, arg):
+        """
+        Processes an non-keyword filter.
+        """
+        pass
+
+    @abc.abstractmethod
+    def add_filter_param(self, key, value):
+        """
+        Processes a keyword filter.
+        """
+        pass
+
+    @abc.abstractmethod
+    def clone(self):
+        """
+        Returns a new deep copy of itself.
+        """
+        pass
+
+
+class TaskWarriorFilter(TaskFilter, SerializingObject):
     """
     A set of parameters to filter the task list with.
     """
