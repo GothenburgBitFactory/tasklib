@@ -427,7 +427,7 @@ class TaskQuerySet(object):
     def __init__(self, warrior=None, filter_obj=None):
         self.warrior = warrior
         self._result_cache = None
-        self.filter_obj = filter_obj or TaskWarriorFilter(warrior)
+        self.filter_obj = filter_obj or self.warrior.filter_class(warrior)
 
     def __deepcopy__(self, memo):
         """
