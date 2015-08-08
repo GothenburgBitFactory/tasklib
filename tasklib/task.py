@@ -708,43 +708,8 @@ class Task(TaskResource):
         if not self.saved:
             raise Task.NotSaved("Task needs to be saved to be refreshed")
 
-        # We need to use ID as backup for uuid here for the refreshes
-        # of newly saved tasks. Any other place in the code is fine
-        # with using UUID only.
-        args = [self['uuid'] or self['id'], 'export']
-        output = self.warrior.execute_command(args)
+        new_data = self.backend.refresh_task(self, after_save=after_save)
 
-        def valid(output):
-            return len(output) == 1 and output[0].startswith('{')
-
-        # For older TW versions attempt to uniquely locate the task
-        # using the data we have if it has been just saved.
-        # This can happen when adding a completed task on older TW versions.
-        if (not valid(output) and self.warrior.version < VERSION_2_4_5
-                and after_save):
-
-            # Make a copy, removing ID and UUID. It's most likely invalid
-            # (ID 0) if it failed to match a unique task.
-            data = copy.deepcopy(self._data)
-            data.pop('id', None)
-            data.pop('uuid', None)
-
-            taskfilter = TaskFilter(self.warrior)
-            for key, value in data.items():
-                taskfilter.add_filter_param(key, value)
-
-            output = self.warrior.execute_command(['export', '--'] +
-                taskfilter.get_filter_params())
-
-        # If more than 1 task has been matched still, raise an exception
-        if not valid(output):
-            raise TaskWarriorException(
-                "Unique identifiers {0} with description: {1} matches "
-                "multiple tasks: {2}".format(
-                self['uuid'] or self['id'], self['description'], output)
-            )
-
-        new_data = json.loads(output[0])
         if only_fields:
             to_update = dict(
                 [(k, new_data.get(k)) for k in only_fields])

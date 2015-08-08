@@ -1,4 +1,5 @@
 import abc
+import json
 import os
 import re
 import subprocess
@@ -43,7 +44,7 @@ class Backend(object):
         pass
 
     @abc.abstractmethod
-    def refresh_task(self, task):
+    def refresh_task(self, task, after_save=False):
         """
         Refreshes the given task. Returns new data dict with serialized
         attributes.
@@ -228,4 +229,43 @@ class TaskWarrior(object):
             task.stop()
 
         self.execute_command([task['uuid'], 'done'])
+
+    def refresh_task(self, task, after_save=False):
+        # We need to use ID as backup for uuid here for the refreshes
+        # of newly saved tasks. Any other place in the code is fine
+        # with using UUID only.
+        args = [task['uuid'] or task['id'], 'export']
+        output = self.execute_command(args)
+
+        def valid(output):
+            return len(output) == 1 and output[0].startswith('{')
+
+        # For older TW versions attempt to uniquely locate the task
+        # using the data we have if it has been just saved.
+        # This can happen when adding a completed task on older TW versions.
+        if (not valid(output) and self.version < VERSION_2_4_5
+                and after_save):
+
+            # Make a copy, removing ID and UUID. It's most likely invalid
+            # (ID 0) if it failed to match a unique task.
+            data = copy.deepcopy(task._data)
+            data.pop('id', None)
+            data.pop('uuid', None)
+
+            taskfilter = TaskFilter(self)
+            for key, value in data.items():
+                taskfilter.add_filter_param(key, value)
+
+            output = self.execute_command(['export', '--'] +
+                taskfilter.get_filter_params())
+
+        # If more than 1 task has been matched still, raise an exception
+        if not valid(output):
+            raise TaskWarriorException(
+                "Unique identifiers {0} with description: {1} matches "
+                "multiple tasks: {2}".format(
+                task['uuid'] or task['id'], task['description'], output)
+            )
+
+        return json.loads(output[0])
 
