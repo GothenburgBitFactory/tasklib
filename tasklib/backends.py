@@ -1,6 +1,7 @@
 import abc
 import datetime
 import json
+import logging
 import os
 import re
 import six
@@ -22,6 +23,7 @@ VERSION_2_4_3 = six.u('2.4.3')
 VERSION_2_4_4 = six.u('2.4.4')
 VERSION_2_4_5 = six.u('2.4.5')
 
+logger = logging.getLogger(__name__)
 
 class Backend(object):
 
