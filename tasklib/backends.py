@@ -4,6 +4,7 @@ import os
 import re
 import subprocess
 
+from tasklib.task import TaskFilter
 
 VERSION_2_1_0 = six.u('2.1.0')
 VERSION_2_2_0 = six.u('2.2.0')
@@ -17,6 +18,8 @@ VERSION_2_4_5 = six.u('2.4.5')
 
 
 class Backend(object):
+
+    filter_class = TaskFilter
 
     @abc.abstractmethod
     def filter_tasks(self, filter_obj):
@@ -252,7 +255,7 @@ class TaskWarrior(object):
             data.pop('id', None)
             data.pop('uuid', None)
 
-            taskfilter = TaskFilter(self)
+            taskfilter = self.filter_class(self)
             for key, value in data.items():
                 taskfilter.add_filter_param(key, value)
 
