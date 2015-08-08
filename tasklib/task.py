@@ -9,7 +9,7 @@ import six
 import sys
 import tzlocal
 
-from backends import TaskWarrior
+from backends import TaskWarrior, TaskWarriorException
 
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
 DATE_FORMAT_CALC = '%Y-%m-%dT%H:%M:%S'
@@ -19,10 +19,6 @@ COMPLETED = 'completed'
 
 logger = logging.getLogger(__name__)
 local_zone = tzlocal.get_localzone()
-
-
-class TaskWarriorException(Exception):
-    pass
 
 
 class ReadOnlyDictView(object):

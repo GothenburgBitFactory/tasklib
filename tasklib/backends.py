@@ -44,6 +44,10 @@ class Backend(object):
         pass
 
 
+class TaskWarriorException(Exception):
+    pass
+
+
 class TaskWarrior(object):
     def __init__(self, data_location=None, create=True, taskrc_location='~/.taskrc'):
         self.taskrc_location = os.path.expanduser(taskrc_location)
