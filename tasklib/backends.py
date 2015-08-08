@@ -204,3 +204,8 @@ class TaskWarrior(object):
     def delete_task(self, task):
         self.execute_command([task['uuid'], 'delete'])
 
+    def start_task(self, task):
+        self.execute_command([task['uuid'], 'start'])
+
+    def stop_task(self, task):
+        self.execute_command([task['uuid'], 'stop'])

@@ -605,7 +605,7 @@ class Task(TaskResource):
         elif self.active:
             raise Task.ActiveTask("Task is already active")
 
-        self.warrior.execute_command([self['uuid'], 'start'])
+        self.backend.start_task(self)
 
         # Refresh the status again, so that we have updated info stored
         self.refresh(only_fields=['status', 'start'])
@@ -620,7 +620,7 @@ class Task(TaskResource):
         if not self.active:
             raise Task.InactiveTask("Cannot stop an inactive task")
 
-        self.warrior.execute_command([self['uuid'], 'stop'])
+        self.backend.stop_task(self)
 
         # Refresh the status again, so that we have updated info stored
         self.refresh(only_fields=['status', 'start'])
