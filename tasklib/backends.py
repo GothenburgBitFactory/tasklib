@@ -39,6 +39,10 @@ class Backend(object):
         pass
 
     @abc.abstractmethod
+    def complete_task(self, task):
+        pass
+
+    @abc.abstractmethod
     def sync(self):
         """Syncs the backend database with the taskd server"""
         pass
