@@ -586,7 +586,7 @@ class Task(TaskResource):
         if self.deleted:
             raise Task.DeletedTask("Task was already deleted")
 
-        self.warrior.execute_command([self['uuid'], 'delete'])
+        self.backend.delete_task(self)
 
         # Refresh the status again, so that we have updated info stored
         self.refresh(only_fields=['status', 'start', 'end'])

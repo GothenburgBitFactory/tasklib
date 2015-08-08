@@ -201,3 +201,6 @@ class TaskWarrior(object):
         # altering the data before saving
         task.refresh(after_save=True)
 
+    def delete_task(self, task):
+        self.execute_command([task['uuid'], 'delete'])
+
