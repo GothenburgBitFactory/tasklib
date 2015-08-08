@@ -4,22 +4,18 @@ import datetime
 import json
 import logging
 import os
-import pytz
 import six
 import sys
-import tzlocal
 
 from backends import TaskWarrior, TaskWarriorException
 from serializing import SerializingObject
 
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
-DATE_FORMAT_CALC = '%Y-%m-%dT%H:%M:%S'
 REPR_OUTPUT_SIZE = 10
 PENDING = 'pending'
 COMPLETED = 'completed'
 
 logger = logging.getLogger(__name__)
-local_zone = tzlocal.get_localzone()
 
 
 class ReadOnlyDictView(object):

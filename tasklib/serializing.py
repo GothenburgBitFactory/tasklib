@@ -1,3 +1,11 @@
+import json
+import pytz
+import six
+import tzlocal
+
+DATE_FORMAT = '%Y%m%dT%H%M%SZ'
+local_zone = tzlocal.get_localzone()
+
 class SerializingObject(object):
     """
     Common ancestor for TaskResource & TaskWarriorFilter, since they both

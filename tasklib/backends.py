@@ -5,6 +5,9 @@ import re
 import subprocess
 
 from tasklib.filters import TaskWarriorFilter
+from tasklib.serializing import local_zone
+
+DATE_FORMAT_CALC = '%Y-%m-%dT%H:%M:%S'
 
 VERSION_2_1_0 = six.u('2.1.0')
 VERSION_2_2_0 = six.u('2.2.0')
