@@ -549,33 +549,6 @@ class Task(TaskResource):
 
         return super(Task, self).serialize_depends(cur_dependencies)
 
-    def format_depends(self):
-        # We need to generate added and removed dependencies list,
-        # since Taskwarrior does not accept redefining dependencies.
-
-        # This cannot be part of serialize_depends, since we need
-        # to keep a list of all depedencies in the _data dictionary,
-        # not just currently added/removed ones
-
-        old_dependencies = self._original_data.get('depends', set())
-
-        added = self['depends'] - old_dependencies
-        removed = old_dependencies - self['depends']
-
-        # Removed dependencies need to be prefixed with '-'
-        return 'depends:' + ','.join(
-                [t['uuid'] for t in added] +
-                ['-' + t['uuid'] for t in removed]
-            )
-
-    def format_description(self):
-        # Task version older than 2.4.0 ignores first word of the
-        # task description if description: prefix is used
-        if self.warrior.version < VERSION_2_4_0:
-            return self._data['description']
-        else:
-            return six.u("description:'{0}'").format(self._data['description'] or '')
-
     def delete(self):
         if not self.saved:
             raise Task.NotSaved("Task needs to be saved before it can be deleted")

@@ -139,10 +139,10 @@ class TaskWarrior(object):
             format_default = lambda: six.u("{0}:{1}").format(field,
                                                       escaped_serialized_value)
 
-            format_func = getattr(task, 'format_{0}'.format(field),
+            format_func = getattr(self, 'format_{0}'.format(field),
                                   format_default)
 
-            args.append(format_func())
+            args.append(format_func(task))
 
         # If we're modifying saved task, simply pass on all modified fields
         if task.saved:
@@ -157,6 +157,35 @@ class TaskWarrior(object):
 
         return args
 
+    def format_depends(self, task):
+        # We need to generate added and removed dependencies list,
+        # since Taskwarrior does not accept redefining dependencies.
+
+        # This cannot be part of serialize_depends, since we need
+        # to keep a list of all depedencies in the _data dictionary,
+        # not just currently added/removed ones
+
+        old_dependencies = task._original_data.get('depends', set())
+
+        added = self['depends'] - old_dependencies
+        removed = old_dependencies - self['depends']
+
+        # Removed dependencies need to be prefixed with '-'
+        return 'depends:' + ','.join(
+                [t['uuid'] for t in added] +
+                ['-' + t['uuid'] for t in removed]
+            )
+
+    def format_description(self, task):
+        # Task version older than 2.4.0 ignores first word of the
+        # task description if description: prefix is used
+        if self.version < VERSION_2_4_0:
+            return task._data['description']
+        else:
+            return six.u("description:'{0}'").format(task._data['description'] or '')
+
+
+    # Public interface
 
     def get_config(self):
         raw_output = self.execute_command(
