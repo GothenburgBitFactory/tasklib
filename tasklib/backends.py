@@ -155,7 +155,7 @@ class TaskWarrior(object):
             else:
                 escaped_serialized_value = six.u("'{0}'").format(serialized_value)
 
-            format_default = lambda: six.u("{0}:{1}").format(field,
+            format_default = lambda task: six.u("{0}:{1}").format(field,
                                                       escaped_serialized_value)
 
             format_func = getattr(self, 'format_{0}'.format(field),
