@@ -1,6 +1,5 @@
 from __future__ import print_function
 import copy
-import datetime
 import importlib
 import json
 import logging
@@ -76,7 +75,6 @@ class TaskResource(SerializingObject):
         if update_original:
             self._original_data = copy.deepcopy(self._data)
 
-
     def __getitem__(self, key):
         # This is a workaround to make TaskResource non-iterable
         # over simple index-based iteration
@@ -121,7 +119,7 @@ class TaskResource(SerializingObject):
         # to pass that to TaskWarrior.
         data_tuples = filter(lambda t: t[1] is not '', data_tuples)
         data = dict(data_tuples)
-        return json.dumps(data, separators=(',',':'))
+        return json.dumps(data, separators=(',', ':'))
 
     @property
     def _modified_fields(self):
@@ -274,7 +272,6 @@ class Task(TaskResource):
             # If the tasks are not saved, compare the actual instances
             return id(self) == id(other)
 
-
     def __hash__(self):
         if self['uuid']:
             # For saved Tasks, just define equality by equality of uuids
@@ -419,6 +416,7 @@ class Task(TaskResource):
             self._update_data(to_update, update_original=True)
         else:
             self._load_data(new_data)
+
 
 class TaskQuerySet(object):
     """
