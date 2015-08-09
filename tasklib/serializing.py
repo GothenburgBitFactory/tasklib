@@ -1,4 +1,5 @@
 import datetime
+import importlib
 import json
 import pytz
 import six
@@ -164,6 +165,8 @@ class SerializingObject(object):
         return serialized_annotations if serialized_annotations else ''
 
     def deserialize_annotations(self, data):
+        task_module = importlib.import_module('tasklib.task')
+        TaskAnnotation = getattr(task_module, 'TaskAnnotation')
         return [TaskAnnotation(self, d) for d in data] if data else []
 
     def serialize_tags(self, tags):
