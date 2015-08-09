@@ -35,9 +35,9 @@ class TaskWarriorFilter(TaskFilter, SerializingObject):
     A set of parameters to filter the task list with.
     """
 
-    def __init__(self, warrior, filter_params=None):
+    def __init__(self, backend, filter_params=None):
         self.filter_params = filter_params or []
-        super(TaskFilter, self).__init__(warrior)
+        super(TaskFilter, self).__init__(backend)
 
     def add_filter(self, filter_str):
         self.filter_params.append(filter_str)
@@ -64,7 +64,7 @@ class TaskWarriorFilter(TaskFilter, SerializingObject):
             # We enforce equality match by using 'is' (or 'none') modifier
             # Without using this syntax, filter fails due to TW-1479
             # which is, however, fixed in 2.4.5
-            if self.warrior.version < warrior.VERSION_2_4_5:
+            if self.backend.version < self.backend.VERSION_2_4_5:
                 modifier = '.is' if value else '.none'
                 key = key + modifier if '.' not in key else key
 
@@ -74,6 +74,6 @@ class TaskWarriorFilter(TaskFilter, SerializingObject):
         return [f for f in self.filter_params if f]
 
     def clone(self):
-        c = self.__class__(self.warrior)
+        c = self.__class__(self.backend)
         c.filter_params = list(self.filter_params)
         return c

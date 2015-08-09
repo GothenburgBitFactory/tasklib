@@ -149,7 +149,7 @@ class TaskAnnotation(TaskResource):
     def __init__(self, task, data=None):
         self.task = task
         self._load_data(data or dict())
-        super(TaskAnnotation, self).__init__(task.warrior)
+        super(TaskAnnotation, self).__init__(task.backend)
 
     def remove(self):
         self.task.remove_annotation(self)
@@ -203,7 +203,7 @@ class Task(TaskResource):
         pass
 
     @classmethod
-    def from_input(cls, input_file=sys.stdin, modify=None, warrior=None):
+    def from_input(cls, input_file=sys.stdin, modify=None, backend=None):
         """
         Creates a Task object, directly from the stdin, by reading one line.
         If modify=True, two lines are used, first line interpreted as the
@@ -224,13 +224,13 @@ class Task(TaskResource):
         modify = name.startswith('on-modify') if modify is None else modify
 
         # Create the TaskWarrior instance if none passed
-        if warrior is None:
+        if backend is None:
             backends = importlib.import_module('.backends')
             hook_parent_dir = os.path.dirname(os.path.dirname(sys.argv[0]))
-            warrior = backends.TaskWarrior(data_location=hook_parent_dir)
+            backend = backends.TaskWarrior(data_location=hook_parent_dir)
 
         # TaskWarrior instance is set to None
-        task = cls(warrior)
+        task = cls(backend)
 
         # Load the data from the input
         task._load_data(json.loads(input_file.readline().strip()))
@@ -243,8 +243,8 @@ class Task(TaskResource):
 
         return task
 
-    def __init__(self, warrior, **kwargs):
-        super(Task, self).__init__(warrior)
+    def __init__(self, backend, **kwargs):
+        super(Task, self).__init__(backend)
 
         # Check that user is not able to set read-only value in __init__
         for key in kwargs.keys():
@@ -425,10 +425,10 @@ class TaskQuerySet(object):
     Represents a lazy lookup for a task objects.
     """
 
-    def __init__(self, warrior=None, filter_obj=None):
-        self.warrior = warrior
+    def __init__(self, backend=None, filter_obj=None):
+        self.backend = backend
         self._result_cache = None
-        self.filter_obj = filter_obj or self.warrior.filter_class(warrior)
+        self.filter_obj = filter_obj or self.backend.filter_class(backend)
 
     def __deepcopy__(self, memo):
         """
@@ -479,7 +479,7 @@ class TaskQuerySet(object):
         if klass is None:
             klass = self.__class__
         filter_obj = self.filter_obj.clone()
-        c = klass(warrior=self.warrior, filter_obj=filter_obj)
+        c = klass(backend=self.backend, filter_obj=filter_obj)
         c.__dict__.update(kwargs)
         return c
 
@@ -487,7 +487,7 @@ class TaskQuerySet(object):
         """
         Fetch the tasks which match the current filters.
         """
-        return self.warrior.filter_tasks(self.filter_obj)
+        return self.backend.filter_tasks(self.filter_obj)
 
     def all(self):
         """
