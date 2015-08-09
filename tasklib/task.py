@@ -225,7 +225,7 @@ class Task(TaskResource):
 
         # Create the TaskWarrior instance if none passed
         if backend is None:
-            backends = importlib.import_module('.backends')
+            backends = importlib.import_module('tasklib.backends')
             hook_parent_dir = os.path.dirname(os.path.dirname(sys.argv[0]))
             backend = backends.TaskWarrior(data_location=hook_parent_dir)
 
