@@ -425,7 +425,7 @@ class TaskQuerySet(object):
     Represents a lazy lookup for a task objects.
     """
 
-    def __init__(self, backend=None, filter_obj=None):
+    def __init__(self, backend, filter_obj=None):
         self.backend = backend
         self._result_cache = None
         self.filter_obj = filter_obj or self.backend.filter_class(backend)
@@ -434,7 +434,7 @@ class TaskQuerySet(object):
         """
         Deep copy of a QuerySet doesn't populate the cache
         """
-        obj = self.__class__()
+        obj = self.__class__(backend=self.backend)
         for k, v in self.__dict__.items():
             if k in ('_iter', '_result_cache'):
                 obj.__dict__[k] = None
