@@ -8,6 +8,7 @@ import tzlocal
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
 local_zone = tzlocal.get_localzone()
 
+
 class SerializingObject(object):
     """
     Common ancestor for TaskResource & TaskWarriorFilter, since they both
@@ -204,8 +205,10 @@ class SerializingObject(object):
         localized datetime -> localized datetime (no conversion)
         """
 
-        if (isinstance(value, datetime.date)
-            and not isinstance(value, datetime.datetime)):
+        if (
+            isinstance(value, datetime.date)
+            and not isinstance(value, datetime.datetime)
+        ):
             # Convert to local midnight
             value_full = datetime.datetime.combine(value, datetime.time.min)
             localized = local_zone.localize(value_full)
@@ -233,5 +236,3 @@ class SerializingObject(object):
                              "not: {}".format(value))
 
         return value
-
-

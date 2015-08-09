@@ -7,6 +7,7 @@ import os
 import re
 import six
 import subprocess
+import copy
 
 from .task import Task, TaskQuerySet
 from .filters import TaskWarriorFilter
@@ -15,6 +16,7 @@ from .serializing import local_zone
 DATE_FORMAT_CALC = '%Y-%m-%dT%H:%M:%S'
 
 logger = logging.getLogger(__name__)
+
 
 class Backend(object):
 
@@ -135,9 +137,9 @@ class TaskWarrior(Backend):
 
     def _get_version(self):
         p = subprocess.Popen(
-                ['task', '--version'],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
+            ['task', '--version'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
         stdout, stderr = [x.decode('utf-8') for x in p.communicate()]
         return stdout.strip('\n')
 
@@ -154,10 +156,11 @@ class TaskWarrior(Backend):
             if serialized_value is '':
                 escaped_serialized_value = ''
             else:
-                escaped_serialized_value = six.u("'{0}'").format(serialized_value)
+                escaped_serialized_value = six.u("'{0}'").format(
+                    serialized_value)
 
-            format_default = lambda task: six.u("{0}:{1}").format(field,
-                                                      escaped_serialized_value)
+            format_default = lambda task: six.u("{0}:{1}").format(
+                field, escaped_serialized_value)
 
             format_func = getattr(self, 'format_{0}'.format(field),
                                   format_default)
@@ -192,9 +195,9 @@ class TaskWarrior(Backend):
 
         # Removed dependencies need to be prefixed with '-'
         return 'depends:' + ','.join(
-                [t['uuid'] for t in added] +
-                ['-' + t['uuid'] for t in removed]
-            )
+            [t['uuid'] for t in added] +
+            ['-' + t['uuid'] for t in removed]
+        )
 
     def format_description(self, task):
         # Task version older than 2.4.0 ignores first word of the
@@ -228,9 +231,9 @@ class TaskWarrior(Backend):
 
     def get_config(self):
         raw_output = self.execute_command(
-                ['show'],
-                config_override={'verbose': 'nothing'}
-            )
+            ['show'],
+            config_override={'verbose': 'nothing'}
+        )
 
         config = dict()
         config_regex = re.compile(r'^(?P<key>[^\s]+)\s+(?P<value>[^\s].+$)')
@@ -381,14 +384,14 @@ class TaskWarrior(Backend):
                 taskfilter.add_filter_param(key, value)
 
             output = self.execute_command(['export', '--'] +
-                taskfilter.get_filter_params())
+                                          taskfilter.get_filter_params())
 
         # If more than 1 task has been matched still, raise an exception
         if not valid(output):
             raise TaskWarriorException(
                 "Unique identifiers {0} with description: {1} matches "
                 "multiple tasks: {2}".format(
-                task['uuid'] or task['id'], task['description'], output)
+                    task['uuid'] or task['id'], task['description'], output)
             )
 
         return json.loads(output[0])
