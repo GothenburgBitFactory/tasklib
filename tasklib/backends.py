@@ -7,6 +7,7 @@ import os
 import re
 import six
 import subprocess
+import copy
 
 from .task import Task, TaskQuerySet
 from .filters import TaskWarriorFilter
