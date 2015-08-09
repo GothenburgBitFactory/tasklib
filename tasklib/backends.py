@@ -81,7 +81,7 @@ class TaskWarriorException(Exception):
     pass
 
 
-class TaskWarrior(object):
+class TaskWarrior(Backend):
 
     VERSION_2_1_0 = six.u('2.1.0')
     VERSION_2_2_0 = six.u('2.2.0')
