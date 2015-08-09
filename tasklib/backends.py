@@ -217,6 +217,8 @@ class TaskWarrior(object):
                              "datetime, its type is not supported: {}"
                              .format(type(value)))
 
+        return localized
+
     @property
     def filter_class(self):
         return TaskWarriorFilter
