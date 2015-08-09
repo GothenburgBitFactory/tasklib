@@ -186,8 +186,8 @@ class TaskWarrior(object):
 
         old_dependencies = task._original_data.get('depends', set())
 
-        added = self['depends'] - old_dependencies
-        removed = old_dependencies - self['depends']
+        added = task['depends'] - old_dependencies
+        removed = old_dependencies - task['depends']
 
         # Removed dependencies need to be prefixed with '-'
         return 'depends:' + ','.join(
