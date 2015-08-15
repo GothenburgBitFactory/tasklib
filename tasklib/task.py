@@ -38,6 +38,11 @@ class ReadOnlyDictView(object):
     def __len__(self):
         return len(self.viewed_dict)
 
+    def __unicode__(self):
+        return u'ReadOnlyDictView: {0}'.format(repr(self.viewed_dict))
+
+    __repr__ = __unicode__
+
     def get(self, key, default=None):
         return copy.deepcopy(self.viewed_dict.get(key, default))
 
