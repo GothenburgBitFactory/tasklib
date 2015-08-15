@@ -9,7 +9,7 @@ import six
 import subprocess
 import copy
 
-from .task import Task, TaskQuerySet
+from .task import Task, TaskQuerySet, ReadOnlyDictView
 from .filters import TaskWarriorFilter
 from .serializing import local_zone
 
@@ -234,7 +234,7 @@ class TaskWarrior(Backend):
     def config(self):
         # First, check if memoized information is available
         if self._config:
-            return copy.deepcopy(self._config)
+            return self._config
 
         # If not, fetch the config using the 'show' command
         raw_output = self.execute_command(
@@ -251,9 +251,9 @@ class TaskWarrior(Backend):
                 config[match.group('key')] = match.group('value').strip()
 
         # Memoize the config dict
-        self._config = config
+        self._config = ReadOnlyDictView(config)
 
-        return copy.deepcopy(config)
+        return self._config
 
     def execute_command(self, args, config_override=None, allow_failure=True,
                         return_all=False):
