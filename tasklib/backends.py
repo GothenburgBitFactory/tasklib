@@ -103,6 +103,7 @@ class TaskWarrior(Backend):
         if not os.path.exists(self.taskrc_location):
             self.taskrc_location = '/'
 
+        self._config = None
         self.version = self._get_version()
         self.config = {
             'confirmation': 'no',
@@ -229,7 +230,13 @@ class TaskWarrior(Backend):
 
     # Public interface
 
-    def get_config(self):
+    @property
+    def config(self):
+        # First, check if memoized information is available
+        if self._config:
+            return copy.deepcopy(self._config)
+
+        # If not, fetch the config using the 'show' command
         raw_output = self.execute_command(
             ['show'],
             config_override={'verbose': 'nothing'}
@@ -243,7 +250,10 @@ class TaskWarrior(Backend):
             if match:
                 config[match.group('key')] = match.group('value').strip()
 
-        return config
+        # Memoize the config dict
+        self._config = config
+
+        return copy.deepcopy(config)
 
     def execute_command(self, args, config_override=None, allow_failure=True,
                         return_all=False):
