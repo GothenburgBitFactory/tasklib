@@ -486,14 +486,14 @@ Setting custom configuration values
 
 By default, TaskWarrior uses configuration values stored in your .taskrc.
 To see what configuration value overrides are passed to each executed
-task command, have a peek into ``config`` attribute of ``TaskWarrior`` object::
+task command, have a peek into ``overrides`` attribute of ``TaskWarrior`` object::
 
-    >>> tw.config
+    >>> tw.overrides
     {'confirmation': 'no', 'data.location': '/home/tbabej/.task'}
 
 To pass your own configuration overrides, you just need to update this dictionary::
 
-    >>> tw.config.update({'hooks': 'off'})  # tasklib will not trigger hooks
+    >>> tw.overrides.update({'hooks': 'off'})  # tasklib will not trigger hooks
 
 Creating hook scripts
 ---------------------

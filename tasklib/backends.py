@@ -105,7 +105,7 @@ class TaskWarrior(Backend):
 
         self._config = None
         self.version = self._get_version()
-        self.config = {
+        self.overrides = {
             'confirmation': 'no',
             'dependency.confirmation': 'no',  # See TW-1483 or taskrc man page
             'recurrence.confirmation': 'no',  # Necessary for modifying R tasks
@@ -123,15 +123,15 @@ class TaskWarrior(Backend):
             data_location = os.path.expanduser(data_location)
             if create and not os.path.exists(data_location):
                 os.makedirs(data_location)
-            self.config['data.location'] = data_location
+            self.overrides['data.location'] = data_location
 
         self.tasks = TaskQuerySet(self)
 
     def _get_command_args(self, args, config_override=None):
         command_args = ['task', 'rc:{0}'.format(self.taskrc_location)]
-        config = self.config.copy()
-        config.update(config_override or dict())
-        for item in config.items():
+        overrides = self.overrides.copy()
+        overrides.update(config_override or dict())
+        for item in overrides.items():
             command_args.append('rc.{0}={1}'.format(*item))
         command_args.extend(map(six.text_type, args))
         return command_args
