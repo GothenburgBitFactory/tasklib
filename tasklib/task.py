@@ -39,7 +39,7 @@ class ReadOnlyDictView(object):
         return len(self.viewed_dict)
 
     def __unicode__(self):
-        return u'ReadOnlyDictView: {0}'.format(repr(self.viewed_dict))
+        return six.u('ReadOnlyDictView: {0}'.format(repr(self.viewed_dict)))
 
     __repr__ = __unicode__
 
