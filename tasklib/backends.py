@@ -298,7 +298,7 @@ class TaskWarrior(Backend):
 
     def filter_tasks(self, filter_obj):
         self.enforce_recurrence()
-        args = ['export', '--'] + filter_obj.get_filter_params()
+        args = ['export'] + filter_obj.get_filter_params()
         tasks = []
         for line in self.execute_command(args):
             if line:
@@ -392,7 +392,7 @@ class TaskWarrior(Backend):
             for key, value in data.items():
                 taskfilter.add_filter_param(key, value)
 
-            output = self.execute_command(['export', '--'] +
+            output = self.execute_command(['export'] +
                                           taskfilter.get_filter_params())
 
         # If more than 1 task has been matched still, raise an exception
