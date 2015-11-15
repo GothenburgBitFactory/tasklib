@@ -11,7 +11,9 @@ import sys
 import tempfile
 import unittest
 
-from .task import TaskWarrior, Task, ReadOnlyDictView, local_zone, DATE_FORMAT
+from .backends import TaskWarrior
+from .task import Task, ReadOnlyDictView
+from .serializing import DATE_FORMAT, local_zone
 
 # http://taskwarrior.org/docs/design/task.html , Section: The Attributes
 TASK_STANDARD_ATTRS = (
@@ -283,6 +285,19 @@ class TaskTest(TasklibTest):
         t.done()
 
         self.assertRaises(Task.CompletedTask, t.start)
+
+    def test_add_completed_task(self):
+        t = Task(self.tw, description="test", status="completed",
+                 end=datetime.datetime.now())
+        t.save()
+
+    def test_add_multiple_completed_tasks(self):
+        t1 = Task(self.tw, description="test1", status="completed",
+                 end=datetime.datetime.now())
+        t2 = Task(self.tw, description="test2", status="completed",
+                 end=datetime.datetime.now())
+        t1.save()
+        t2.save()
 
     def test_complete_deleted_task(self):
         t = Task(self.tw, description="test task")
@@ -760,13 +775,13 @@ class TaskFromHookTest(TasklibTest):
          '"description":"test task"}')
 
     def test_setting_up_from_add_hook_input(self):
-        t = Task.from_input(input_file=self.input_add_data, warrior=self.tw)
+        t = Task.from_input(input_file=self.input_add_data, backend=self.tw)
         self.assertEqual(t['description'], "Buy some milk")
         self.assertEqual(t.pending, True)
 
     def test_setting_up_from_modified_hook_input(self):
         t = Task.from_input(input_file=self.input_modify_data, modify=True,
-                            warrior=self.tw)
+                            backend=self.tw)
         self.assertEqual(t['description'], "Buy some milk finally")
         self.assertEqual(t.pending, False)
         self.assertEqual(t.completed, True)
