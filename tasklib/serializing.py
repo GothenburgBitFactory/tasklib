@@ -186,6 +186,9 @@ class SerializingObject(object):
     def deserialize_depends(self, raw_uuids):
         raw_uuids = raw_uuids or []  # Convert None to empty list
 
+        if not raw_uuids:
+            return set()
+
         # TW 2.4.4 encodes list of dependencies as a single string
         if type(raw_uuids) is not list:
             uuids = raw_uuids.split(',')
@@ -193,7 +196,7 @@ class SerializingObject(object):
         else:
             uuids = raw_uuids
 
-        return set(self.backend.tasks.get(uuid=uuid) for uuid in uuids if uuid)
+        return set(self.backend.tasks.filter(' '.join(uuids)))
 
     def datetime_normalizer(self, value):
         """
