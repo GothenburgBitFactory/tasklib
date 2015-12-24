@@ -5,6 +5,9 @@ import pytz
 import six
 import tzlocal
 
+
+from .lazy import LazyUUIDTaskSet
+
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
 local_zone = tzlocal.get_localzone()
 
@@ -181,7 +184,11 @@ class SerializingObject(object):
     def serialize_depends(self, value):
         # Return the list of uuids
         value = value if value is not None else set()
-        return ','.join(task['uuid'] for task in value)
+
+        if isinstance(value, LazyUUIDTaskSet):
+            return ','.join(value._uuids)
+        else:
+            return ','.join(task['uuid'] for task in value)
 
     def deserialize_depends(self, raw_uuids):
         raw_uuids = raw_uuids or []  # Convert None to empty list
@@ -196,7 +203,7 @@ class SerializingObject(object):
         else:
             uuids = raw_uuids
 
-        return set(self.backend.tasks.filter(' '.join(uuids)))
+        return LazyUUIDTaskSet(self.backend, uuids)
 
     def datetime_normalizer(self, value):
         """
