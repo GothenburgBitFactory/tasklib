@@ -215,6 +215,50 @@ class LazyUUIDTask(object):
         self.__dict__ = replacement.__dict__
 
 
+class LazyUUIDTaskSet(object):
+    """
+    A lazy wrapper around TaskQuerySet object, for tasks referenced by UUID.
+
+    - Supports 'in' operator with LazyUUIDTask or Task objects
+    - If iteration over the objects in the LazyUUIDTaskSet is requested, the
+      LazyUUIDTaskSet will be converted to QuerySet and evaluated
+    """
+
+    def __init__(self, tw, uuids):
+        self._tw = tw
+        self._uuids = set(uuids)
+
+    def __getattr__(self, name):
+        # Getattr is called only if the attribute could not be found using
+        # normal means
+        self.replace()
+        return self.name
+
+    def __eq__(self, other):
+        return set(t['uuid'] for t in other) == self._uuids
+
+    def __contains__(self, task):
+        return task['uuid'] in self._uuids
+
+    def __len__(self):
+        return len(self._uuids)
+
+    def __iter__(self):
+        self.replace()
+        for task in self:
+            yield task
+
+    def replace(self):
+        """
+        Performs conversion to the regular TaskQuerySet object, referenced by
+        the stored UUIDs.
+        """
+
+        replacement = self._tw.tasks.filter(' '.join(self._uuids))
+        self.__class__ = replacement.__class__
+        self.__dict__ = replacement.__dict__
+
+
 class Task(TaskResource):
     read_only_fields = ['id', 'entry', 'urgency', 'uuid', 'modified']
 
