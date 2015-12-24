@@ -12,8 +12,8 @@ import tempfile
 import unittest
 
 from .backends import TaskWarrior
-from .task import (Task, ReadOnlyDictView, LazyUUIDTask,
-                   LazyUUIDTaskSet, TaskQuerySet)
+from .task import Task, ReadOnlyDictView, TaskQuerySet
+from .lazy import LazyUUIDTask, LazyUUIDTaskSet
 from .serializing import DATE_FORMAT, local_zone
 
 # http://taskwarrior.org/docs/design/task.html , Section: The Attributes
