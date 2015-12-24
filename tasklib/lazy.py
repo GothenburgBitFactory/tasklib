@@ -85,9 +85,8 @@ class LazyUUIDTaskSet(object):
         return len(self._uuids)
 
     def __iter__(self):
-        self.replace()
-        for task in self:
-            yield task
+        for uuid in self._uuids:
+            yield LazyUUIDTask(self._tw, uuid)
 
     def replace(self):
         """
