@@ -12,7 +12,7 @@ import tempfile
 import unittest
 
 from .backends import TaskWarrior
-from .task import Task, ReadOnlyDictView
+from .task import Task, ReadOnlyDictView, LazyUUIDTask
 from .serializing import DATE_FORMAT, local_zone
 
 # http://taskwarrior.org/docs/design/task.html , Section: The Attributes
@@ -1101,3 +1101,40 @@ class ReadOnlyDictViewTest(unittest.TestCase):
         view_list_item.append(4)
         self.assertNotEqual(view_values, sample_values)
         self.assertEqual(self.sample, self.original_sample)
+
+
+class LazyUUIDTaskTest(TasklibTest):
+
+    def setUp(self):
+        super(LazyUUIDTaskTest, self).setUp()
+
+        self.stored = Task(self.tw, description="this is test task")
+        self.stored.save()
+
+        self.lazy = LazyUUIDTask(self.tw, self.stored['uuid'])
+
+    def test_uuid_non_conversion(self):
+        assert self.stored['uuid'] == self.lazy['uuid']
+        assert type(self.lazy) is LazyUUIDTask
+
+    def test_conversion(self):
+        assert self.stored['description'] == self.lazy['description']
+        assert type(self.lazy) is Task
+
+    def test_normal_to_lazy_equality(self):
+        assert self.stored == self.lazy
+        assert type(self.lazy) is LazyUUIDTask
+
+    def test_lazy_to_lazy_equality(self):
+        lazy1 = LazyUUIDTask(self.tw, self.stored['uuid'])
+        lazy2 = LazyUUIDTask(self.tw, self.stored['uuid'])
+
+        assert lazy1 == lazy2
+        assert type(lazy1) is LazyUUIDTask
+        assert type(lazy2) is LazyUUIDTask
+
+    def test_lazy_in_queryset(self):
+        tasks = self.tw.tasks.filter(uuid=self.stored['uuid'])
+
+        assert self.lazy in tasks
+        assert type(self.lazy) is LazyUUIDTask
