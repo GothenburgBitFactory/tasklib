@@ -1172,10 +1172,15 @@ class LazyUUIDTaskSetTest(TasklibTest):
         assert self.task3 in self.lazy
         assert type(self.lazy) is LazyUUIDTaskSet
 
-    def test_eq(self):
-        assert self.lazy == self.tw.tasks.all()
+    def test_eq_lazy(self):
+        new_lazy = LazyUUIDTaskSet(self.tw, self.uuids)
+        assert self.lazy == new_lazy
+        assert not self.lazy != new_lazy
         assert type(self.lazy) is LazyUUIDTaskSet
 
-    def test_conversion(self):
-        assert set(self.lazy) == set(self.tw.tasks.all())
-        assert type(self.lazy) is TaskQuerySet
+    def test_eq_real(self):
+        assert self.lazy == self.tw.tasks.all()
+        assert self.tw.tasks.all() == self.lazy
+        assert not self.lazy != self.tw.tasks.all()
+
+        assert type(self.lazy) is LazyUUIDTaskSet
