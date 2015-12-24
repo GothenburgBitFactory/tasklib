@@ -39,6 +39,13 @@ class LazyUUIDTask(object):
     def __hash__(self):
         return self['uuid'].__hash__()
 
+    @property
+    def saved(self):
+        """
+        Implementation of the 'saved' property. Always returns True.
+        """
+        return True
+
     def replace(self):
         """
         Performs conversion to the regular Task object, referenced by the
