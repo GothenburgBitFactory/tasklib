@@ -66,8 +66,14 @@ class LazyUUIDTaskSet(object):
     def __getattr__(self, name):
         # Getattr is called only if the attribute could not be found using
         # normal means
-        self.replace()
-        return self.name
+
+        if name.startswith('__'):
+            # If some internal method was being search, do not convert
+            # to TaskQuerySet just because of that
+            raise AttributeError
+        else:
+            self.replace()
+            return self.name
 
     def __eq__(self, other):
         return set(t['uuid'] for t in other) == self._uuids
