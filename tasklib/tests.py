@@ -12,7 +12,8 @@ import tempfile
 import unittest
 
 from .backends import TaskWarrior
-from .task import Task, ReadOnlyDictView, LazyUUIDTask
+from .task import (Task, ReadOnlyDictView, LazyUUIDTask,
+                   LazyUUIDTaskSet, TaskQuerySet)
 from .serializing import DATE_FORMAT, local_zone
 
 # http://taskwarrior.org/docs/design/task.html , Section: The Attributes
@@ -1134,7 +1135,47 @@ class LazyUUIDTaskTest(TasklibTest):
         assert type(lazy2) is LazyUUIDTask
 
     def test_lazy_in_queryset(self):
-        tasks = self.tw.tasks.filter(uuid=self.stored['uuid'])
+        tasks = self.tw.tasks.tasks.filter(uuid=self.stored['uuid'])
 
         assert self.lazy in tasks
         assert type(self.lazy) is LazyUUIDTask
+
+
+class LazyUUIDTaskSetTest(TasklibTest):
+
+    def setUp(self):
+        super(LazyUUIDTaskTest, self).setUp()
+
+        self.task1 = Task(self.tw, description="task 1")
+        self.task2 = Task(self.tw, description="task 2")
+        self.task3 = Task(self.tw, description="task 3")
+
+        self.task1.save()
+        self.task2.save()
+        self.task3.save()
+
+        self.uuids = (
+            self.task1['uuid'],
+            self.task2['uuid'],
+            self.task3['uuid']
+        )
+
+        self.lazy = LazyUUIDTaskSet(self.tw, self.uuids)
+
+    def test_length(self):
+        assert len(self.lazy) == 3
+        assert type(self.lazy) is LazyUUIDTaskSet
+
+    def test_contains(self):
+        assert self.task1 in self.lazy
+        assert self.task2 in self.lazy
+        assert self.task3 in self.lazy
+        assert type(self.lazy) is LazyUUIDTaskSet
+
+    def test_eq(self):
+        assert self.lazy == self.tw.tasks.all()
+        assert type(self.lazy) is LazyUUIDTaskSet
+
+    def test_conversion(self):
+        assert set(self.lazy) == set(self.tw.tasks.all())
+        assert type(self.lazy) is TaskQuerySet
