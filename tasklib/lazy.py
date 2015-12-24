@@ -91,6 +91,9 @@ class LazyUUIDTaskSet(object):
     def __eq__(self, other):
         return set(t['uuid'] for t in other) == self._uuids
 
+    def __ne__(self, other):
+        return not (self == other)
+
     def __contains__(self, task):
         return task['uuid'] in self._uuids
 
@@ -100,6 +103,22 @@ class LazyUUIDTaskSet(object):
     def __iter__(self):
         for uuid in self._uuids:
             yield LazyUUIDTask(self._tw, uuid)
+
+    def __sub__(self, other):
+        return LazyUUIDTaskSet(self._tw,
+                               self._uuids - set(t['uuid'] for t in other))
+
+    def __isub__(self, other):
+        self._uuids -= set(t['uuid'] for t in other)
+        return self
+
+    def __or__(self, other):
+        return LazyUUIDTaskSet(self._tw,
+                               self._uuids | set(t['uuid'] for t in other))
+
+    def __ior__(self, other):
+        self._uuids |= set(t['uuid'] for t in other)
+        return self
 
     def replace(self):
         """
