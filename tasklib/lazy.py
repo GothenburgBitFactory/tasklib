@@ -39,6 +39,9 @@ class LazyUUIDTask(object):
     def __hash__(self):
         return self['uuid'].__hash__()
 
+    def __repr__(self):
+        return "LazyUUIDTask: {0}".format(self._uuid)
+
     @property
     def saved(self):
         """
@@ -81,6 +84,9 @@ class LazyUUIDTaskSet(object):
         else:
             self.replace()
             return self.name
+
+    def __repr__(self):
+        return "LazyUUIDTaskSet([{0}])".format(', '.join(self._uuids))
 
     def __eq__(self, other):
         return set(t['uuid'] for t in other) == self._uuids
