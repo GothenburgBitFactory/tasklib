@@ -1135,7 +1135,7 @@ class LazyUUIDTaskTest(TasklibTest):
         assert type(lazy2) is LazyUUIDTask
 
     def test_lazy_in_queryset(self):
-        tasks = self.tw.tasks.tasks.filter(uuid=self.stored['uuid'])
+        tasks = self.tw.tasks.filter(uuid=self.stored['uuid'])
 
         assert self.lazy in tasks
         assert type(self.lazy) is LazyUUIDTask
@@ -1144,7 +1144,7 @@ class LazyUUIDTaskTest(TasklibTest):
 class LazyUUIDTaskSetTest(TasklibTest):
 
     def setUp(self):
-        super(LazyUUIDTaskTest, self).setUp()
+        super(LazyUUIDTaskSetTest, self).setUp()
 
         self.task1 = Task(self.tw, description="task 1")
         self.task2 = Task(self.tw, description="task 2")
