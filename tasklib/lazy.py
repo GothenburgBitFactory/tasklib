@@ -29,7 +29,7 @@ class LazyUUIDTask(object):
         # Getattr is called only if the attribute could not be found using
         # normal means
         self.replace()
-        return self.name
+        return getattr(self, name)
 
     def __eq__(self, other):
         if other['uuid']:
@@ -83,7 +83,7 @@ class LazyUUIDTaskSet(object):
             raise AttributeError
         else:
             self.replace()
-            return self.name
+            return getattr(self, name)
 
     def __repr__(self):
         return "LazyUUIDTaskSet([{0}])".format(', '.join(self._uuids))
