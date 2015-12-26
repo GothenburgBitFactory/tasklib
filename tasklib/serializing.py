@@ -6,7 +6,7 @@ import six
 import tzlocal
 
 
-from .lazy import LazyUUIDTaskSet
+from .lazy import LazyUUIDTaskSet, LazyUUIDTask
 
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
 local_zone = tzlocal.get_localzone()
@@ -180,6 +180,12 @@ class SerializingObject(object):
         if isinstance(tags, six.string_types):
             return set(tags.split(',')) if tags else set()
         return set(tags or [])
+
+    def serialize_parent(self, parent):
+        return parent['uuid'] if parent else ''
+
+    def deserialize_parent(self, uuid):
+        return LazyUUIDTask(self.backend, uuid) if uuid else None
 
     def serialize_depends(self, value):
         # Return the list of uuids
