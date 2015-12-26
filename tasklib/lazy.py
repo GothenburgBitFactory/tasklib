@@ -49,6 +49,14 @@ class LazyUUIDTask(object):
         """
         return True
 
+    @property
+    def _modified_fields(self):
+        return set()
+
+    @property
+    def modified(self):
+        return False
+
     def replace(self):
         """
         Performs conversion to the regular Task object, referenced by the
