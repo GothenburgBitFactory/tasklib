@@ -1203,3 +1203,63 @@ class LazyUUIDTaskSetTest(TasklibTest):
         assert not self.lazy != self.tw.tasks.all()
 
         assert type(self.lazy) is LazyUUIDTaskSet
+
+    def test_union(self):
+        taskset = set([self.task1])
+        lazyset = LazyUUIDTaskSet(
+            self.tw,
+            (self.task2['uuid'], self.task3['uuid'])
+        )
+
+        assert taskset | lazyset == self.lazy
+        assert lazyset | taskset == self.lazy
+        assert taskset.union(lazyset) == self.lazy
+        assert lazyset.union(taskset) == self.lazy
+
+        lazyset |= taskset
+        assert lazyset == self.lazy
+
+    def test_difference(self):
+        taskset = set([self.task1, self.task2])
+        lazyset = LazyUUIDTaskSet(
+            self.tw,
+            (self.task2['uuid'], self.task3['uuid'])
+        )
+
+        assert taskset - lazyset == set([self.task1])
+        assert lazyset - taskset == set([self.task3])
+        assert taskset.difference(lazyset) == set([self.task1])
+        assert lazyset.difference(taskset) == set([self.task3])
+
+        lazyset -= taskset
+        assert lazyset == set([self.task3])
+
+    def test_symmetric_difference(self):
+        taskset = set([self.task1, self.task2])
+        lazyset = LazyUUIDTaskSet(
+            self.tw,
+            (self.task2['uuid'], self.task3['uuid'])
+        )
+
+        assert taskset ^ lazyset == set([self.task1, self.task3])
+        assert lazyset ^ taskset == set([self.task1, self.task3])
+        assert taskset.symmetric_difference(lazyset) == set([self.task1, self.task3])
+        assert lazyset.symmetric_difference(taskset) == set([self.task1, self.task3])
+
+        lazyset ^= taskset
+        assert lazyset == set([self.task1, self.task3])
+
+    def test_intersection(self):
+        taskset = set([self.task1, self.task2])
+        lazyset = LazyUUIDTaskSet(
+            self.tw,
+            (self.task2['uuid'], self.task3['uuid'])
+        )
+
+        assert taskset & lazyset == set([self.task2])
+        assert lazyset & taskset == set([self.task2])
+        assert taskset.intersection(lazyset) == set([self.task2])
+        assert lazyset.intersection(taskset) == set([self.task2])
+
+        lazyset &= taskset
+        assert lazyset == set([self.task2])
