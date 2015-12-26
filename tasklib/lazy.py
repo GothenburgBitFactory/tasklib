@@ -32,7 +32,7 @@ class LazyUUIDTask(object):
         return getattr(self, name)
 
     def __eq__(self, other):
-        if other['uuid']:
+        if other and other['uuid']:
             # For saved Tasks, just define equality by equality of uuids
             return self['uuid'] == other['uuid']
 
