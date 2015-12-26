@@ -105,8 +105,28 @@ class LazyUUIDTaskSet(object):
             yield LazyUUIDTask(self._tw, uuid)
 
     def __sub__(self, other):
-        return LazyUUIDTaskSet(self._tw,
-                               self._uuids - set(t['uuid'] for t in other))
+        return self.difference(other)
+
+    def __isub__(self, other):
+        return self.difference_update(other)
+
+    def __or__(self, other):
+        return self.union(other)
+
+    def __ior__(self, other):
+        return self.update(other)
+
+    def __xor__(self, other):
+        return self.symmetric_difference(other)
+
+    def __ixor__(self, other):
+        return self.symmetric_difference_update(other)
+
+    def __le__(self, other):
+        return self.issubset(other)
+
+    def __ge__(self, other):
+        return self.issuperset(other)
 
     def issubset(self, other):
         return all([task in other for task in self])
