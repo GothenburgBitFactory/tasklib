@@ -1118,8 +1118,18 @@ class LazyUUIDTaskTest(TasklibTest):
         assert self.stored['uuid'] == self.lazy['uuid']
         assert type(self.lazy) is LazyUUIDTask
 
-    def test_conversion(self):
+    def test_lazy_explicit_conversion(self):
+        assert type(self.lazy) is LazyUUIDTask
+        self.lazy.replace()
+        assert type(self.lazy) is Task
+
+    def test_conversion_key(self):
         assert self.stored['description'] == self.lazy['description']
+        assert type(self.lazy) is Task
+
+    def test_conversion_attribute(self):
+        assert type(self.lazy) is LazyUUIDTask
+        assert self.lazy.completed is False
         assert type(self.lazy) is Task
 
     def test_normal_to_lazy_equality(self):
@@ -1139,6 +1149,15 @@ class LazyUUIDTaskTest(TasklibTest):
 
         assert self.lazy in tasks
         assert type(self.lazy) is LazyUUIDTask
+
+    def test_lazy_saved(self):
+        assert self.lazy.saved is True
+
+    def test_lazy_modified(self):
+        assert self.lazy.modified is False
+
+    def test_lazy_modified_fields(self):
+        assert self.lazy._modified_fields == set()
 
 
 class LazyUUIDTaskSetTest(TasklibTest):
