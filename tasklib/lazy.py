@@ -110,17 +110,27 @@ class LazyUUIDTaskSet(object):
     def __isub__(self, other):
         return self.difference_update(other)
 
+    def __rsub__(self, other):
+        return LazyUUIDTaskSet(self._tw,
+            set(t['uuid'] for t in other) - self._uuids)
+
     def __or__(self, other):
         return self.union(other)
 
     def __ior__(self, other):
         return self.update(other)
 
+    def __ror__(self, other):
+        return self.union(other)
+
     def __xor__(self, other):
         return self.symmetric_difference(other)
 
     def __ixor__(self, other):
         return self.symmetric_difference_update(other)
+
+    def __rxor__(self, other):
+        return self.symmetric_difference(other)
 
     def __le__(self, other):
         return self.issubset(other)
