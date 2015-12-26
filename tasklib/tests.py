@@ -1263,3 +1263,10 @@ class LazyUUIDTaskSetTest(TasklibTest):
 
         lazyset &= taskset
         assert lazyset == set([self.task2])
+
+
+class TaskWarriorBackendTest(TasklibTest):
+
+    def test_config(self):
+        assert self.tw.config['nag'] == "You have more urgent tasks."
+        assert self.tw.config['sugar'] == "yes"
