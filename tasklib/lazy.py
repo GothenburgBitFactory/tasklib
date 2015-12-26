@@ -132,6 +132,15 @@ class LazyUUIDTaskSet(object):
     def __rxor__(self, other):
         return self.symmetric_difference(other)
 
+    def __and__(self, other):
+        return self.intersection(other)
+
+    def __iand__(self, other):
+        return self.intersection_update(other)
+
+    def __rand__(self, other):
+        return self.intersection(other)
+
     def __le__(self, other):
         return self.issubset(other)
 
