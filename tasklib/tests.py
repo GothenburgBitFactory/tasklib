@@ -745,6 +745,15 @@ class TaskTest(TasklibTest):
         t.save()
         self.assertEqual(len(self.tw.tasks.pending()), 2)
 
+    def test_spawned_task_parent(self):
+        today = datetime.date.today()
+        t = Task(self.tw, description="brush teeth",
+                 due=today, recur="daily")
+        t.save()
+
+        spawned = self.tw.tasks.pending().get(due=today)
+        assert spawned['parent'] == t
+
     def test_modify_number_of_tasks_at_once(self):
         for i in range(1, 100):
             Task(self.tw, description="test task %d" % i, tags=['test']).save()
