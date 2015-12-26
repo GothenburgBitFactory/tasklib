@@ -178,8 +178,8 @@ class SerializingObject(object):
 
     def deserialize_tags(self, tags):
         if isinstance(tags, six.string_types):
-            return tags.split(',') if tags else []
-        return tags or []
+            return set(tags.split(',')) if tags else set()
+        return set(tags or [])
 
     def serialize_depends(self, value):
         # Return the list of uuids
