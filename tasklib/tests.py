@@ -696,16 +696,24 @@ class TaskTest(TasklibTest):
     def test_adding_tag_by_appending(self):
         t = Task(self.tw, description="test task", tags=['test1'])
         t.save()
-        t['tags'].append('test2')
+        t['tags'].add('test2')
         t.save()
-        self.assertEqual(t['tags'], ['test1', 'test2'])
+        self.assertEqual(t['tags'], set(['test1', 'test2']))
+
+    def test_adding_tag_twice(self):
+        t = Task(self.tw, description="test task", tags=['test1'])
+        t.save()
+        t['tags'].add('test2')
+        t['tags'].add('test2')
+        t.save()
+        self.assertEqual(t['tags'], set(['test1', 'test2']))
 
     def test_adding_tag_by_appending_empty(self):
         t = Task(self.tw, description="test task")
         t.save()
-        t['tags'].append('test')
+        t['tags'].add('test')
         t.save()
-        self.assertEqual(t['tags'], ['test'])
+        self.assertEqual(t['tags'], set(['test']))
 
     def test_serializers_returning_empty_string_for_none(self):
         # Test that any serializer returns '' when passed None
