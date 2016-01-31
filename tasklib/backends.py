@@ -75,7 +75,7 @@ class Backend(object):
         Converts TW syntax datetime string to a localized datetime
         object. This method is not mandatory.
         """
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class TaskWarriorException(Exception):

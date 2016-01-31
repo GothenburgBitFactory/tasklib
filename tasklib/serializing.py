@@ -5,6 +5,9 @@ import pytz
 import six
 import tzlocal
 
+
+from .lazy import LazyUUIDTaskSet, LazyUUIDTask
+
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
 local_zone = tzlocal.get_localzone()
 
@@ -175,16 +178,29 @@ class SerializingObject(object):
 
     def deserialize_tags(self, tags):
         if isinstance(tags, six.string_types):
-            return tags.split(',') if tags else []
-        return tags or []
+            return set(tags.split(',')) if tags else set()
+        return set(tags or [])
+
+    def serialize_parent(self, parent):
+        return parent['uuid'] if parent else ''
+
+    def deserialize_parent(self, uuid):
+        return LazyUUIDTask(self.backend, uuid) if uuid else None
 
     def serialize_depends(self, value):
         # Return the list of uuids
         value = value if value is not None else set()
-        return ','.join(task['uuid'] for task in value)
+
+        if isinstance(value, LazyUUIDTaskSet):
+            return ','.join(value._uuids)
+        else:
+            return ','.join(task['uuid'] for task in value)
 
     def deserialize_depends(self, raw_uuids):
         raw_uuids = raw_uuids or []  # Convert None to empty list
+
+        if not raw_uuids:
+            return set()
 
         # TW 2.4.4 encodes list of dependencies as a single string
         if type(raw_uuids) is not list:
@@ -193,7 +209,7 @@ class SerializingObject(object):
         else:
             uuids = raw_uuids
 
-        return set(self.backend.tasks.get(uuid=uuid) for uuid in uuids if uuid)
+        return LazyUUIDTaskSet(self.backend, uuids)
 
     def datetime_normalizer(self, value):
         """

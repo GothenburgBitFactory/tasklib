@@ -12,7 +12,8 @@ import tempfile
 import unittest
 
 from .backends import TaskWarrior
-from .task import Task, ReadOnlyDictView
+from .task import Task, ReadOnlyDictView, TaskQuerySet
+from .lazy import LazyUUIDTask, LazyUUIDTaskSet
 from .serializing import DATE_FORMAT, local_zone
 
 # http://taskwarrior.org/docs/design/task.html , Section: The Attributes
@@ -695,16 +696,24 @@ class TaskTest(TasklibTest):
     def test_adding_tag_by_appending(self):
         t = Task(self.tw, description="test task", tags=['test1'])
         t.save()
-        t['tags'].append('test2')
+        t['tags'].add('test2')
         t.save()
-        self.assertEqual(t['tags'], ['test1', 'test2'])
+        self.assertEqual(t['tags'], set(['test1', 'test2']))
+
+    def test_adding_tag_twice(self):
+        t = Task(self.tw, description="test task", tags=['test1'])
+        t.save()
+        t['tags'].add('test2')
+        t['tags'].add('test2')
+        t.save()
+        self.assertEqual(t['tags'], set(['test1', 'test2']))
 
     def test_adding_tag_by_appending_empty(self):
         t = Task(self.tw, description="test task")
         t.save()
-        t['tags'].append('test')
+        t['tags'].add('test')
         t.save()
-        self.assertEqual(t['tags'], ['test'])
+        self.assertEqual(t['tags'], set(['test']))
 
     def test_serializers_returning_empty_string_for_none(self):
         # Test that any serializer returns '' when passed None
@@ -735,6 +744,15 @@ class TaskTest(TasklibTest):
                  due=today, recur="daily")
         t.save()
         self.assertEqual(len(self.tw.tasks.pending()), 2)
+
+    def test_spawned_task_parent(self):
+        today = datetime.date.today()
+        t = Task(self.tw, description="brush teeth",
+                 due=today, recur="daily")
+        t.save()
+
+        spawned = self.tw.tasks.pending().get(due=today)
+        assert spawned['parent'] == t
 
     def test_modify_number_of_tasks_at_once(self):
         for i in range(1, 100):
@@ -1101,3 +1119,171 @@ class ReadOnlyDictViewTest(unittest.TestCase):
         view_list_item.append(4)
         self.assertNotEqual(view_values, sample_values)
         self.assertEqual(self.sample, self.original_sample)
+
+
+class LazyUUIDTaskTest(TasklibTest):
+
+    def setUp(self):
+        super(LazyUUIDTaskTest, self).setUp()
+
+        self.stored = Task(self.tw, description="this is test task")
+        self.stored.save()
+
+        self.lazy = LazyUUIDTask(self.tw, self.stored['uuid'])
+
+    def test_uuid_non_conversion(self):
+        assert self.stored['uuid'] == self.lazy['uuid']
+        assert type(self.lazy) is LazyUUIDTask
+
+    def test_lazy_explicit_conversion(self):
+        assert type(self.lazy) is LazyUUIDTask
+        self.lazy.replace()
+        assert type(self.lazy) is Task
+
+    def test_conversion_key(self):
+        assert self.stored['description'] == self.lazy['description']
+        assert type(self.lazy) is Task
+
+    def test_conversion_attribute(self):
+        assert type(self.lazy) is LazyUUIDTask
+        assert self.lazy.completed is False
+        assert type(self.lazy) is Task
+
+    def test_normal_to_lazy_equality(self):
+        assert self.stored == self.lazy
+        assert type(self.lazy) is LazyUUIDTask
+
+    def test_lazy_to_lazy_equality(self):
+        lazy1 = LazyUUIDTask(self.tw, self.stored['uuid'])
+        lazy2 = LazyUUIDTask(self.tw, self.stored['uuid'])
+
+        assert lazy1 == lazy2
+        assert type(lazy1) is LazyUUIDTask
+        assert type(lazy2) is LazyUUIDTask
+
+    def test_lazy_in_queryset(self):
+        tasks = self.tw.tasks.filter(uuid=self.stored['uuid'])
+
+        assert self.lazy in tasks
+        assert type(self.lazy) is LazyUUIDTask
+
+    def test_lazy_saved(self):
+        assert self.lazy.saved is True
+
+    def test_lazy_modified(self):
+        assert self.lazy.modified is False
+
+    def test_lazy_modified_fields(self):
+        assert self.lazy._modified_fields == set()
+
+
+class LazyUUIDTaskSetTest(TasklibTest):
+
+    def setUp(self):
+        super(LazyUUIDTaskSetTest, self).setUp()
+
+        self.task1 = Task(self.tw, description="task 1")
+        self.task2 = Task(self.tw, description="task 2")
+        self.task3 = Task(self.tw, description="task 3")
+
+        self.task1.save()
+        self.task2.save()
+        self.task3.save()
+
+        self.uuids = (
+            self.task1['uuid'],
+            self.task2['uuid'],
+            self.task3['uuid']
+        )
+
+        self.lazy = LazyUUIDTaskSet(self.tw, self.uuids)
+
+    def test_length(self):
+        assert len(self.lazy) == 3
+        assert type(self.lazy) is LazyUUIDTaskSet
+
+    def test_contains(self):
+        assert self.task1 in self.lazy
+        assert self.task2 in self.lazy
+        assert self.task3 in self.lazy
+        assert type(self.lazy) is LazyUUIDTaskSet
+
+    def test_eq_lazy(self):
+        new_lazy = LazyUUIDTaskSet(self.tw, self.uuids)
+        assert self.lazy == new_lazy
+        assert not self.lazy != new_lazy
+        assert type(self.lazy) is LazyUUIDTaskSet
+
+    def test_eq_real(self):
+        assert self.lazy == self.tw.tasks.all()
+        assert self.tw.tasks.all() == self.lazy
+        assert not self.lazy != self.tw.tasks.all()
+
+        assert type(self.lazy) is LazyUUIDTaskSet
+
+    def test_union(self):
+        taskset = set([self.task1])
+        lazyset = LazyUUIDTaskSet(
+            self.tw,
+            (self.task2['uuid'], self.task3['uuid'])
+        )
+
+        assert taskset | lazyset == self.lazy
+        assert lazyset | taskset == self.lazy
+        assert taskset.union(lazyset) == self.lazy
+        assert lazyset.union(taskset) == self.lazy
+
+        lazyset |= taskset
+        assert lazyset == self.lazy
+
+    def test_difference(self):
+        taskset = set([self.task1, self.task2])
+        lazyset = LazyUUIDTaskSet(
+            self.tw,
+            (self.task2['uuid'], self.task3['uuid'])
+        )
+
+        assert taskset - lazyset == set([self.task1])
+        assert lazyset - taskset == set([self.task3])
+        assert taskset.difference(lazyset) == set([self.task1])
+        assert lazyset.difference(taskset) == set([self.task3])
+
+        lazyset -= taskset
+        assert lazyset == set([self.task3])
+
+    def test_symmetric_difference(self):
+        taskset = set([self.task1, self.task2])
+        lazyset = LazyUUIDTaskSet(
+            self.tw,
+            (self.task2['uuid'], self.task3['uuid'])
+        )
+
+        assert taskset ^ lazyset == set([self.task1, self.task3])
+        assert lazyset ^ taskset == set([self.task1, self.task3])
+        assert taskset.symmetric_difference(lazyset) == set([self.task1, self.task3])
+        assert lazyset.symmetric_difference(taskset) == set([self.task1, self.task3])
+
+        lazyset ^= taskset
+        assert lazyset == set([self.task1, self.task3])
+
+    def test_intersection(self):
+        taskset = set([self.task1, self.task2])
+        lazyset = LazyUUIDTaskSet(
+            self.tw,
+            (self.task2['uuid'], self.task3['uuid'])
+        )
+
+        assert taskset & lazyset == set([self.task2])
+        assert lazyset & taskset == set([self.task2])
+        assert taskset.intersection(lazyset) == set([self.task2])
+        assert lazyset.intersection(taskset) == set([self.task2])
+
+        lazyset &= taskset
+        assert lazyset == set([self.task2])
+
+
+class TaskWarriorBackendTest(TasklibTest):
+
+    def test_config(self):
+        assert self.tw.config['nag'] == "You have more urgent tasks."
+        assert self.tw.config['debug'] == "no"
