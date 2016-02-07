@@ -42,6 +42,12 @@ class LazyUUIDTask(object):
     def __repr__(self):
         return "LazyUUIDTask: {0}".format(self._uuid)
 
+    def __copy__(self):
+        return LazyUUIDTask(self._tw, self._uuid)
+
+    def __deepcopy__(self, memo):
+        return LazyUUIDTask(self._tw, self._uuid)
+
     @property
     def saved(self):
         """
