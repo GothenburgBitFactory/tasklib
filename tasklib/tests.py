@@ -781,6 +781,14 @@ class TaskFromHookTest(TasklibTest):
         '"start":"20141119T152233Z",'
         '"uuid":"a360fc44-315c-4366-b70c-ea7e7520b749"}')
 
+    input_add_data_recurring = six.StringIO(
+        '{"description":"Mow the lawn",'
+        '"entry":"20160210T224304Z",'
+        '"parent":"62da6227-519c-42c2-915d-dccada926ad7",'
+        '"recur":"weekly",'
+        '"status":"pending",'
+        '"uuid":"81305335-0237-49ff-8e87-b3cdc2369cec"}')
+
     input_modify_data = six.StringIO(input_add_data.getvalue() + '\n' +
         '{"description":"Buy some milk finally",'
         '"entry":"20141118T050231Z",'
@@ -795,6 +803,12 @@ class TaskFromHookTest(TasklibTest):
     def test_setting_up_from_add_hook_input(self):
         t = Task.from_input(input_file=self.input_add_data, backend=self.tw)
         self.assertEqual(t['description'], "Buy some milk")
+        self.assertEqual(t.pending, True)
+
+    def test_setting_up_from_add_hook_input_recurring(self):
+        t = Task.from_input(input_file=self.input_add_data_recurring,
+                            backend=self.tw)
+        self.assertEqual(t['description'], "Mow the lawn")
         self.assertEqual(t.pending, True)
 
     def test_setting_up_from_modified_hook_input(self):
