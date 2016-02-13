@@ -323,8 +323,10 @@ class TaskWarrior(Backend):
             id_lines = [l for l in output if l.startswith('Created task ')]
 
             # Complain loudly if it seems that more tasks were created
-            # Should not happen
-            if len(id_lines) != 1 or len(id_lines[0].split(' ')) != 3:
+            # Should not happen.
+            # Expected output: Created task 1.
+            #                  Created task 1 (recurrence template).
+            if len(id_lines) != 1 or len(id_lines[0].split(' ')) not in (3, 5):
                 raise TaskWarriorException("Unexpected output when creating "
                                            "task: %s" % '\n'.join(id_lines))
 
