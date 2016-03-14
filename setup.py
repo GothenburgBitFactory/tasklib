@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 install_requirements = ['six==1.5.2', 'pytz', 'tzlocal']
 
-version = '0.12.1'
+version = '1.0.0'
 
 try:
     import importlib
