@@ -1177,6 +1177,30 @@ class LazyUUIDTaskTest(TasklibTest):
         assert type(lazy1) is LazyUUIDTask
         assert type(lazy2) is LazyUUIDTask
 
+    def test_normal_to_lazy_inequality(self):
+        # Create a different UUID by changing the last letter
+        wrong_uuid = self.stored['uuid']
+        wrong_uuid = wrong_uuid[:-1] + ('a' if wrong_uuid[-1] != 'a' else 'b')
+
+        wrong_lazy = LazyUUIDTask(self.tw, wrong_uuid)
+
+        assert not self.stored == wrong_lazy
+        assert self.stored != wrong_lazy
+        assert type(wrong_lazy) is LazyUUIDTask
+
+    def test_lazy_to_lazy_inequality(self):
+        # Create a different UUID by changing the last letter
+        wrong_uuid = self.stored['uuid']
+        wrong_uuid = wrong_uuid[:-1] + ('a' if wrong_uuid[-1] != 'a' else 'b')
+
+        lazy1 = LazyUUIDTask(self.tw, self.stored['uuid'])
+        lazy2 = LazyUUIDTask(self.tw, wrong_uuid)
+
+        assert not lazy1 == lazy2
+        assert lazy1 != lazy2
+        assert type(lazy1) is LazyUUIDTask
+        assert type(lazy2) is LazyUUIDTask
+
     def test_lazy_in_queryset(self):
         tasks = self.tw.tasks.filter(uuid=self.stored['uuid'])
 
