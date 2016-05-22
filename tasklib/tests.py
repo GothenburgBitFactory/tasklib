@@ -1165,6 +1165,7 @@ class LazyUUIDTaskTest(TasklibTest):
 
     def test_normal_to_lazy_equality(self):
         assert self.stored == self.lazy
+        assert not self.stored != self.lazy
         assert type(self.lazy) is LazyUUIDTask
 
     def test_lazy_to_lazy_equality(self):
@@ -1172,6 +1173,7 @@ class LazyUUIDTaskTest(TasklibTest):
         lazy2 = LazyUUIDTask(self.tw, self.stored['uuid'])
 
         assert lazy1 == lazy2
+        assert not lazy1 != lazy2
         assert type(lazy1) is LazyUUIDTask
         assert type(lazy2) is LazyUUIDTask
 

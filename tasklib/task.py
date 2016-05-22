@@ -165,6 +165,9 @@ class TaskAnnotation(TaskResource):
         # their data dics are the same
         return self.task == other.task and self._data == other._data
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     __repr__ = __unicode__
 
 
@@ -276,6 +279,9 @@ class Task(TaskResource):
         else:
             # If the tasks are not saved, compare the actual instances
             return id(self) == id(other)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def __hash__(self):
         if self['uuid']:
