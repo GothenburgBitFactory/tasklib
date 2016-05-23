@@ -171,11 +171,17 @@ class TaskWarrior(Backend):
         if task.saved:
             for field in task._modified_fields:
                 add_field(field)
+
         # For new tasks, pass all fields that make sense
         else:
             for field in task._data.keys():
+                # We cannot set stuff that's read only (ID, UUID, ..)
                 if field in task.read_only_fields:
                     continue
+                # We do not want to do field deletion for new tasks
+                if task._data[field] is None:
+                    continue
+                # Otherwise we're fine
                 add_field(field)
 
         return args
