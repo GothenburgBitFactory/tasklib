@@ -105,6 +105,15 @@ class TaskFilterTest(TasklibTest):
 
         self.assertEqual(len(self.tw.tasks.waiting()), 1)
 
+    def test_recurring_empty(self):
+        Task(self.tw, description="test task").save()
+        self.assertEqual(len(self.tw.tasks.recurring()), 0)
+
+    def test_recurring_non_empty(self):
+        Task(self.tw, description="test task", recur="daily",
+             due=datetime.datetime.now()).save()
+        self.assertEqual(len(self.tw.tasks.recurring()), 1)
+
     def test_filtering_by_attribute(self):
         Task(self.tw, description="no priority task").save()
         Task(self.tw, priority="H", description="high priority task").save()
