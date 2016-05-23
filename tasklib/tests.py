@@ -81,6 +81,30 @@ class TaskFilterTest(TasklibTest):
         self.tw.tasks.all()[0].done()
         self.assertEqual(len(self.tw.tasks.completed()), 1)
 
+    def test_deleted_empty(self):
+        Task(self.tw, description="test task").save()
+        self.assertEqual(len(self.tw.tasks.deleted()), 0)
+
+    def test_deleted_non_empty(self):
+        Task(self.tw, description="test task").save()
+        self.assertEqual(len(self.tw.tasks.deleted()), 0)
+        self.tw.tasks.all()[0].delete()
+        self.assertEqual(len(self.tw.tasks.deleted()), 1)
+
+    def test_waiting_empty(self):
+        Task(self.tw, description="test task").save()
+        self.assertEqual(len(self.tw.tasks.waiting()), 0)
+
+    def test_waiting_non_empty(self):
+        Task(self.tw, description="test task").save()
+        self.assertEqual(len(self.tw.tasks.waiting()), 0)
+
+        t = self.tw.tasks.all()[0]
+        t['wait'] = 'tomorrow'
+        t.save()
+
+        self.assertEqual(len(self.tw.tasks.waiting()), 1)
+
     def test_filtering_by_attribute(self):
         Task(self.tw, description="no priority task").save()
         Task(self.tw, priority="H", description="high priority task").save()
