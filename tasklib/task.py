@@ -13,6 +13,8 @@ DATE_FORMAT = '%Y%m%dT%H%M%SZ'
 REPR_OUTPUT_SIZE = 10
 PENDING = 'pending'
 COMPLETED = 'completed'
+DELETED = 'deleted'
+WAITING = 'waiting'
 
 logger = logging.getLogger(__name__)
 
@@ -509,6 +511,12 @@ class TaskQuerySet(object):
 
     def completed(self):
         return self.filter(status=COMPLETED)
+
+    def deleted(self):
+        return self.filter(status=DELETED)
+
+    def waiting(self):
+        return self.filter(status=WAITING)
 
     def filter(self, *args, **kwargs):
         """
