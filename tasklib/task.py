@@ -310,6 +310,10 @@ class Task(TaskResource):
         return self['status'] == six.text_type('pending')
 
     @property
+    def recurring(self):
+        return self['status'] == six.text_type('recurring')
+
+    @property
     def active(self):
         return self['start'] is not None
 
