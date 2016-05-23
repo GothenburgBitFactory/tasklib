@@ -100,7 +100,7 @@ class TaskFilterTest(TasklibTest):
         self.assertEqual(len(self.tw.tasks.waiting()), 0)
 
         t = self.tw.tasks.all()[0]
-        t['wait'] = 'tomorrow'
+        t['wait'] = datetime.datetime.now() + datetime.timedelta(days=1)
         t.save()
 
         self.assertEqual(len(self.tw.tasks.waiting()), 1)
