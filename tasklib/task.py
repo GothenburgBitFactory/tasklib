@@ -15,6 +15,7 @@ PENDING = 'pending'
 COMPLETED = 'completed'
 DELETED = 'deleted'
 WAITING = 'waiting'
+RECURRING = 'recurring'
 
 logger = logging.getLogger(__name__)
 
@@ -521,6 +522,9 @@ class TaskQuerySet(object):
 
     def waiting(self):
         return self.filter(status=WAITING)
+
+    def recurring(self):
+        return self.filter(status=RECURRING)
 
     def filter(self, *args, **kwargs):
         """
