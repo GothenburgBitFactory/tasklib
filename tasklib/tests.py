@@ -614,6 +614,23 @@ class TaskTest(TasklibTest):
         t2 = self.tw.tasks.get(uuid=t1['uuid'])
         self.assertEqual(t1.__hash__(), t2.__hash__())
 
+    def test_hash_unequal_unsaved_tasks(self):
+        # Compare the hash of the task using two different objects
+        t1 = Task(self.tw, description="test task 1")
+        t2 = Task(self.tw, description="test task 2")
+
+        self.assertNotEqual(t1.__hash__(), t2.__hash__())
+
+    def test_hash_unequal_saved_tasks(self):
+        # Compare the hash of the task using two different objects
+        t1 = Task(self.tw, description="test task 1")
+        t2 = Task(self.tw, description="test task 2")
+
+        t1.save()
+        t2.save()
+
+        self.assertNotEqual(t1.__hash__(), t2.__hash__())
+
     def test_adding_task_with_priority(self):
         t = Task(self.tw, description="test task", priority="M")
         t.save()
