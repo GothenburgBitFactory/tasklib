@@ -265,6 +265,9 @@ class TaskWarrior(Backend):
         command_args = self._get_command_args(
             args, config_override=config_override)
         logger.debug(' '.join(command_args))
+
+        with open('/tmp/tasklog', 'a') as f:
+            f.write('|'.join(command_args)+'\n')
         p = subprocess.Popen(command_args, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
         stdout, stderr = [x.decode('utf-8') for x in p.communicate()]
