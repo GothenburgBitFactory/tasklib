@@ -132,7 +132,10 @@ class TaskWarrior(Backend):
         overrides.update(config_override or dict())
         for item in overrides.items():
             command_args.append('rc.{0}={1}'.format(*item))
-        command_args.extend([x.decode('utf-8') for x in args])
+        command_args.extend([
+            x.decode('utf-8') if isinstance(x, six.binary_type)
+            else six.text_type(x) for x in args
+        ])
         return command_args
 
     def _get_version(self):
