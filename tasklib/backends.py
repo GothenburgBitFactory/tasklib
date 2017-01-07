@@ -132,7 +132,7 @@ class TaskWarrior(Backend):
         overrides.update(config_override or dict())
         for item in overrides.items():
             command_args.append('rc.{0}={1}'.format(*item))
-        command_args.extend(map(six.text_type, args))
+        command_args.extend([x.decode('utf-8') for x in args])
         return command_args
 
     def _get_version(self):
@@ -264,7 +264,8 @@ class TaskWarrior(Backend):
                         return_all=False):
         command_args = self._get_command_args(
             args, config_override=config_override)
-        logger.debug(' '.join(command_args))
+        logger.debug(u' '.join(command_args))
+
         p = subprocess.Popen(command_args, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
         stdout, stderr = [x.decode('utf-8') for x in p.communicate()]
