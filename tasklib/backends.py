@@ -274,6 +274,7 @@ class TaskWarrior(Backend):
                 error_msg = stderr.strip()
             else:
                 error_msg = stdout.strip()
+            error_msg += u'\nCommand used: ' + u' '.join(command_args)
             raise TaskWarriorException(error_msg)
 
         # Return all whole triplet only if explicitly asked for
