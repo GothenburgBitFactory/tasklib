@@ -1376,4 +1376,5 @@ class TaskWarriorBackendTest(TasklibTest):
 
     def test_config(self):
         assert self.tw.config['nag'] == "You have more urgent tasks."
-        assert self.tw.config['debug'] == "no"
+        assert self.tw.config['default.command'] == "next"
+        assert self.tw.config['dependency.indicator'] == "D"
