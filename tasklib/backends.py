@@ -132,7 +132,10 @@ class TaskWarrior(Backend):
         overrides.update(config_override or dict())
         for item in overrides.items():
             command_args.append('rc.{0}={1}'.format(*item))
-        command_args.extend(map(six.text_type, args))
+        command_args.extend([
+            x.decode('utf-8') if isinstance(x, six.binary_type)
+            else six.text_type(x) for x in args
+        ])
         return command_args
 
     def _get_version(self):
@@ -171,11 +174,17 @@ class TaskWarrior(Backend):
         if task.saved:
             for field in task._modified_fields:
                 add_field(field)
+
         # For new tasks, pass all fields that make sense
         else:
             for field in task._data.keys():
+                # We cannot set stuff that's read only (ID, UUID, ..)
                 if field in task.read_only_fields:
                     continue
+                # We do not want to do field deletion for new tasks
+                if task._data[field] is None:
+                    continue
+                # Otherwise we're fine
                 add_field(field)
 
         return args
@@ -242,7 +251,7 @@ class TaskWarrior(Backend):
         )
 
         config = dict()
-        config_regex = re.compile(r'^(?P<key>[^\s]+)\s+(?P<value>[^\s].+$)')
+        config_regex = re.compile(r'^(?P<key>[^\s]+)\s+(?P<value>[^\s].*$)')
 
         for line in raw_output:
             match = config_regex.match(line)
@@ -258,7 +267,8 @@ class TaskWarrior(Backend):
                         return_all=False):
         command_args = self._get_command_args(
             args, config_override=config_override)
-        logger.debug(' '.join(command_args))
+        logger.debug(u' '.join(command_args))
+
         p = subprocess.Popen(command_args, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
         stdout, stderr = [x.decode('utf-8') for x in p.communicate()]
@@ -267,6 +277,7 @@ class TaskWarrior(Backend):
                 error_msg = stderr.strip()
             else:
                 error_msg = stdout.strip()
+            error_msg += u'\nCommand used: ' + u' '.join(command_args)
             raise TaskWarriorException(error_msg)
 
         # Return all whole triplet only if explicitly asked for

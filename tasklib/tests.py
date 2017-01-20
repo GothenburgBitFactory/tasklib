@@ -81,6 +81,39 @@ class TaskFilterTest(TasklibTest):
         self.tw.tasks.all()[0].done()
         self.assertEqual(len(self.tw.tasks.completed()), 1)
 
+    def test_deleted_empty(self):
+        Task(self.tw, description="test task").save()
+        self.assertEqual(len(self.tw.tasks.deleted()), 0)
+
+    def test_deleted_non_empty(self):
+        Task(self.tw, description="test task").save()
+        self.assertEqual(len(self.tw.tasks.deleted()), 0)
+        self.tw.tasks.all()[0].delete()
+        self.assertEqual(len(self.tw.tasks.deleted()), 1)
+
+    def test_waiting_empty(self):
+        Task(self.tw, description="test task").save()
+        self.assertEqual(len(self.tw.tasks.waiting()), 0)
+
+    def test_waiting_non_empty(self):
+        Task(self.tw, description="test task").save()
+        self.assertEqual(len(self.tw.tasks.waiting()), 0)
+
+        t = self.tw.tasks.all()[0]
+        t['wait'] = datetime.datetime.now() + datetime.timedelta(days=1)
+        t.save()
+
+        self.assertEqual(len(self.tw.tasks.waiting()), 1)
+
+    def test_recurring_empty(self):
+        Task(self.tw, description="test task").save()
+        self.assertEqual(len(self.tw.tasks.recurring()), 0)
+
+    def test_recurring_non_empty(self):
+        Task(self.tw, description="test task", recur="daily",
+             due=datetime.datetime.now()).save()
+        self.assertEqual(len(self.tw.tasks.recurring()), 1)
+
     def test_filtering_by_attribute(self):
         Task(self.tw, description="no priority task").save()
         Task(self.tw, priority="H", description="high priority task").save()
@@ -580,6 +613,23 @@ class TaskTest(TasklibTest):
 
         t2 = self.tw.tasks.get(uuid=t1['uuid'])
         self.assertEqual(t1.__hash__(), t2.__hash__())
+
+    def test_hash_unequal_unsaved_tasks(self):
+        # Compare the hash of the task using two different objects
+        t1 = Task(self.tw, description="test task 1")
+        t2 = Task(self.tw, description="test task 2")
+
+        self.assertNotEqual(t1.__hash__(), t2.__hash__())
+
+    def test_hash_unequal_saved_tasks(self):
+        # Compare the hash of the task using two different objects
+        t1 = Task(self.tw, description="test task 1")
+        t2 = Task(self.tw, description="test task 2")
+
+        t1.save()
+        t2.save()
+
+        self.assertNotEqual(t1.__hash__(), t2.__hash__())
 
     def test_adding_task_with_priority(self):
         t = Task(self.tw, description="test task", priority="M")
@@ -1165,6 +1215,7 @@ class LazyUUIDTaskTest(TasklibTest):
 
     def test_normal_to_lazy_equality(self):
         assert self.stored == self.lazy
+        assert not self.stored != self.lazy
         assert type(self.lazy) is LazyUUIDTask
 
     def test_lazy_to_lazy_equality(self):
@@ -1172,6 +1223,31 @@ class LazyUUIDTaskTest(TasklibTest):
         lazy2 = LazyUUIDTask(self.tw, self.stored['uuid'])
 
         assert lazy1 == lazy2
+        assert not lazy1 != lazy2
+        assert type(lazy1) is LazyUUIDTask
+        assert type(lazy2) is LazyUUIDTask
+
+    def test_normal_to_lazy_inequality(self):
+        # Create a different UUID by changing the last letter
+        wrong_uuid = self.stored['uuid']
+        wrong_uuid = wrong_uuid[:-1] + ('a' if wrong_uuid[-1] != 'a' else 'b')
+
+        wrong_lazy = LazyUUIDTask(self.tw, wrong_uuid)
+
+        assert not self.stored == wrong_lazy
+        assert self.stored != wrong_lazy
+        assert type(wrong_lazy) is LazyUUIDTask
+
+    def test_lazy_to_lazy_inequality(self):
+        # Create a different UUID by changing the last letter
+        wrong_uuid = self.stored['uuid']
+        wrong_uuid = wrong_uuid[:-1] + ('a' if wrong_uuid[-1] != 'a' else 'b')
+
+        lazy1 = LazyUUIDTask(self.tw, self.stored['uuid'])
+        lazy2 = LazyUUIDTask(self.tw, wrong_uuid)
+
+        assert not lazy1 == lazy2
+        assert lazy1 != lazy2
         assert type(lazy1) is LazyUUIDTask
         assert type(lazy2) is LazyUUIDTask
 
@@ -1300,4 +1376,5 @@ class TaskWarriorBackendTest(TasklibTest):
 
     def test_config(self):
         assert self.tw.config['nag'] == "You have more urgent tasks."
-        assert self.tw.config['debug'] == "no"
+        assert self.tw.config['default.command'] == "next"
+        assert self.tw.config['dependency.indicator'] == "D"
