@@ -3,6 +3,7 @@ import copy
 import importlib
 import json
 import logging
+import datetime
 import os
 import six
 import sys
@@ -435,6 +436,26 @@ class Task(TaskResource):
         else:
             self._load_data(new_data)
 
+    def task_active_time(self):
+        self.active_time = 0
+        task_history = [history_entry
+                        for history_entry in self.backend.history
+                        if self['uuid'] in history_entry['new']['uuid']]
+
+        for history_entry in task_history:
+            try:
+                if history_entry['old']['start']:
+                    try:
+                        if history_entry['new']['start']:
+                            pass
+                    except KeyError:
+                        entry_seconds = history_entry['time'] - \
+                            datetime.datetime.fromtimestamp(
+                                float(history_entry['old']['start']))
+                        self.active_time += entry_seconds.total_seconds()
+            except KeyError:
+                pass
+        return self.active_time
 
 class TaskQuerySet(object):
     """

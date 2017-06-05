@@ -189,6 +189,51 @@ class TaskWarrior(Backend):
 
         return args
 
+    def _get_history(self):
+        self.history = []
+        history_entry = {}
+
+        def get_available_keys():
+            available_keys = ['uuid', 'status', 'modified', 'entry',
+                              'description', 'project', 'priority', 'due',
+                              'start', 'end', 'tags', 'recur', 'parent',
+                              'imask', 'mask', 'depends', 'wait']
+            udas = []
+            for index in self.config:
+                if 'uda' in index:
+                    udas.append(re.sub(r'.*uda\.(.*?)\..*', r'\1', index))
+            available_keys.extend(set(udas))
+            return available_keys
+
+        def clean_history_entry(data_line, data_type):
+            """
+            Perform the scrapping of the undo.data file
+            """
+
+            data_line = re.sub('^' + data_type + ' \[', '{', data_line.strip())
+            data_line = re.sub('\]$', '}', data_line)
+            data_line = re.sub('" ', '", ', data_line)
+            available_keys = get_available_keys()
+            for key in available_keys:
+                data_line = re.sub(re.compile('({|, )(' + key + '):'),
+                                   r'\1"\2":', data_line)
+            data_line = re.sub(r'(annotation_\d*):', r'"\1":', data_line)
+            return json.loads(data_line)
+
+        with open(os.path.join(self.config['data.location'], 'undo.data'),
+                  'r') as f:
+            for line in f.readlines():
+                if re.match('^time ', line):
+                    history_entry['time'] = datetime.datetime.fromtimestamp(
+                        int(re.sub('^time ', '', line.strip())))
+                elif re.match('^new ', line):
+                    history_entry['new'] = clean_history_entry(line, 'new')
+                elif re.match('^old ', line):
+                    history_entry['old'] = clean_history_entry(line, 'old')
+                else:
+                    self.history.append(history_entry)
+                    history_entry = {}
+
     def format_depends(self, task):
         # We need to generate added and removed dependencies list,
         # since Taskwarrior does not accept redefining dependencies.
