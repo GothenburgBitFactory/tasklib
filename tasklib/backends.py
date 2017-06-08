@@ -189,7 +189,7 @@ class TaskWarrior(Backend):
 
         return args
 
-    def _get_history(self):
+    def _get_history(self, task_uuid=None):
         self.history = []
         history_entry = {}
 
@@ -198,11 +198,11 @@ class TaskWarrior(Backend):
                               'description', 'project', 'priority', 'due',
                               'start', 'end', 'tags', 'recur', 'parent',
                               'imask', 'mask', 'depends', 'wait']
-            udas = []
+            udas = set()
             for index in self.config:
                 if 'uda' in index:
-                    udas.append(re.sub(r'.*uda\.(.*?)\..*', r'\1', index))
-            available_keys.extend(set(udas))
+                    udas.add(re.sub(r'.*uda\.(.*?)\..*', r'\1', index))
+            available_keys.extend(udas)
             return available_keys
 
         def clean_history_entry(data_line, data_type):
@@ -226,12 +226,17 @@ class TaskWarrior(Backend):
                 if re.match('^time ', line):
                     history_entry['time'] = datetime.datetime.fromtimestamp(
                         int(re.sub('^time ', '', line.strip())))
-                elif re.match('^new ', line):
+                elif re.match('^new ', line) and (
+                        task_uuid is None or re.match(
+                            '.*' + task_uuid + '.*', line)):
                     history_entry['new'] = clean_history_entry(line, 'new')
-                elif re.match('^old ', line):
+                elif re.match('^old ', line) and (
+                        task_uuid is None or re.match(
+                            '.*' + task_uuid + '.*', line)):
                     history_entry['old'] = clean_history_entry(line, 'old')
                 else:
-                    self.history.append(history_entry)
+                    if 'new' in history_entry.keys():
+                        self.history.append(history_entry)
                     history_entry = {}
 
     def format_depends(self, task):
