@@ -189,7 +189,7 @@ class TaskWarrior(Backend):
 
         return args
 
-    def _get_history(self, task_uuid=None):
+    def _get_history(self):
         self.history = []
         history_entry = {}
 
@@ -226,13 +226,9 @@ class TaskWarrior(Backend):
                 if re.match('^time ', line):
                     history_entry['time'] = datetime.datetime.fromtimestamp(
                         int(re.sub('^time ', '', line.strip())))
-                elif re.match('^new ', line) and (
-                        task_uuid is None or re.match(
-                            '.*' + task_uuid + '.*', line)):
+                elif re.match('^new ', line):
                     history_entry['new'] = clean_history_entry(line, 'new')
-                elif re.match('^old ', line) and (
-                        task_uuid is None or re.match(
-                            '.*' + task_uuid + '.*', line)):
+                elif re.match('^old ', line):
                     history_entry['old'] = clean_history_entry(line, 'old')
                 else:
                     if 'new' in history_entry.keys():
