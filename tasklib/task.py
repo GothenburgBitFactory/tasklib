@@ -436,7 +436,7 @@ class Task(TaskResource):
         else:
             self._load_data(new_data)
 
-    def task_active_time(self):
+    def active_time(self):
         self.active_time = 0
         task_history = [history_entry
                         for history_entry in self.backend.history
