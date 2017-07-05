@@ -205,31 +205,44 @@ class TaskWarrior(Backend):
             available_keys.extend(udas)
             return available_keys
 
-        def clean_history_entry(data_line, data_type):
-            """
-            Perform the scrapping of the undo.data file
-            """
+        def convert_data_time(time_string):
+            "Convert undo.data time string to datetime"
+            return local_zone.localize(datetime.datetime.fromtimestamp(
+                float(time_string)))
 
-            data_line = re.sub('^' + data_type + ' \[', '{', data_line.strip())
+        def convert_history_entry(data_line, data_type):
+            "Convert undo.data history entry to a dictionary"
+            data_line = re.sub('^{} \['.format(data_type),
+                               '{', data_line.strip())
             data_line = re.sub('\]$', '}', data_line)
             data_line = re.sub('" ', '", ', data_line)
+
             available_keys = get_available_keys()
             for key in available_keys:
                 data_line = re.sub(re.compile('({|, )(' + key + '):'),
                                    r'\1"\2":', data_line)
             data_line = re.sub(r'(annotation_\d*):', r'"\1":', data_line)
-            return json.loads(data_line)
+            history_entry = json.loads(data_line)
+
+            for key in available_keys:
+                try:
+                    if re.match('\d{10}', history_entry[key]):
+                        history_entry[key] = convert_data_time(
+                            history_entry[key])
+                except KeyError:
+                    pass
+            return history_entry
 
         with open(os.path.join(self.config['data.location'], 'undo.data'),
                   'r') as f:
             for line in f.readlines():
                 if re.match('^time ', line):
-                    history_entry['time'] = datetime.datetime.fromtimestamp(
-                        int(re.sub('^time ', '', line.strip())))
+                    history_entry['time'] = convert_data_time(
+                            int(re.sub('^time ', '', line.strip())))
                 elif re.match('^new ', line):
-                    history_entry['new'] = clean_history_entry(line, 'new')
+                    history_entry['new'] = convert_history_entry(line, 'new')
                 elif re.match('^old ', line):
-                    history_entry['old'] = clean_history_entry(line, 'old')
+                    history_entry['old'] = convert_history_entry(line, 'old')
                 else:
                     if 'new' in history_entry.keys():
                         self.history.append(history_entry)

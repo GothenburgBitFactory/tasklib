@@ -436,13 +436,22 @@ class Task(TaskResource):
         else:
             self._load_data(new_data)
 
-    def active_time(self):
-        self.active_time = 0
+    def active_time(self, period=None):
+        """ Measure the active time of a task, if period is set,
+        it will calculate the time from now to the period, for example if
+        period = '1d', it will just measure the active time of the last 24h"""
+
+        active_time = 0
         task_history = [history_entry
                         for history_entry in self.backend.history
                         if self['uuid'] in history_entry['new']['uuid']]
+        if period:
+            oldest_possible_date = self.backend.convert_datetime_string(
+                'now - {}'.format(period))
 
         for history_entry in task_history:
+            if period and history_entry['time'] < oldest_possible_date:
+                continue
             try:
                 if history_entry['old']['start']:
                     try:
@@ -450,17 +459,24 @@ class Task(TaskResource):
                             pass
                     except KeyError:
                         entry_seconds = history_entry['time'] - \
-                            datetime.datetime.fromtimestamp(
-                                float(history_entry['old']['start']))
-                        self.active_time += entry_seconds.total_seconds()
+                            history_entry['old']['start']
+                        active_time += entry_seconds.total_seconds()
             except KeyError:
                 pass
 
-        if history_entry['new']['start']:
-            entry_seconds = datetime.datetime.now() - history_entry['time']
-            self.active_time += entry_seconds.total_seconds()
+        try:
+            if history_entry['new']['start']:
+                now = self.backend.convert_datetime_string(
+                    datetime.datetime.now().strftime('%Y%m%dT%H%M%S'))
+                if period and history_entry['time'] < oldest_possible_date:
+                    entry_seconds = now - oldest_possible_date
+                else:
+                    entry_seconds = now - history_entry['time']
+                active_time += entry_seconds.total_seconds()
+        except KeyError:
+            pass
 
-        return self.active_time
+        return active_time
 
 class TaskQuerySet(object):
     """
