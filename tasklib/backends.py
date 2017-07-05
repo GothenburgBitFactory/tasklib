@@ -2,6 +2,7 @@ import abc
 import copy
 import datetime
 import json
+import pickle
 import logging
 import os
 import re
@@ -190,8 +191,6 @@ class TaskWarrior(Backend):
         return args
 
     def _get_history(self):
-        self.history = []
-        history_entry = {}
 
         def get_available_keys():
             available_keys = ['uuid', 'status', 'modified', 'entry',
@@ -205,7 +204,7 @@ class TaskWarrior(Backend):
             available_keys.extend(udas)
             return available_keys
 
-        def convert_data_time(time_string):
+        def convert_timestamp(time_string):
             "Convert undo.data time string to datetime"
             return local_zone.localize(datetime.datetime.fromtimestamp(
                 float(time_string)))
@@ -227,26 +226,63 @@ class TaskWarrior(Backend):
             for key in available_keys:
                 try:
                     if re.match('\d{10}', history_entry[key]):
-                        history_entry[key] = convert_data_time(
+                        history_entry[key] = convert_timestamp(
                             history_entry[key])
                 except KeyError:
                     pass
             return history_entry
 
-        with open(os.path.join(self.config['data.location'], 'undo.data'),
-                  'r') as f:
-            for line in f.readlines():
-                if re.match('^time ', line):
-                    history_entry['time'] = convert_data_time(
-                            int(re.sub('^time ', '', line.strip())))
-                elif re.match('^new ', line):
-                    history_entry['new'] = convert_history_entry(line, 'new')
-                elif re.match('^old ', line):
-                    history_entry['old'] = convert_history_entry(line, 'old')
-                else:
-                    if 'new' in history_entry.keys():
-                        self.history.append(history_entry)
-                    history_entry = {}
+        def _load_history_from_source():
+            self.history = []
+            history_entry = {}
+            with open(os.path.join(self.config['data.location'], 'undo.data'),
+                      'r') as f:
+                for line in f.readlines():
+                    if re.match('^time ', line):
+                        history_entry['time'] = convert_timestamp(
+                                int(re.sub('^time ', '', line.strip())))
+                    elif re.match('^new ', line):
+                        history_entry['new'] = \
+                            convert_history_entry(line, 'new')
+                    elif re.match('^old ', line):
+                        history_entry['old'] = \
+                            convert_history_entry(line, 'old')
+                    else:
+                        if 'new' in history_entry.keys():
+                            self.history.append(history_entry)
+                        history_entry = {}
+
+        def _load_history_from_cache():
+            "Load the history cache"
+            with open(history_cache_filepath, 'rb') as f:
+                self.history = pickle.load(f)
+
+        def _save_history():
+            "Save the history cache"
+            with open(history_cache_filepath, 'wb') as f:
+                pickle.dump(self.history, f, pickle.HIGHEST_PROTOCOL)
+
+        def _cache_is_updated():
+            """ Check if cache is older than the value specified in the config
+            under `history.cache`, being the value an task calc now - {}
+            compatible value """
+            cache_date = convert_timestamp(os.path.getmtime(
+                history_cache_filepath))
+            cache_oldest_date = self.convert_datetime_string(
+                'now - {}'.format(self.config['history.cache']))
+            return cache_date > cache_oldest_date
+
+        history_cache_filepath = os.path.expanduser(
+            self.config['history.cache.location'])
+        if os.path.isfile(history_cache_filepath) and \
+                os.access(history_cache_filepath, os.R_OK) and \
+                _cache_is_updated():
+                _load_history_from_cache()
+        else:
+            _load_history_from_source()
+            _save_history()
+
+
 
     def format_depends(self, task):
         # We need to generate added and removed dependencies list,
