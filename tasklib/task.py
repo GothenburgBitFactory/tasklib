@@ -455,6 +455,11 @@ class Task(TaskResource):
                         self.active_time += entry_seconds.total_seconds()
             except KeyError:
                 pass
+
+        if history_entry['new']['start']:
+            entry_seconds = datetime.datetime.now() - history_entry['time']
+            self.active_time += entry_seconds.total_seconds()
+
         return self.active_time
 
 class TaskQuerySet(object):
