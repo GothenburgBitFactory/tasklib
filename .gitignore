@@ -4,3 +4,4 @@ tasklib.egg-info
 /dist
 /build
 docs/_build
+.project

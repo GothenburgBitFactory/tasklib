@@ -1378,3 +1378,12 @@ class TaskWarriorBackendTest(TasklibTest):
         assert self.tw.config['nag'] == "You have more urgent tasks."
         assert self.tw.config['default.command'] == "next"
         assert self.tw.config['dependency.indicator'] == "D"
+
+class TaskHistory(TasklibTest):
+    def setUp(self):
+        super(TaskHistory, self).setUp()
+        shutil.copyfile('./tests.data/undo.data', self.tmp)
+        tw._get.history()
+
+    def test_load_history_from_source(self):
+
