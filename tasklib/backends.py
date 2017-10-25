@@ -191,12 +191,11 @@ class TaskWarrior(Backend):
         return args
 
     def _get_history(self):
-
         def get_available_keys():
             available_keys = ['uuid', 'status', 'modified', 'entry',
                               'description', 'project', 'priority', 'due',
                               'start', 'end', 'tags', 'recur', 'parent',
-                              'imask', 'mask', 'depends', 'wait']
+                              'imask', 'mask', 'depends', 'wait', 'instatus']
             udas = set()
             for index in self.config:
                 if 'uda' in index:
@@ -221,11 +220,7 @@ class TaskWarrior(Backend):
                 data_line = re.sub(re.compile('({|, )(' + key + '):'),
                                    r'\1"\2":', data_line)
             data_line = re.sub(r'(annotation_\d*):', r'"\1":', data_line)
-            try:
-                history_entry = json.loads(data_line)
-            except Exception:
-                logger.warning('Error parsing line \n{}'.format(data_line))
-
+            history_entry = json.loads(data_line)
             for key in available_keys:
                 try:
                     if re.match('\d{10}', history_entry[key]):
