@@ -12,7 +12,7 @@ import tempfile
 import unittest
 
 from .backends import TaskWarrior
-from .task import Task, ReadOnlyDictView, TaskQuerySet
+from .task import Task, ReadOnlyDictView
 from .lazy import LazyUUIDTask, LazyUUIDTaskSet
 from .serializing import DATE_FORMAT, local_zone
 
@@ -40,7 +40,9 @@ TASK_STANDARD_ATTRS = (
     'annotations',
 )
 
-total_seconds_2_6 = lambda x: x.microseconds / 1e6 + x.seconds + x.days * 24 * 3600
+
+def total_seconds_2_6(x):
+    return x.microseconds / 1e6 + x.seconds + x.days * 24 * 3600
 
 
 class TasklibTest(unittest.TestCase):
@@ -124,7 +126,8 @@ class TaskFilterTest(TasklibTest):
 
         # Assert that the correct tasks are returned
         high_priority_task = self.tw.tasks.get(priority="H")
-        self.assertEqual(high_priority_task['description'], "high priority task")
+        self.assertEqual(high_priority_task['description'],
+                         "high priority task")
 
     def test_filtering_by_empty_attribute(self):
         Task(self.tw, description="no priority task").save()
@@ -277,7 +280,7 @@ class TaskTest(TasklibTest):
 
     def test_create_unsaved_task(self):
         # Make sure a new task is not saved unless explicitly called for
-        t = Task(self.tw, description="test task")
+        Task(self.tw, description="test task")
         self.assertEqual(len(self.tw.tasks.all()), 0)
 
     # TODO: once python 2.6 compatiblity is over, use context managers here
@@ -327,9 +330,9 @@ class TaskTest(TasklibTest):
 
     def test_add_multiple_completed_tasks(self):
         t1 = Task(self.tw, description="test1", status="completed",
-                 end=datetime.datetime.now())
+                  end=datetime.datetime.now())
         t2 = Task(self.tw, description="test2", status="completed",
-                 end=datetime.datetime.now())
+                  end=datetime.datetime.now())
         t1.save()
         t2.save()
 
@@ -421,7 +424,7 @@ class TaskTest(TasklibTest):
 
     def test_stopping_task(self):
         t = Task(self.tw, description="test task")
-        now = t.datetime_normalizer(datetime.datetime.now())
+        t.datetime_normalizer(datetime.datetime.now())
         t.save()
         t.start()
         t.stop()
@@ -706,7 +709,7 @@ class TaskTest(TasklibTest):
         self.assertEqual(set(t._modified_fields), set())
 
         # Get the task by using a filter by UUID
-        t2 = self.tw.tasks.get(uuid=t['uuid'])
+        self.tw.tasks.get(uuid=t['uuid'])
 
         # Reassigning the fields with the same values now should not produce
         # modified fields
@@ -720,7 +723,7 @@ class TaskTest(TasklibTest):
         t = Task(self.tw)
 
         for field in TASK_STANDARD_ATTRS:
-            value = t[field]
+            t[field]
 
         self.assertEqual(set(t._modified_fields), set())
 
@@ -777,7 +780,7 @@ class TaskTest(TasklibTest):
         # Test that any deserializer returns empty value when passed ''
         t = Task(self.tw)
         deserializers = [getattr(t, deserializer_name) for deserializer_name in
-                        filter(lambda x: x.startswith('deserialize_'), dir(t))]
+                         filter(lambda x: x.startswith('deserialize_'), dir(t))]
         for deserializer in deserializers:
             self.assertTrue(deserializer('') in (None, [], set()))
 
@@ -818,7 +821,8 @@ class TaskTest(TasklibTest):
     def test_return_all_from_failed_executed_command(self):
         Task(self.tw, description="test task", tags=['test']).save()
         out, err, rc = self.tw.execute_command(['countinvalid'],
-            return_all=True, allow_failure=False)
+                                               return_all=True,
+                                               allow_failure=False)
         self.assertNotEqual(rc, 0)
 
 
@@ -839,7 +843,8 @@ class TaskFromHookTest(TasklibTest):
         '"status":"pending",'
         '"uuid":"81305335-0237-49ff-8e87-b3cdc2369cec"}')
 
-    input_modify_data = six.StringIO(input_add_data.getvalue() + '\n' +
+    input_modify_data = six.StringIO(
+        input_add_data.getvalue() + '\n' +
         '{"description":"Buy some milk finally",'
         '"entry":"20141118T050231Z",'
         '"status":"completed",'
@@ -847,8 +852,8 @@ class TaskFromHookTest(TasklibTest):
 
     exported_raw_data = (
         '{"project":"Home",'
-         '"due":"20150101T232323Z",'
-         '"description":"test task"}')
+        '"due":"20150101T232323Z",'
+        '"description":"test task"}')
 
     def test_setting_up_from_add_hook_input(self):
         t = Task.from_input(input_file=self.input_add_data, backend=self.tw)
@@ -875,8 +880,9 @@ class TaskFromHookTest(TasklibTest):
 
     def test_export_data(self):
         t = Task(self.tw, description="test task",
-            project="Home",
-            due=pytz.utc.localize(datetime.datetime(2015,1,1,23,23,23)))
+                 project="Home",
+                 due=pytz.utc.localize(datetime.datetime(2015, 1, 1,
+                                                         23, 23, 23)))
 
         # Check that the output is a permutation of:
         # {"project":"Home","description":"test task","due":"20150101232323Z"}
@@ -889,13 +895,14 @@ class TaskFromHookTest(TasklibTest):
         self.assertTrue(any(t.export_data() == expected
                             for expected in allowed_output))
 
+
 class TimezoneAwareDatetimeTest(TasklibTest):
 
     def setUp(self):
         super(TimezoneAwareDatetimeTest, self).setUp()
         self.zone = local_zone
-        self.localdate_naive = datetime.datetime(2015,2,2)
-        self.localtime_naive = datetime.datetime(2015,2,2,0,0,0)
+        self.localdate_naive = datetime.datetime(2015, 2, 2)
+        self.localtime_naive = datetime.datetime(2015, 2, 2, 0, 0, 0)
         self.localtime_aware = self.zone.localize(self.localtime_naive)
         self.utctime_aware = self.localtime_aware.astimezone(pytz.utc)
 
@@ -959,6 +966,7 @@ class TimezoneAwareDatetimeTest(TasklibTest):
         self.assertEqual(json.loads(t.export_data())['due'],
                          self.utctime_aware.strftime(DATE_FORMAT))
 
+
 class DatetimeStringTest(TasklibTest):
 
     def test_simple_now_conversion(self):
@@ -974,7 +982,7 @@ class DatetimeStringTest(TasklibTest):
         now = local_zone.localize(datetime.datetime.now())
 
         # Assert that both times are not more than 5 seconds apart
-        if sys.version_info < (2,7):
+        if sys.version_info < (2, 7):
             self.assertTrue(total_seconds_2_6(now - t['due']) < 5)
             self.assertTrue(total_seconds_2_6(t['due'] - now) < 5)
         else:
@@ -1020,7 +1028,7 @@ class DatetimeStringTest(TasklibTest):
             hour=23,
             minute=59,
             second=59
-            )) - datetime.timedelta(0,4 * 30 * 86400)
+            )) - datetime.timedelta(0, 4 * 30 * 86400)
         self.assertEqual(due_date, t['due'])
 
     def test_filtering_with_string_datetime(self):
@@ -1033,9 +1041,10 @@ class DatetimeStringTest(TasklibTest):
                 return
 
         t = Task(self.tw, description="test task",
-                 due=datetime.datetime.now() - datetime.timedelta(0,2))
+                 due=datetime.datetime.now() - datetime.timedelta(0, 2))
         t.save()
         self.assertEqual(len(self.tw.tasks.filter(due__before="now")), 1)
+
 
 class AnnotationTest(TasklibTest):
 
@@ -1071,12 +1080,12 @@ class AnnotationTest(TasklibTest):
         self.assertEqual(len(task['annotations']), 0)
 
     def test_annotation_after_modification(self):
-         task = self.tw.tasks.get()
-         task['project'] = 'test'
-         task.add_annotation('I should really do this task')
-         self.assertEqual(task['project'], 'test')
-         task.save()
-         self.assertEqual(task['project'], 'test')
+        task = self.tw.tasks.get()
+        task['project'] = 'test'
+        task.add_annotation('I should really do this task')
+        self.assertEqual(task['project'], 'test')
+        task.save()
+        self.assertEqual(task['project'], 'test')
 
     def test_serialize_annotations(self):
         # Test that serializing annotations is possible
@@ -1111,40 +1120,43 @@ class UnicodeTest(TasklibTest):
         Task(self.tw, description="test task").save()
         self.tw.tasks.get()
 
+
 class ReadOnlyDictViewTest(unittest.TestCase):
 
     def setUp(self):
-        self.sample = dict(l=[1,2,3], d={'k':'v'})
+        self.sample = dict(sample_list=[1, 2, 3], sample_dict={'key': 'value'})
         self.original_sample = copy.deepcopy(self.sample)
         self.view = ReadOnlyDictView(self.sample)
 
     def test_readonlydictview_getitem(self):
-        l = self.view['l']
-        self.assertEqual(l, self.sample['l'])
+        sample_list = self.view['sample_list']
+        self.assertEqual(sample_list, self.sample['sample_list'])
 
         # Assert that modification changed only copied value
-        l.append(4)
-        self.assertNotEqual(l, self.sample['l'])
+        sample_list.append(4)
+        self.assertNotEqual(sample_list, self.sample['sample_list'])
 
         # Assert that viewed dict is not changed
         self.assertEqual(self.sample, self.original_sample)
 
     def test_readonlydictview_contains(self):
-        self.assertEqual('l' in self.view, 'l' in self.sample)
-        self.assertEqual('d' in self.view, 'd' in self.sample)
-        self.assertEqual('k' in self.view, 'k' in self.sample)
+        self.assertEqual('sample_list' in self.view,
+                         'sample_list' in self.sample)
+        self.assertEqual('sample_dict' in self.view,
+                         'sample_dict' in self.sample)
+        self.assertEqual('key' in self.view, 'key' in self.sample)
 
         # Assert that viewed dict is not changed
         self.assertEqual(self.sample, self.original_sample)
 
     def test_readonlydictview_iter(self):
-        self.assertEqual(list(k for k in self.view),
-                         list(k for k in self.sample))
+        self.assertEqual(list(key for key in self.view),
+                         list(key for key in self.sample))
 
         # Assert the view is correct after modification
         self.sample['new'] = 'value'
-        self.assertEqual(list(k for k in self.view),
-                         list(k for k in self.sample))
+        self.assertEqual(list(key for key in self.view),
+                         list(key for key in self.sample))
 
     def test_readonlydictview_len(self):
         self.assertEqual(len(self.view), len(self.sample))
@@ -1154,12 +1166,12 @@ class ReadOnlyDictViewTest(unittest.TestCase):
         self.assertEqual(len(self.view), len(self.sample))
 
     def test_readonlydictview_get(self):
-        l = self.view.get('l')
-        self.assertEqual(l, self.sample.get('l'))
+        sample_list = self.view.get('sample_list')
+        self.assertEqual(sample_list, self.sample.get('sample_list'))
 
         # Assert that modification changed only copied value
-        l.append(4)
-        self.assertNotEqual(l, self.sample.get('l'))
+        sample_list.append(4)
+        self.assertNotEqual(sample_list, self.sample.get('sample_list'))
 
         # Assert that viewed dict is not changed
         self.assertEqual(self.sample, self.original_sample)
@@ -1350,8 +1362,10 @@ class LazyUUIDTaskSetTest(TasklibTest):
 
         assert taskset ^ lazyset == set([self.task1, self.task3])
         assert lazyset ^ taskset == set([self.task1, self.task3])
-        assert taskset.symmetric_difference(lazyset) == set([self.task1, self.task3])
-        assert lazyset.symmetric_difference(taskset) == set([self.task1, self.task3])
+        assert taskset.symmetric_difference(lazyset) == set([self.task1,
+                                                             self.task3])
+        assert lazyset.symmetric_difference(taskset) == set([self.task1,
+                                                             self.task3])
 
         lazyset ^= taskset
         assert lazyset == set([self.task1, self.task3])

@@ -94,7 +94,8 @@ class TaskWarrior(Backend):
     VERSION_2_4_4 = six.u('2.4.4')
     VERSION_2_4_5 = six.u('2.4.5')
 
-    def __init__(self, data_location=None, create=True, taskrc_location='~/.taskrc'):
+    def __init__(self, data_location=None, create=True,
+                 taskrc_location='~/.taskrc'):
         self.taskrc_location = os.path.expanduser(taskrc_location)
 
         # If taskrc does not exist, pass / to use defaults and avoid creating
@@ -214,7 +215,8 @@ class TaskWarrior(Backend):
         if self.version < self.VERSION_2_4_0:
             return task._data['description']
         else:
-            return six.u("description:'{0}'").format(task._data['description'] or '')
+            return six.u("description:'{0}'").format(task._data['description']
+                                                     or '')
 
     def convert_datetime_string(self, value):
 

@@ -333,7 +333,8 @@ class Task(TaskResource):
 
     def delete(self):
         if not self.saved:
-            raise Task.NotSaved("Task needs to be saved before it can be deleted")
+            raise Task.NotSaved(
+                "Task needs to be saved before it can be deleted")
 
         # Refresh the status, and raise exception if the task is deleted
         self.refresh(only_fields=['status'])
@@ -348,7 +349,8 @@ class Task(TaskResource):
 
     def start(self):
         if not self.saved:
-            raise Task.NotSaved("Task needs to be saved before it can be started")
+            raise Task.NotSaved(
+                "Task needs to be saved before it can be started")
 
         # Refresh, and raise exception if task is already completed/deleted
         self.refresh(only_fields=['status'])
@@ -367,7 +369,8 @@ class Task(TaskResource):
 
     def stop(self):
         if not self.saved:
-            raise Task.NotSaved("Task needs to be saved before it can be stopped")
+            raise Task.NotSaved(
+                "Task needs to be saved before it can be stopped")
 
         # Refresh, and raise exception if task is already completed/deleted
         self.refresh(only_fields=['status'])
@@ -382,7 +385,8 @@ class Task(TaskResource):
 
     def done(self):
         if not self.saved:
-            raise Task.NotSaved("Task needs to be saved before it can be completed")
+            raise Task.NotSaved(
+                "Task needs to be saved before it can be completed")
 
         # Refresh, and raise exception if task is already completed/deleted
         self.refresh(only_fields=['status'])

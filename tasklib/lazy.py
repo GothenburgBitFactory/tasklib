@@ -129,7 +129,7 @@ class LazyUUIDTaskSet(object):
 
     def __rsub__(self, other):
         return LazyUUIDTaskSet(self._tw,
-            set(t['uuid'] for t in other) - self._uuids)
+                               set(t['uuid'] for t in other) - self._uuids)
 
     def __or__(self, other):
         return self.union(other)
@@ -172,19 +172,19 @@ class LazyUUIDTaskSet(object):
 
     def union(self, other):
         return LazyUUIDTaskSet(self._tw,
-            self._uuids | set(t['uuid'] for t in other))
+                               self._uuids | set(t['uuid'] for t in other))
 
     def intersection(self, other):
         return LazyUUIDTaskSet(self._tw,
-            self._uuids & set(t['uuid'] for t in other))
+                               self._uuids & set(t['uuid'] for t in other))
 
     def difference(self, other):
         return LazyUUIDTaskSet(self._tw,
-            self._uuids - set(t['uuid'] for t in other))
+                               self._uuids - set(t['uuid'] for t in other))
 
     def symmetric_difference(self, other):
         return LazyUUIDTaskSet(self._tw,
-            self._uuids ^ set(t['uuid'] for t in other))
+                               self._uuids ^ set(t['uuid'] for t in other))
 
     def update(self, other):
         self._uuids |= set(t['uuid'] for t in other)
