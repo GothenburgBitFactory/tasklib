@@ -11,33 +11,33 @@ import sys
 import tempfile
 import unittest
 
-from .backends import TaskWarrior
+from .backends import TaskWarrior, History
 from .task import Task, ReadOnlyDictView, TaskQuerySet
 from .lazy import LazyUUIDTask, LazyUUIDTaskSet
 from .serializing import DATE_FORMAT, local_zone
 
 # http://taskwarrior.org/docs/design/task.html , Section: The Attributes
 TASK_STANDARD_ATTRS = (
-    'status',
-    'uuid',
-    'entry',
-    'description',
-    'start',
-    'end',
-    'due',
-    'until',
-    'wait',
-    'modified',
-    'scheduled',
-    'recur',
-    'mask',
-    'imask',
-    'parent',
-    'project',
-    'priority',
-    'depends',
-    'tags',
     'annotations',
+    'entry',
+    'depends',
+    'description',
+    'due',
+    'end',
+    'imask',
+    'mask',
+    'modified',
+    'parent',
+    'priority',
+    'project',
+    'recur',
+    'scheduled',
+    'start',
+    'status',
+    'tags',
+    'until',
+    'uuid',
+    'wait',
 )
 
 total_seconds_2_6 = lambda x: x.microseconds / 1e6 + x.seconds + x.days * 24 * 3600
@@ -1379,11 +1379,11 @@ class TaskWarriorBackendTest(TasklibTest):
         assert self.tw.config['default.command'] == "next"
         assert self.tw.config['dependency.indicator'] == "D"
 
+
 class TaskHistory(TasklibTest):
     def setUp(self):
         super(TaskHistory, self).setUp()
         shutil.copyfile('./tests.data/undo.data', self.tmp)
-        tw._get.history()
 
-    def test_load_history_from_source(self):
-
+    def test_available_keys_without_udas(self):
+        pass

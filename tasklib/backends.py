@@ -190,97 +190,6 @@ class TaskWarrior(Backend):
 
         return args
 
-    def _get_history(self):
-        def get_available_keys():
-            available_keys = ['uuid', 'status', 'modified', 'entry',
-                              'description', 'project', 'priority', 'due',
-                              'start', 'end', 'tags', 'recur', 'parent',
-                              'imask', 'mask', 'depends', 'wait', 'instatus']
-            udas = set()
-            for index in self.config:
-                if 'uda' in index:
-                    udas.add(re.sub(r'.*uda\.(.*?)\..*', r'\1', index))
-            available_keys.extend(udas)
-            return available_keys
-
-        def convert_timestamp(time_string):
-            "Convert undo.data time string to datetime"
-            return local_zone.localize(datetime.datetime.fromtimestamp(
-                float(time_string)))
-
-        def convert_history_entry(data_line, data_type):
-            "Convert undo.data history entry to a dictionary"
-            data_line = re.sub('^{} \['.format(data_type),
-                               '{', data_line.strip())
-            data_line = re.sub('\]$', '}', data_line)
-            data_line = re.sub('" ', '", ', data_line)
-
-            available_keys = get_available_keys()
-            for key in available_keys:
-                data_line = re.sub(re.compile('({|, )(' + key + '):'),
-                                   r'\1"\2":', data_line)
-            data_line = re.sub(r'(annotation_\d*):', r'"\1":', data_line)
-            history_entry = json.loads(data_line)
-            for key in available_keys:
-                try:
-                    if re.match('\d{10}', history_entry[key]):
-                        history_entry[key] = convert_timestamp(
-                            history_entry[key])
-                except KeyError:
-                    pass
-            return history_entry
-
-        def _load_history_from_source():
-            self.history = []
-            history_entry = {}
-            with open(os.path.join(self.config['data.location'], 'undo.data'),
-                      'r') as f:
-                for line in f.readlines():
-                    if re.match('^time ', line):
-                        history_entry['time'] = convert_timestamp(
-                                int(re.sub('^time ', '', line.strip())))
-                    elif re.match('^new ', line):
-                        history_entry['new'] = \
-                            convert_history_entry(line, 'new')
-                    elif re.match('^old ', line):
-                        history_entry['old'] = \
-                            convert_history_entry(line, 'old')
-                    else:
-                        if 'new' in history_entry.keys():
-                            self.history.append(history_entry)
-                        history_entry = {}
-
-        def _load_history_from_cache():
-            "Load the history cache"
-            with open(history_cache_filepath, 'rb') as f:
-                self.history = pickle.load(f)
-
-        def _save_history():
-            "Save the history cache"
-            with open(history_cache_filepath, 'wb') as f:
-                pickle.dump(self.history, f, pickle.HIGHEST_PROTOCOL)
-
-        def _cache_is_updated():
-            """ Check if cache is older than the value specified in the config
-            under `history.cache`, being the value an task calc now - {}
-            compatible value """
-            cache_date = convert_timestamp(os.path.getmtime(
-                history_cache_filepath))
-            cache_oldest_date = self.convert_datetime_string(
-                'now - {}'.format(self.config['history.cache']))
-            return cache_date > cache_oldest_date
-
-        history_cache_filepath = os.path.expanduser(
-            self.config['history.cache.location'])
-        if os.path.isfile(history_cache_filepath) and \
-                os.access(history_cache_filepath, os.R_OK) and \
-                _cache_is_updated():
-                _load_history_from_cache()
-        else:
-            _load_history_from_source()
-            _save_history()
-
-
 
     def format_depends(self, task):
         # We need to generate added and removed dependencies list,
@@ -513,3 +422,118 @@ class TaskWarrior(Backend):
 
     def sync(self):
         self.execute_command(['sync'])
+
+class History(object):
+    def __init__(self)
+
+    # def _get_history(self):
+    #    def get_available_keys():
+    #        TASK_STANDARD_ATTRS = [
+    #            'annotations',
+    #            'entry',
+    #            'depends',
+    #            'description',
+    #            'due',
+    #            'end',
+    #            'imask',
+    #            'mask',
+    #            'modified',
+    #            'parent',
+    #            'priority',
+    #            'project',
+    #            'recur',
+    #            'scheduled',
+    #            'start',
+    #            'status',
+    #            'tags',
+    #            'until',
+    #            'uuid',
+    #            'wait',
+    #        ]
+    #        available_keys = ['uuid', 'status', 'modified', 'entry',
+    #                          'description', 'project', 'priority', 'due',
+    #                          'start', 'end', 'tags', 'recur', 'parent',
+    #                          'imask', 'mask', 'depends', 'wait']
+    #        udas = set()
+    #        for index in self.config:
+    #            if 'uda' in index:
+    #                udas.add(re.sub(r'.*uda\.(.*?)\..*', r'\1', index))
+    #        available_keys.extend(udas)
+    #        return available_keys
+
+    #    def convert_timestamp(time_string):
+    #        "Convert undo.data time string to datetime"
+    #        return local_zone.localize(datetime.datetime.fromtimestamp(
+    #            float(time_string)))
+
+    #    def convert_history_entry(data_line, data_type):
+    #        "Convert undo.data history entry to a dictionary"
+    #        data_line = re.sub('^{} \['.format(data_type),
+    #                           '{', data_line.strip())
+    #        data_line = re.sub('\]$', '}', data_line)
+    #        data_line = re.sub('" ', '", ', data_line)
+
+    #        available_keys = get_available_keys()
+    #        for key in available_keys:
+    #            data_line = re.sub(re.compile('({|, )(' + key + '):'),
+    #                               r'\1"\2":', data_line)
+    #        data_line = re.sub(r'(annotation_\d*):', r'"\1":', data_line)
+    #        history_entry = json.loads(data_line)
+    #        for key in available_keys:
+    #            try:
+    #                if re.match('\d{10}', history_entry[key]):
+    #                    history_entry[key] = convert_timestamp(
+    #                        history_entry[key])
+    #            except KeyError:
+    #                pass
+    #        return history_entry
+
+    #   def _load_history_from_source():
+    #        self.history = []
+    #        history_entry = {}
+    #        with open(os.path.join(self.config['data.location'], 'undo.data'),
+    #                  'r') as f:
+    #            for line in f.readlines():
+    #                if re.match('^time ', line):
+    #                    history_entry['time'] = convert_timestamp(
+    #                            int(re.sub('^time ', '', line.strip())))
+    #                elif re.match('^new ', line):
+    #                    history_entry['new'] = \
+    #                        convert_history_entry(line, 'new')
+    #                elif re.match('^old ', line):
+    #                    history_entry['old'] = \
+    #                        convert_history_entry(line, 'old')
+    #                else:
+    #                    if 'new' in history_entry.keys():
+    #                        self.history.append(history_entry)
+    #                    history_entry = {}
+
+    #  def _load_history_from_cache():
+    #        "Load the history cache"
+    #        with open(history_cache_filepath, 'rb') as f:
+    #            self.history = pickle.load(f)
+
+    #  def _save_history():
+    #        "Save the history cache"
+    #        with open(history_cache_filepath, 'wb') as f:
+    #            pickle.dump(self.history, f, pickle.HIGHEST_PROTOCOL)
+
+    #  def _cache_is_updated():
+    #        """ Check if cache is older than the value specified in the config
+    #        under `history.cache`, being the value an task calc now - {}
+    #        compatible value """
+    #        cache_date = convert_timestamp(os.path.getmtime(
+    #            history_cache_filepath))
+    #        cache_oldest_date = self.convert_datetime_string(
+    #            'now - {}'.format(self.config['history.cache']))
+    #        return cache_date > cache_oldest_date
+
+    #    history_cache_filepath = os.path.expanduser(
+    #        self.config['history.cache.location'])
+    #    if os.path.isfile(history_cache_filepath) and \
+    #            os.access(history_cache_filepath, os.R_OK) and \
+    #            _cache_is_updated():
+    #            _load_history_from_cache()
+    #    else:
+    #        _load_history_from_source()
+    #        _save_history()
