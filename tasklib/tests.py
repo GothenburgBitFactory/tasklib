@@ -1,5 +1,6 @@
 # coding=utf-8
 
+import os
 import copy
 import datetime
 import itertools
@@ -11,7 +12,7 @@ import sys
 import tempfile
 import unittest
 
-from .backends import TaskWarrior, History
+from .backends import TaskWarrior, TaskHistory
 from .task import Task, ReadOnlyDictView, TaskQuerySet
 from .lazy import LazyUUIDTask, LazyUUIDTaskSet
 from .serializing import DATE_FORMAT, local_zone
@@ -1380,10 +1381,19 @@ class TaskWarriorBackendTest(TasklibTest):
         assert self.tw.config['dependency.indicator'] == "D"
 
 
-class TaskHistory(TasklibTest):
+class TaskHistoryTest(TasklibTest):
     def setUp(self):
-        super(TaskHistory, self).setUp()
-        shutil.copyfile('./tests.data/undo.data', self.tmp)
+        super(TaskHistoryTest, self).setUp()
+        shutil.copyfile('tasklib/tests.data/undo.data', os.path.join(
+            self.tmp, 'undo.data'))
+        self.tw.history = TaskHistory()
 
     def test_available_keys_without_udas(self):
-        pass
+        self.tw.history.get_available_keys()
+        self.assertEqual(TASK_STANDARD_ATTRS, self.tw.history.available_keys)
+
+    def test_available_keys_with_udas(self):
+        shutil.copyfile('tasklib/tests.data/undo.data', os.path.join(
+            self.tmp, 'undo.data'))
+        self.tw.history.get_available_keys()
+        self.assertEqual(TASK_STANDARD_ATTRS, self.tw.history.available_keys)

@@ -423,43 +423,43 @@ class TaskWarrior(Backend):
     def sync(self):
         self.execute_command(['sync'])
 
-class History(object):
-    def __init__(self)
+
+class TaskHistory(TaskWarrior):
+    def __init__(self):
+        super(TaskHistory, self).__init__()
+
+    def get_available_keys(self):
+        TASK_STANDARD_ATTRS = [
+            'annotations',
+            'entry',
+            'depends',
+            'description',
+            'due',
+            'end',
+            'imask',
+            'mask',
+            'modified',
+            'parent',
+            'priority',
+            'project',
+            'recur',
+            'scheduled',
+            'start',
+            'status',
+            'tags',
+            'until',
+            'uuid',
+            'wait',
+        ]
+        available_keys = TASK_STANDARD_ATTRS
+        udas = set()
+        for index in self.config:
+            if 'uda' in index:
+                udas.add(re.sub(r'.*uda\.(.*?)\..*', r'\1', index))
+        available_keys.extend(udas)
+        self.available_keys = tuple(available_keys)
 
     # def _get_history(self):
-    #    def get_available_keys():
-    #        TASK_STANDARD_ATTRS = [
-    #            'annotations',
-    #            'entry',
-    #            'depends',
-    #            'description',
-    #            'due',
-    #            'end',
-    #            'imask',
-    #            'mask',
-    #            'modified',
-    #            'parent',
-    #            'priority',
-    #            'project',
-    #            'recur',
-    #            'scheduled',
-    #            'start',
-    #            'status',
-    #            'tags',
-    #            'until',
-    #            'uuid',
-    #            'wait',
-    #        ]
-    #        available_keys = ['uuid', 'status', 'modified', 'entry',
-    #                          'description', 'project', 'priority', 'due',
-    #                          'start', 'end', 'tags', 'recur', 'parent',
-    #                          'imask', 'mask', 'depends', 'wait']
-    #        udas = set()
-    #        for index in self.config:
-    #            if 'uda' in index:
-    #                udas.add(re.sub(r'.*uda\.(.*?)\..*', r'\1', index))
-    #        available_keys.extend(udas)
-    #        return available_keys
 
     #    def convert_timestamp(time_string):
     #        "Convert undo.data time string to datetime"
