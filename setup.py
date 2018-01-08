@@ -34,6 +34,6 @@ setup(
         "Programming Language :: Python :: 3.3",
         'License :: OSI Approved :: BSD License',
         'Topic :: Software Development :: Libraries :: Python Modules',
-        'Intended Audience :: Developers',
+        'Intended Audience :: Developers'
     ],
 )
