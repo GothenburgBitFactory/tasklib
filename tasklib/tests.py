@@ -1390,10 +1390,20 @@ class TaskHistoryTest(TasklibTest):
 
     def test_available_keys_without_udas(self):
         self.tw.history.get_available_keys()
-        self.assertEqual(TASK_STANDARD_ATTRS, self.tw.history.available_keys)
+        self.assertTrue(all(
+            (attribute in self.tw.history.available_keys
+             for attribute in TASK_STANDARD_ATTRS)))
 
-    def test_available_keys_with_udas(self):
-        shutil.copyfile('tasklib/tests.data/undo.data', os.path.join(
-            self.tmp, 'undo.data'))
-        self.tw.history.get_available_keys()
-        self.assertEqual(TASK_STANDARD_ATTRS, self.tw.history.available_keys)
+    def test_conversion_from_undo_timestamp_to_datetime(self):
+        undo_timestamp = '1500364111'
+        desired_timestamp = local_zone.localize(
+            datetime.datetime.fromtimestamp(float(undo_timestamp)))
+        self.assertEqual(
+            self.tw.history._convert_timestamp(undo_timestamp),
+            desired_timestamp)
+
+    # The next test is commented as we would need to pass a custom taskrc to the
+    # tests
+    # def test_available_keys_with_udas(self):
+    #     self.tw.history.get_available_keys()
+    #     self.assertIn(TASK_STANDARD_ATTRS, self.tw.history.available_keys)

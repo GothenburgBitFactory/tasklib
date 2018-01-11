@@ -459,12 +459,33 @@ class TaskHistory(TaskWarrior):
         available_keys.extend(udas)
         self.available_keys = tuple(available_keys)
 
+    def _convert_timestamp(self, time_string):
+        "Convert undo.data time string to datetime"
+        return local_zone.localize(datetime.datetime.fromtimestamp(
+            float(time_string)))
+
+    #   def _load_history_from_source():
+    #        self.history = []
+    #        history_entry = {}
+    #        with open(os.path.join(self.config['data.location'], 'undo.data'),
+    #                  'r') as f:
+    #            for line in f.readlines():
+    #                if re.match('^time ', line):
+    #                    history_entry['time'] = convert_timestamp(
+    #                            int(re.sub('^time ', '', line.strip())))
+    #                elif re.match('^new ', line):
+    #                    history_entry['new'] = \
+    #                        convert_history_entry(line, 'new')
+    #                elif re.match('^old ', line):
+    #                    history_entry['old'] = \
+    #                        convert_history_entry(line, 'old')
+    #                else:
+    #                    if 'new' in history_entry.keys():
+    #                        self.history.append(history_entry)
+    #                    history_entry = {}
+
     # def _get_history(self):
 
-    #    def convert_timestamp(time_string):
-    #        "Convert undo.data time string to datetime"
-    #        return local_zone.localize(datetime.datetime.fromtimestamp(
-    #            float(time_string)))
 
     #    def convert_history_entry(data_line, data_type):
     #        "Convert undo.data history entry to a dictionary"
@@ -488,25 +509,6 @@ class TaskHistory(TaskWarrior):
     #                pass
     #        return history_entry
 
-    #   def _load_history_from_source():
-    #        self.history = []
-    #        history_entry = {}
-    #        with open(os.path.join(self.config['data.location'], 'undo.data'),
-    #                  'r') as f:
-    #            for line in f.readlines():
-    #                if re.match('^time ', line):
-    #                    history_entry['time'] = convert_timestamp(
-    #                            int(re.sub('^time ', '', line.strip())))
-    #                elif re.match('^new ', line):
-    #                    history_entry['new'] = \
-    #                        convert_history_entry(line, 'new')
-    #                elif re.match('^old ', line):
-    #                    history_entry['old'] = \
-    #                        convert_history_entry(line, 'old')
-    #                else:
-    #                    if 'new' in history_entry.keys():
-    #                        self.history.append(history_entry)
-    #                    history_entry = {}
 
     #  def _load_history_from_cache():
     #        "Load the history cache"
