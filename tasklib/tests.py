@@ -1380,19 +1380,22 @@ class TaskWarriorBackendTest(TasklibTest):
         assert self.tw.config['default.command'] == "next"
         assert self.tw.config['dependency.indicator'] == "D"
 
+    def test_available_keys_without_udas(self):
+        self.tw._get_task_attrs()
+        self.assertTrue(all(
+            (attribute in self.tw.available_task_attrs
+             for attribute in TASK_STANDARD_ATTRS)))
+
+
 
 class TaskHistoryTest(TasklibTest):
     def setUp(self):
         super(TaskHistoryTest, self).setUp()
         shutil.copyfile('tasklib/tests.data/undo.data', os.path.join(
-            self.tmp, 'undo.data'))
-        self.tw.history = TaskHistory()
-
-    def test_available_keys_without_udas(self):
-        self.tw.history.get_available_keys()
-        self.assertTrue(all(
-            (attribute in self.tw.history.available_keys
-             for attribute in TASK_STANDARD_ATTRS)))
+            self.tw.config['data.location'], 'undo.data'))
+        shutil.copyfile('tasklib/tests.data/undo.data', os.path.join(
+            self.tw.config['data.location'], 'undo.data'))
+        self.tw.history = TaskHistory(self.tw)
 
     def test_conversion_from_undo_timestamp_to_datetime(self):
         undo_timestamp = '1500364111'
@@ -1402,8 +1405,46 @@ class TaskHistoryTest(TasklibTest):
             self.tw.history._convert_timestamp(undo_timestamp),
             desired_timestamp)
 
+    def test_parsing_of_old_history_entry(self):
+        old_entry = ('old [description:"Started once task" ' +
+                     'entry:"1500364111" modified:"1500364111" ' +
+                     'priority:"M" status:"pending" ' +
+                     'uuid:"1eb86cd0-1b7e-4688-ac9b-227c731bf433"]')
+        parsed = self.tw.history._convert_history_entry(old_entry, 'old')
+        self.assertEqual(parsed['modified'],
+                         self.tw.history._convert_timestamp("1500364111"))
+        self.assertEqual(parsed['uuid'], "1eb86cd0-1b7e-4688-ac9b-227c731bf433")
+        self.assertEqual(parsed['entry'],
+                         self.tw.history._convert_timestamp("1500364111"))
+        self.assertEqual(parsed['description'], "Started once task")
+        self.assertEqual(parsed['status'], 'pending')
+        self.assertEqual(parsed['priority'], 'M')
+
+    def test_parsing_of_new_history_entry(self):
+        new_entry = ('new [description:"Started once task" ' +
+                     'entry:"1500364111" modified:"1500364117" ' +
+                     'priority:"M" start:"1500364117" status:"pending" ' +
+                     'uuid:"1eb86cd0-1b7e-4688-ac9b-227c731bf433"]')
+        parsed = self.tw.history._convert_history_entry(new_entry, 'new')
+        self.assertEqual(parsed['modified'],
+                         self.tw.history._convert_timestamp("1500364117"))
+        self.assertEqual(parsed['uuid'], "1eb86cd0-1b7e-4688-ac9b-227c731bf433")
+        self.assertEqual(parsed['entry'],
+                         self.tw.history._convert_timestamp("1500364111"))
+        self.assertEqual(parsed['start'],
+                         self.tw.history._convert_timestamp("1500364117"))
+        self.assertEqual(parsed['description'], "Started once task")
+        self.assertEqual(parsed['status'], 'pending')
+        self.assertEqual(parsed['priority'], 'M')
+
+
+    def test_load_history_from_source(self):
+        self.tw.history._load_history_from_source()
+
+
+
     # The next test is commented as we would need to pass a custom taskrc to the
     # tests
     # def test_available_keys_with_udas(self):
-    #     self.tw.history.get_available_keys()
+    #     self.tw.history._get_task_keys()
     #     self.assertIn(TASK_STANDARD_ATTRS, self.tw.history.available_keys)

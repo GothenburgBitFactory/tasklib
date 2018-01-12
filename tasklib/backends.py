@@ -126,6 +126,7 @@ class TaskWarrior(Backend):
             self.overrides['data.location'] = data_location
 
         self.tasks = TaskQuerySet(self)
+        self.history = TaskHistory(self)
 
     def _get_command_args(self, args, config_override=None):
         command_args = ['task', 'rc:{0}'.format(self.taskrc_location)]
@@ -423,12 +424,7 @@ class TaskWarrior(Backend):
     def sync(self):
         self.execute_command(['sync'])
 
-
-class TaskHistory(TaskWarrior):
-    def __init__(self):
-        super(TaskHistory, self).__init__()
-
-    def get_available_keys(self):
+    def _get_task_attrs(self):
         TASK_STANDARD_ATTRS = [
             'annotations',
             'entry',
@@ -451,64 +447,77 @@ class TaskHistory(TaskWarrior):
             'uuid',
             'wait',
         ]
-        available_keys = TASK_STANDARD_ATTRS
+        available_task_attrs = TASK_STANDARD_ATTRS
         udas = set()
         for index in self.config:
             if 'uda' in index:
                 udas.add(re.sub(r'.*uda\.(.*?)\..*', r'\1', index))
-        available_keys.extend(udas)
-        self.available_keys = tuple(available_keys)
+        available_task_attrs.extend(udas)
+        self.available_task_attrs = tuple(available_task_attrs)
+
+
+class TaskHistory(TaskWarrior):
+    def __init__(self, backend):
+        self.backend = backend
+        self.backend._get_task_attrs()
+
+    # def __init__(self):
+    #     super(TaskHistory, self).__init__()
+
+    # def __init__(self, data_location=None, create=True,
+    #              taskrc_location='~/.taskrc'):
+    #     super(TaskHistory, self).__init__(data_location, create,
+    #                                       taskrc_location)
 
     def _convert_timestamp(self, time_string):
         "Convert undo.data time string to datetime"
         return local_zone.localize(datetime.datetime.fromtimestamp(
             float(time_string)))
 
-    #   def _load_history_from_source():
-    #        self.history = []
-    #        history_entry = {}
-    #        with open(os.path.join(self.config['data.location'], 'undo.data'),
-    #                  'r') as f:
-    #            for line in f.readlines():
-    #                if re.match('^time ', line):
-    #                    history_entry['time'] = convert_timestamp(
-    #                            int(re.sub('^time ', '', line.strip())))
-    #                elif re.match('^new ', line):
-    #                    history_entry['new'] = \
-    #                        convert_history_entry(line, 'new')
-    #                elif re.match('^old ', line):
-    #                    history_entry['old'] = \
-    #                        convert_history_entry(line, 'old')
-    #                else:
-    #                    if 'new' in history_entry.keys():
-    #                        self.history.append(history_entry)
-    #                    history_entry = {}
+    def _convert_history_entry(self, data_line, data_type):
+        "Convert undo.data history entry to a dictionary"
+        data_line = re.sub('^{} \['.format(data_type),
+                           '{', data_line.strip())
+        data_line = re.sub('\]$', '}', data_line)
+        data_line = re.sub('" ', '", ', data_line)
 
-    # def _get_history(self):
+        for key in self.backend.available_task_attrs:
+            data_line = re.sub(re.compile('({|, )(' + key + '):'),
+                               r'\1"\2":', data_line)
+        data_line = re.sub(r'(annotation_\d*):', r'"\1":', data_line)
+        try:
+            history_entry = json.loads(data_line)
+        except Exception:
+            import pdb; pdb.set_trace()  # XXX BREAKPOINT
 
+        for key in self.backend.available_task_attrs:
+            try:
+                if re.match('\d{10}', history_entry[key]):
+                    history_entry[key] = self._convert_timestamp(
+                        history_entry[key])
+            except KeyError:
+                pass
+        return history_entry
 
-    #    def convert_history_entry(data_line, data_type):
-    #        "Convert undo.data history entry to a dictionary"
-    #        data_line = re.sub('^{} \['.format(data_type),
-    #                           '{', data_line.strip())
-    #        data_line = re.sub('\]$', '}', data_line)
-    #        data_line = re.sub('" ', '", ', data_line)
-
-    #        available_keys = get_available_keys()
-    #        for key in available_keys:
-    #            data_line = re.sub(re.compile('({|, )(' + key + '):'),
-    #                               r'\1"\2":', data_line)
-    #        data_line = re.sub(r'(annotation_\d*):', r'"\1":', data_line)
-    #        history_entry = json.loads(data_line)
-    #        for key in available_keys:
-    #            try:
-    #                if re.match('\d{10}', history_entry[key]):
-    #                    history_entry[key] = convert_timestamp(
-    #                        history_entry[key])
-    #            except KeyError:
-    #                pass
-    #        return history_entry
-
+    def _load_history_from_source(self):
+        self.entries = []
+        history_entry = {}
+        with open(os.path.join(self.backend.config['data.location'], 'undo.data'),
+                  'r') as f:
+            for line in f.readlines():
+                if re.match('^time ', line):
+                    history_entry['time'] = self._convert_timestamp(
+                            int(re.sub('^time ', '', line.strip())))
+                elif re.match('^new ', line):
+                    history_entry['new'] = \
+                        self._convert_history_entry(line, 'new')
+                elif re.match('^old ', line):
+                    history_entry['old'] = \
+                        self._convert_history_entry(line, 'old')
+                else:
+                    if 'new' in history_entry.keys():
+                        self.entries.append(history_entry)
+                    history_entry = {}
 
     #  def _load_history_from_cache():
     #        "Load the history cache"
@@ -527,11 +536,12 @@ class TaskHistory(TaskWarrior):
     #        cache_date = convert_timestamp(os.path.getmtime(
     #            history_cache_filepath))
     #        cache_oldest_date = self.convert_datetime_string(
-    #            'now - {}'.format(self.config['history.cache']))
+    #            'now - {}'.format(self.backend.config['history.cache']))
     #        return cache_date > cache_oldest_date
 
+    # def _get_history(self):
     #    history_cache_filepath = os.path.expanduser(
-    #        self.config['history.cache.location'])
+    #        self.backend.config['history.cache.location'])
     #    if os.path.isfile(history_cache_filepath) and \
     #            os.access(history_cache_filepath, os.R_OK) and \
     #            _cache_is_updated():
