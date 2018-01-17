@@ -43,7 +43,7 @@ class LazyUUIDTask(object):
         return self['uuid'].__hash__()
 
     def __repr__(self):
-        return "LazyUUIDTask: {0}".format(self._uuid)
+        return 'LazyUUIDTask: {0}'.format(self._uuid)
 
     def __copy__(self):
         return LazyUUIDTask(self._tw, self._uuid)
@@ -103,7 +103,7 @@ class LazyUUIDTaskSet(object):
             return getattr(self, name)
 
     def __repr__(self):
-        return "LazyUUIDTaskSet([{0}])".format(', '.join(self._uuids))
+        return 'LazyUUIDTaskSet([{0}])'.format(', '.join(self._uuids))
 
     def __eq__(self, other):
         return set(t['uuid'] for t in other) == self._uuids
@@ -128,8 +128,10 @@ class LazyUUIDTaskSet(object):
         return self.difference_update(other)
 
     def __rsub__(self, other):
-        return LazyUUIDTaskSet(self._tw,
-                               set(t['uuid'] for t in other) - self._uuids)
+        return LazyUUIDTaskSet(
+            self._tw,
+            set(t['uuid'] for t in other) - self._uuids,
+        )
 
     def __or__(self, other):
         return self.union(other)
@@ -171,20 +173,28 @@ class LazyUUIDTaskSet(object):
         return all([task in self for task in other])
 
     def union(self, other):
-        return LazyUUIDTaskSet(self._tw,
-                               self._uuids | set(t['uuid'] for t in other))
+        return LazyUUIDTaskSet(
+            self._tw,
+            self._uuids | set(t['uuid'] for t in other),
+        )
 
     def intersection(self, other):
-        return LazyUUIDTaskSet(self._tw,
-                               self._uuids & set(t['uuid'] for t in other))
+        return LazyUUIDTaskSet(
+            self._tw,
+            self._uuids & set(t['uuid'] for t in other),
+        )
 
     def difference(self, other):
-        return LazyUUIDTaskSet(self._tw,
-                               self._uuids - set(t['uuid'] for t in other))
+        return LazyUUIDTaskSet(
+            self._tw,
+            self._uuids - set(t['uuid'] for t in other),
+        )
 
     def symmetric_difference(self, other):
-        return LazyUUIDTaskSet(self._tw,
-                               self._uuids ^ set(t['uuid'] for t in other))
+        return LazyUUIDTaskSet(
+            self._tw,
+            self._uuids ^ set(t['uuid'] for t in other),
+        )
 
     def update(self, other):
         self._uuids |= set(t['uuid'] for t in other)
