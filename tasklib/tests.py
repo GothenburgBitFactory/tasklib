@@ -1380,19 +1380,24 @@ class TaskWarriorBackendTest(TasklibTest):
         assert self.tw.config['default.command'] == "next"
         assert self.tw.config['dependency.indicator'] == "D"
 
-    def test_available_keys_without_udas(self):
+    def test_get_task_attrs_without_udas(self):
         self.tw._get_task_attrs()
         self.assertTrue(all(
             (attribute in self.tw.available_task_attrs
              for attribute in TASK_STANDARD_ATTRS)))
 
+    # WIP: test udas
+    # def test_get_task_attrs_with_udas(self):
+    #     shutil.copyfile('tasklib/tests.data/uda-test-taskrc',
+    #                     os.path.join(self.tmp, '.taskrc'))
+    #     self.tw = TaskWarrior(data_location=self.tmp, taskrc_location='/')
+    #     self.tw._get_task_attrs()
+    #     self.assertIn('test-uda', TASK_STANDARD_ATTRS)
 
 
 class TaskHistoryTest(TasklibTest):
     def setUp(self):
         super(TaskHistoryTest, self).setUp()
-        shutil.copyfile('tasklib/tests.data/undo.data', os.path.join(
-            self.tw.config['data.location'], 'undo.data'))
         shutil.copyfile('tasklib/tests.data/undo.data', os.path.join(
             self.tw.config['data.location'], 'undo.data'))
         self.tw.history = TaskHistory(self.tw)
@@ -1443,8 +1448,3 @@ class TaskHistoryTest(TasklibTest):
 
 
 
-    # The next test is commented as we would need to pass a custom taskrc to the
-    # tests
-    # def test_available_keys_with_udas(self):
-    #     self.tw.history._get_task_keys()
-    #     self.assertIn(TASK_STANDARD_ATTRS, self.tw.history.available_keys)

@@ -1,3 +1,4 @@
+.cache
 *.pyc
 *~
 tasklib.egg-info
