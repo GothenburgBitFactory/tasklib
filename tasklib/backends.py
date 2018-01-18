@@ -94,7 +94,8 @@ class TaskWarrior(Backend):
     VERSION_2_4_4 = six.u('2.4.4')
     VERSION_2_4_5 = six.u('2.4.5')
 
-    def __init__(self, data_location=None, create=True, taskrc_location='~/.taskrc'):
+    def __init__(self, data_location=None, create=True,
+                 taskrc_location='~/.taskrc'):
         self.taskrc_location = os.path.expanduser(taskrc_location)
 
         # If taskrc does not exist, pass / to use defaults and avoid creating
@@ -214,7 +215,9 @@ class TaskWarrior(Backend):
         if self.version < self.VERSION_2_4_0:
             return task._data['description']
         else:
-            return six.u("description:'{0}'").format(task._data['description'] or '')
+            return six.u("description:'{0}'").format(
+                task._data['description'] or '',
+            )
 
     def convert_datetime_string(self, value):
 
@@ -226,9 +229,11 @@ class TaskWarrior(Backend):
             naive = datetime.datetime.strptime(result[0], DATE_FORMAT_CALC)
             localized = local_zone.localize(naive)
         else:
-            raise ValueError("Provided value could not be converted to "
-                             "datetime, its type is not supported: {}"
-                             .format(type(value)))
+            raise ValueError(
+                'Provided value could not be converted to '
+                'datetime, its type is not supported: {}'
+                .format(type(value)),
+            )
 
         return localized
 
@@ -338,8 +343,10 @@ class TaskWarrior(Backend):
             # Expected output: Created task 1.
             #                  Created task 1 (recurrence template).
             if len(id_lines) != 1 or len(id_lines[0].split(' ')) not in (3, 5):
-                raise TaskWarriorException("Unexpected output when creating "
-                                           "task: %s" % '\n'.join(id_lines))
+                raise TaskWarriorException(
+                    'Unexpected output when creating '
+                    'task: %s' % '\n'.join(id_lines),
+                )
 
             # Circumvent the ID storage, since ID is considered read-only
             identifier = id_lines[0].split(' ')[2].rstrip('.')
@@ -411,8 +418,8 @@ class TaskWarrior(Backend):
         # If more than 1 task has been matched still, raise an exception
         if not valid(output):
             raise TaskWarriorException(
-                "Unique identifiers {0} with description: {1} matches "
-                "multiple tasks: {2}".format(
+                'Unique identifiers {0} with description: {1} matches '
+                'multiple tasks: {2}'.format(
                     task['uuid'] or task['id'], task['description'], output)
             )
 
