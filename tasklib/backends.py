@@ -192,7 +192,6 @@ class TaskWarrior(Backend):
 
         return args
 
-
     def format_depends(self, task):
         # We need to generate added and removed dependencies list,
         # since Taskwarrior does not accept redefining dependencies.
@@ -468,14 +467,6 @@ class TaskHistory(TaskWarrior):
         self.backend = backend
         self.backend._get_task_attrs()
 
-    # def __init__(self):
-    #     super(TaskHistory, self).__init__()
-
-    # def __init__(self, data_location=None, create=True,
-    #              taskrc_location='~/.taskrc'):
-    #     super(TaskHistory, self).__init__(data_location, create,
-    #                                       taskrc_location)
-
     def _convert_timestamp(self, time_string):
         "Convert undo.data time string to datetime"
         return local_zone.localize(datetime.datetime.fromtimestamp(
@@ -492,10 +483,7 @@ class TaskHistory(TaskWarrior):
             data_line = re.sub(re.compile('({|, )(' + key + '):'),
                                r'\1"\2":', data_line)
         data_line = re.sub(r'(annotation_\d*):', r'"\1":', data_line)
-        try:
-            history_entry = json.loads(data_line)
-        except Exception:
-            import pdb; pdb.set_trace()  # XXX BREAKPOINT
+        history_entry = json.loads(data_line)
 
         for key in self.backend.available_task_attrs:
             try:
@@ -509,8 +497,10 @@ class TaskHistory(TaskWarrior):
     def _load_history_from_source(self):
         self.entries = []
         history_entry = {}
-        with open(os.path.join(self.backend.config['data.location'], 'undo.data'),
-                  'r') as f:
+        with open(
+            os.path.join(self.backend.config['data.location'], 'undo.data',),
+            'r',
+        ) as f:
             for line in f.readlines():
                 if re.match('^time ', line):
                     history_entry['time'] = self._convert_timestamp(

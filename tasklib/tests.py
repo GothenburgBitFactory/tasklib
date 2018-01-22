@@ -1497,8 +1497,10 @@ class TaskWarriorBackendTest(TasklibTest):
 class TaskHistoryTest(TasklibTest):
     def setUp(self):
         super(TaskHistoryTest, self).setUp()
-        shutil.copyfile('tasklib/tests.data/undo.data', os.path.join(
-            self.tw.config['data.location'], 'undo.data'))
+        shutil.copyfile(
+            'tasklib/tests.data/undo.data',
+            os.path.join(self.tw.config['data.location'], 'undo.data'),
+        )
         self.tw.history = TaskHistory(self.tw)
 
     def test_conversion_from_undo_timestamp_to_datetime(self):
@@ -1507,7 +1509,8 @@ class TaskHistoryTest(TasklibTest):
             datetime.datetime.fromtimestamp(float(undo_timestamp)))
         self.assertEqual(
             self.tw.history._convert_timestamp(undo_timestamp),
-            desired_timestamp)
+            desired_timestamp,
+        )
 
     def test_parsing_of_old_history_entry(self):
         old_entry = ('old [description:"Started once task" ' +
@@ -1543,3 +1546,58 @@ class TaskHistoryTest(TasklibTest):
 
     def test_load_history_from_source(self):
         self.tw.history._load_history_from_source()
+        self.assertEqual(
+            self.tw.history.entries[0],
+            {
+                'new': {
+                    'modified': local_zone.localize(
+                        datetime.datetime(2017, 7, 18, 9, 48, 31),
+                    ),
+                    'uuid': '1eb86cd0-1b7e-4688-ac9b-227c731bf433',
+                    'description': 'Started once task',
+                    'status': 'pending',
+                    'priority': 'M',
+                    'entry': local_zone.localize(
+                        datetime.datetime(2017, 7, 18, 9, 48, 31),
+                    ),
+                },
+                'time': local_zone.localize(
+                    datetime.datetime(2017, 7, 18, 9, 48, 31),
+                ),
+            },
+        )
+        self.assertEqual(
+            self.tw.history.entries[1],
+            {
+                'new': {
+                    'start': local_zone.localize(
+                        datetime.datetime(2017, 7, 18, 9, 48, 37),
+                    ),
+                    'modified': local_zone.localize(
+                        datetime.datetime(2017, 7, 18, 9, 48, 37),
+                    ),
+                    'uuid': '1eb86cd0-1b7e-4688-ac9b-227c731bf433',
+                    'description': 'Started once task',
+                    'status': 'pending',
+                    'priority': 'M',
+                    'entry': local_zone.localize(
+                        datetime.datetime(2017, 7, 18, 9, 48, 31),
+                    ),
+                },
+                'time': local_zone.localize(
+                    datetime.datetime(2017, 7, 18, 9, 48, 37),
+                ),
+                'old': {
+                    'modified': local_zone.localize(
+                        datetime.datetime(2017, 7, 18, 9, 48, 31),
+                    ),
+                    'uuid': '1eb86cd0-1b7e-4688-ac9b-227c731bf433',
+                    'description': 'Started once task',
+                    'status': 'pending',
+                    'priority': 'M',
+                    'entry': local_zone.localize(
+                        datetime.datetime(2017, 7, 18, 9, 48, 31),
+                    ),
+                },
+            },
+        )
