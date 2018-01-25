@@ -6,3 +6,4 @@ tasklib.egg-info
 /build
 docs/_build
 .project
+.coverage
