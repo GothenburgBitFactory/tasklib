@@ -9,6 +9,7 @@ import pytz
 import six
 import shutil
 import sys
+import time
 import tempfile
 import unittest
 
@@ -1656,3 +1657,19 @@ class TaskHistoryCacheTest(TasklibTest):
             source_loaded_entries,
             self.tw.history.entries,
         )
+
+    def test_detect_cache_is_not_outdated(self):
+        shutil.copyfile(
+            'tasklib/tests.data/history.cache',
+            'history.cache',
+        )
+        self.assertTrue(self.tw.history._cache_is_updated())
+
+    def test_detect_cache_is_outdated(self):
+        shutil.copyfile(
+            'tasklib/tests.data/history.cache',
+            'history.cache',
+        )
+        # The cache is set to 1 second
+        time.sleep(1)
+        self.assertTrue(self.tw.history._cache_is_updated())

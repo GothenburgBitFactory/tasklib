@@ -1,2 +1,2 @@
-history.cache=15min
+history.cache=1s
 history.cache.location=history.cache

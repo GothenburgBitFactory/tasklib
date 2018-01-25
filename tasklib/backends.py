@@ -533,16 +533,16 @@ class TaskHistory(TaskWarrior):
         ) as f:
             self.entries = pickle.load(f)
 
-
-    #  def _cache_is_updated():
-    #        """ Check if cache is older than the value specified in the config
-    #        under `history.cache`, being the value an task calc now - {}
-    #        compatible value """
-    #        cache_date = convert_timestamp(os.path.getmtime(
-    #            history_cache_filepath))
-    #        cache_oldest_date = self.convert_datetime_string(
-    #            'now - {}'.format(self.backend.config['history.cache']))
-    #        return cache_date > cache_oldest_date
+    def _cache_is_updated(self):
+        """ Check if cache is older than the value specified in the config under
+        `history.cache`, being the value an task calc now - {} compatible value
+        """
+        cache_date = self._convert_timestamp(
+            os.path.getmtime(self.backend.config['history.cache.location']),
+        )
+        cache_oldest_date = self.backend.convert_datetime_string(
+            'now - {}'.format(self.backend.config['history.cache']))
+        return cache_date > cache_oldest_date
 
     # def _get_history(self):
     #    if os.path.isfile(history_cache_filepath) and \
