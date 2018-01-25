@@ -1499,7 +1499,15 @@ class TaskHistoryTest(TasklibTest):
         super(TaskHistoryTest, self).setUp()
         shutil.copyfile(
             'tasklib/tests.data/undo.data',
-            os.path.join(self.tw.config['data.location'], 'undo.data'),
+            os.path.join(self.tmp, 'undo.data'),
+        )
+        shutil.copyfile(
+            'tasklib/tests.data/empty-taskrc',
+            os.path.join(self.tmp, 'taskrc'),
+        )
+        self.tw = TaskWarrior(
+            data_location=self.tmp,
+            taskrc_location=os.path.join(self.tmp, 'taskrc'),
         )
         self.tw.history = TaskHistory(self.tw)
 
@@ -1601,3 +1609,36 @@ class TaskHistoryTest(TasklibTest):
                 },
             },
         )
+
+    def test_dont_save_history_to_cache_when_not_set(self):
+        self.tw.history._load_history_from_source()
+        self.assertFalse(self.tw.history._save_history())
+
+
+class TaskHistoryCacheTest(TasklibTest):
+    def setUp(self):
+        super(TaskHistoryCacheTest, self).setUp()
+        shutil.copyfile(
+            'tasklib/tests.data/undo.data',
+            os.path.join(self.tmp, 'undo.data'),
+        )
+        shutil.copyfile(
+            'tasklib/tests.data/history-cache-taskrc',
+            os.path.join(self.tmp, 'taskrc'),
+        )
+        self.tw = TaskWarrior(
+            data_location=self.tmp,
+            taskrc_location=os.path.join(self.tmp, 'taskrc'),
+        )
+        self.tw.history = TaskHistory(self.tw)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp)
+        try:
+            os.remove(self.tw.config['history.cache.location'])
+        except Exception:
+            pass
+
+    def test_save_history_to_cache_when_set(self):
+        self.tw.history._load_history_from_source()
+        self.assertTrue(self.tw.history._save_history())

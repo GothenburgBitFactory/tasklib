@@ -516,15 +516,20 @@ class TaskHistory(TaskWarrior):
                         self.entries.append(history_entry)
                     history_entry = {}
 
+    def _save_history(self):
+        "Save the history cache"
+        try:
+            with open(self.backend.config['history.cache.location'], 'wb') as f:
+                pickle.dump(self.entries, f, pickle.HIGHEST_PROTOCOL)
+            return True
+        except KeyError:
+            return False
+
     #  def _load_history_from_cache():
     #        "Load the history cache"
     #        with open(history_cache_filepath, 'rb') as f:
     #            self.history = pickle.load(f)
 
-    #  def _save_history():
-    #        "Save the history cache"
-    #        with open(history_cache_filepath, 'wb') as f:
-    #            pickle.dump(self.history, f, pickle.HIGHEST_PROTOCOL)
 
     #  def _cache_is_updated():
     #        """ Check if cache is older than the value specified in the config
@@ -537,8 +542,6 @@ class TaskHistory(TaskWarrior):
     #        return cache_date > cache_oldest_date
 
     # def _get_history(self):
-    #    history_cache_filepath = os.path.expanduser(
-    #        self.backend.config['history.cache.location'])
     #    if os.path.isfile(history_cache_filepath) and \
     #            os.access(history_cache_filepath, os.R_OK) and \
     #            _cache_is_updated():
