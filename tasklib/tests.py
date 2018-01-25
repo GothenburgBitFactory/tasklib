@@ -1673,3 +1673,18 @@ class TaskHistoryCacheTest(TasklibTest):
         # The cache is set to 1 second
         time.sleep(1)
         self.assertTrue(self.tw.history._cache_is_updated())
+
+    def test_get_history_from_source_and_save_cache(self):
+        self.tw.history.get_history()
+        self.assertGreater(len(self.tw.history.entries), 0)
+        self.assertTrue(os.path.isfile('history.cache'))
+
+    def test_get_history_from_cache(self):
+        shutil.copyfile(
+            'tasklib/tests.data/history.cache',
+            'history.cache',
+        )
+        # The cache is set to 1 second
+        time.sleep(1)
+        self.tw.history.get_history()
+        self.assertGreater(len(self.tw.history.entries), 0)
