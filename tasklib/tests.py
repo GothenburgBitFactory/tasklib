@@ -1642,3 +1642,17 @@ class TaskHistoryCacheTest(TasklibTest):
     def test_save_history_to_cache_when_set(self):
         self.tw.history._load_history_from_source()
         self.assertTrue(self.tw.history._save_history())
+
+    def test_load_history_from_cache(self):
+        shutil.copyfile(
+            'tasklib/tests.data/history.cache',
+            'history.cache',
+        )
+        self.tw.history._load_history_from_source()
+        source_loaded_entries = self.tw.history.entries
+        self.tw.history.entries = ''
+        self.tw.history._load_history_from_cache()
+        self.assertEqual(
+            source_loaded_entries,
+            self.tw.history.entries,
+        )

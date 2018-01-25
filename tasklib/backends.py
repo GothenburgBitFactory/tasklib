@@ -525,10 +525,13 @@ class TaskHistory(TaskWarrior):
         except KeyError:
             return False
 
-    #  def _load_history_from_cache():
-    #        "Load the history cache"
-    #        with open(history_cache_filepath, 'rb') as f:
-    #            self.history = pickle.load(f)
+    def _load_history_from_cache(self):
+        "Load the history cache"
+        with open(
+            self.backend.config['history.cache.location'],
+            'rb',
+        ) as f:
+            self.entries = pickle.load(f)
 
 
     #  def _cache_is_updated():
