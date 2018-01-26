@@ -245,7 +245,7 @@ class TaskWarrior(Backend):
 
     @property
     def config(self):
-        # First, check if memoized information is available
+        # First, check if memorized information is available
         if self._config:
             return self._config
 
@@ -427,3 +427,34 @@ class TaskWarrior(Backend):
 
     def sync(self):
         self.execute_command(['sync'])
+
+    def _get_task_attrs(self):
+        TASK_STANDARD_ATTRS = [
+            'annotations',
+            'entry',
+            'depends',
+            'description',
+            'due',
+            'end',
+            'imask',
+            'mask',
+            'modified',
+            'parent',
+            'priority',
+            'project',
+            'recur',
+            'scheduled',
+            'start',
+            'status',
+            'tags',
+            'until',
+            'uuid',
+            'wait',
+        ]
+        available_task_attrs = TASK_STANDARD_ATTRS
+        udas = set()
+        for index in self.config:
+            if 'uda' in index:
+                udas.add(re.sub(r'.*uda\.(.*?)\..*', r'\1', index))
+        available_task_attrs.extend(udas)
+        self.available_task_attrs = tuple(available_task_attrs)

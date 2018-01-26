@@ -1,5 +1,6 @@
 # coding=utf-8
 
+import os
 import copy
 import datetime
 import itertools
@@ -1477,3 +1478,22 @@ class TaskWarriorBackendTest(TasklibTest):
         assert self.tw.config['nag'] == 'You have more urgent tasks.'
         assert self.tw.config['default.command'] == 'next'
         assert self.tw.config['dependency.indicator'] == 'D'
+
+    def test_get_task_attrs_without_udas(self):
+        self.tw._get_task_attrs()
+        self.assertTrue(all(
+            (attribute in self.tw.available_task_attrs
+             for attribute in TASK_STANDARD_ATTRS)))
+
+    def test_get_task_attrs_with_udas(self):
+        shutil.copyfile(
+            'tasklib/tests.data/taskrc_with_udas',
+            os.path.join(self.tmp, 'taskrc'),
+        )
+        self.tw = TaskWarrior(
+            data_location=self.tmp,
+            taskrc_location=os.path.join(self.tmp, 'taskrc'),
+        )
+        self.tw._get_task_attrs()
+        self.assertEqual(self.tw.config['uda.testuda.label'], 'UDA test')
+        self.assertEqual(self.tw.config['uda.testuda.type'], 'string')
