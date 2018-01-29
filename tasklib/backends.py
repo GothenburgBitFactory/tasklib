@@ -545,9 +545,13 @@ class TaskHistory(TaskWarrior):
         return cache_date > cache_oldest_date
 
     def get_history(self):
-        if os.path.isfile(self.backend.config['history.cache.location']) and \
-                self._cache_is_updated():
-                self._load_history_from_cache()
-        else:
+        try:
+            if os.path.isfile(self.backend.config['history.cache.location']) \
+                    and self._cache_is_updated():
+                    self._load_history_from_cache()
+            else:
+                self._load_history_from_source()
+                self._save_history()
+        except KeyError:
             self._load_history_from_source()
             self._save_history()

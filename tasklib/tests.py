@@ -873,6 +873,38 @@ class TaskTest(TasklibTest):
         )
         self.assertNotEqual(rc, 0)
 
+    def test_task_active_time(self):
+        for task_file in [
+            'backlog.data',
+            'completed.data',
+            'pending.data',
+            'undo.data',
+        ]:
+            shutil.copyfile(
+                'tasklib/tests.data/{}'.format(task_file),
+                os.path.join(self.tmp, task_file),
+            )
+        self.tw.history = TaskHistory(self.tw)
+        self.tw.history.get_history()
+        task = self.tw.tasks.get(uuid='e06d3893-d716-4a22-a06b-0d41e924d2ca')
+        self.assertEqual(task.active_time(), 25.0)
+
+    def test_started_twice_task_active_time(self):
+        for task_file in [
+            'backlog.data',
+            'completed.data',
+            'pending.data',
+            'undo.data',
+        ]:
+            shutil.copyfile(
+                'tasklib/tests.data/{}'.format(task_file),
+                os.path.join(self.tmp, task_file),
+            )
+        self.tw.history = TaskHistory(self.tw)
+        self.tw.history.get_history()
+        task = self.tw.tasks.get(uuid='eddeddae-e965-4283-b4ac-c1370d90f5a7')
+        self.assertEqual(task.active_time(), 33.0)
+
 
 class TaskFromHookTest(TasklibTest):
 

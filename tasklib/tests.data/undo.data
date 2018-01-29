@@ -35,3 +35,48 @@ time 1500364211
 old [description:"Started twice task" entry:"1500364129" modified:"1500364197" priority:"M" start:"1500364197" status:"pending" uuid:"d5caed10-00e9-4196-8468-8328d47ed975"]
 new [description:"Started twice task" entry:"1500364129" modified:"1500364211" priority:"M" status:"pending" uuid:"d5caed10-00e9-4196-8468-8328d47ed975"]
 ---
+time 1517214770
+new [description:"Started and stopped task" entry:"1517214770" modified:"1517214770" status:"pending" uuid:"e06d3893-d716-4a22-a06b-0d41e924d2ca"]
+---
+time 1517214785
+old [description:"Started and stopped task" entry:"1517214770" modified:"1517214770" status:"pending" uuid:"e06d3893-d716-4a22-a06b-0d41e924d2ca"]
+new [description:"Started and stopped task" entry:"1517214770" modified:"1517214785" start:"1517214785" status:"pending" uuid:"e06d3893-d716-4a22-a06b-0d41e924d2ca"]
+---
+time 1517214810
+old [description:"Started and stopped task" entry:"1517214770" modified:"1517214785" start:"1517214785" status:"pending" uuid:"e06d3893-d716-4a22-a06b-0d41e924d2ca"]
+new [description:"Started and stopped task" entry:"1517214770" modified:"1517214810" status:"pending" uuid:"e06d3893-d716-4a22-a06b-0d41e924d2ca"]
+---
+time 1517214858
+new [description:"Started and stopped task, then completed" entry:"1517214858" modified:"1517214858" status:"pending" uuid:"fe9aa946-ffb3-43c6-b2e2-513270f858b1"]
+---
+time 1517214866
+old [description:"Started and stopped task, then completed" entry:"1517214858" modified:"1517214858" status:"pending" uuid:"fe9aa946-ffb3-43c6-b2e2-513270f858b1"]
+new [description:"Started and stopped task, then completed" entry:"1517214858" modified:"1517214866" start:"1517214866" status:"pending" uuid:"fe9aa946-ffb3-43c6-b2e2-513270f858b1"]
+---
+time 1517215360
+old [description:"Started and stopped task, then completed" entry:"1517214858" modified:"1517214866" start:"1517214866" status:"pending" uuid:"fe9aa946-ffb3-43c6-b2e2-513270f858b1"]
+new [description:"Started and stopped task, then completed" entry:"1517214858" modified:"1517215360" status:"pending" uuid:"fe9aa946-ffb3-43c6-b2e2-513270f858b1"]
+---
+time 1517215397
+old [description:"Started and stopped task, then completed" entry:"1517214858" modified:"1517215360" status:"pending" uuid:"fe9aa946-ffb3-43c6-b2e2-513270f858b1"]
+new [description:"Started and stopped task, then completed" end:"1517215397" entry:"1517214858" modified:"1517215397" status:"completed" uuid:"fe9aa946-ffb3-43c6-b2e2-513270f858b1"]
+---
+time 1517217108
+new [description:"Started twice task" entry:"1517217108" modified:"1517217108" status:"pending" uuid:"eddeddae-e965-4283-b4ac-c1370d90f5a7"]
+---
+time 1517217122
+old [description:"Started twice task" entry:"1517217108" modified:"1517217108" status:"pending" uuid:"eddeddae-e965-4283-b4ac-c1370d90f5a7"]
+new [description:"Started twice task" entry:"1517217108" modified:"1517217122" start:"1517217122" status:"pending" uuid:"eddeddae-e965-4283-b4ac-c1370d90f5a7"]
+---
+time 1517217139
+old [description:"Started twice task" entry:"1517217108" modified:"1517217122" start:"1517217122" status:"pending" uuid:"eddeddae-e965-4283-b4ac-c1370d90f5a7"]
+new [description:"Started twice task" entry:"1517217108" modified:"1517217139" status:"pending" uuid:"eddeddae-e965-4283-b4ac-c1370d90f5a7"]
+---
+time 1517217155
+old [description:"Started twice task" entry:"1517217108" modified:"1517217139" status:"pending" uuid:"eddeddae-e965-4283-b4ac-c1370d90f5a7"]
+new [description:"Started twice task" entry:"1517217108" modified:"1517217155" start:"1517217155" status:"pending" uuid:"eddeddae-e965-4283-b4ac-c1370d90f5a7"]
+---
+time 1517217171
+old [description:"Started twice task" entry:"1517217108" modified:"1517217155" start:"1517217155" status:"pending" uuid:"eddeddae-e965-4283-b4ac-c1370d90f5a7"]
+new [description:"Started twice task" entry:"1517217108" modified:"1517217171" status:"pending" uuid:"eddeddae-e965-4283-b4ac-c1370d90f5a7"]
+---
