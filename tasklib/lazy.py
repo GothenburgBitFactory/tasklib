@@ -36,9 +36,6 @@ class LazyUUIDTask(object):
             # For saved Tasks, just define equality by equality of uuids
             return self['uuid'] == other['uuid']
 
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
     def __hash__(self):
         return self['uuid'].__hash__()
 
