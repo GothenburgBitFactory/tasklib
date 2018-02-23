@@ -542,6 +542,7 @@ class TaskHistory(TaskWarrior):
         )
         cache_oldest_date = self.backend.convert_datetime_string(
             'now - {}'.format(self.backend.config['history.cache']))
+
         return cache_date > cache_oldest_date
 
     def get_history(self):

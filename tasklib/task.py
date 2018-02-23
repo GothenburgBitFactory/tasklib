@@ -450,14 +450,16 @@ class Task(TaskResource):
     def active_time(self, period=None):
         """ Measure the active time of a task, if period is set,
         it will calculate the time from now to the period, for example if
-        period = '1d', it will just measure the active time of the last 24h"""
+        period = 'now - 1d', it will just measure the active time of the
+        last 24h"""
         active_time = 0
-        task_history = [history_entry
-                        for history_entry in self.backend.history.entries
-                        if self['uuid'] in history_entry['new']['uuid']]
+        task_history = [
+            history_entry
+            for history_entry in self.backend.history.entries
+            if self['uuid'] in history_entry['new']['uuid']
+        ]
         if period:
-            oldest_possible_date = self.backend.convert_datetime_string(
-                'now - {}'.format(period))
+            oldest_possible_date = self.backend.convert_datetime_string(period)
 
         for history_entry in task_history:
             if period and history_entry['time'] < oldest_possible_date:
@@ -487,6 +489,7 @@ class Task(TaskResource):
             pass
 
         return active_time
+
 
 class TaskQuerySet(object):
     """

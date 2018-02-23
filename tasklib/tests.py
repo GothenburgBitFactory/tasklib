@@ -889,6 +889,38 @@ class TaskTest(TasklibTest):
         task = self.tw.tasks.get(uuid='e06d3893-d716-4a22-a06b-0d41e924d2ca')
         self.assertEqual(task.active_time(), 25.0)
 
+    def test_task_active_time_specifying_period_by_date(self):
+        for task_file in [
+            'backlog.data',
+            'completed.data',
+            'pending.data',
+            'undo.data',
+        ]:
+            shutil.copyfile(
+                'tasklib/tests.data/{}'.format(task_file),
+                os.path.join(self.tmp, task_file),
+            )
+        self.tw.history = TaskHistory(self.tw)
+        self.tw.history.get_history()
+        task = self.tw.tasks.get(uuid='e06d3893-d716-4a22-a06b-0d41e924d2ca')
+        self.assertEqual(task.active_time('1984-01-01'), 25.0)
+
+    def test_task_active_time_specifying_period_by_taskwarrior_string(self):
+        for task_file in [
+            'backlog.data',
+            'completed.data',
+            'pending.data',
+            'undo.data',
+        ]:
+            shutil.copyfile(
+                'tasklib/tests.data/{}'.format(task_file),
+                os.path.join(self.tmp, task_file),
+            )
+        self.tw.history = TaskHistory(self.tw)
+        self.tw.history.get_history()
+        task = self.tw.tasks.get(uuid='e06d3893-d716-4a22-a06b-0d41e924d2ca')
+        self.assertEqual(task.active_time('now - 1d'), 0)
+
     def test_started_twice_task_active_time(self):
         for task_file in [
             'backlog.data',
@@ -1703,8 +1735,8 @@ class TaskHistoryCacheTest(TasklibTest):
             'history.cache',
         )
         # The cache is set to 1 second
-        time.sleep(1)
-        self.assertTrue(self.tw.history._cache_is_updated())
+        time.sleep(1.5)
+        self.assertFalse(self.tw.history._cache_is_updated())
 
     def test_get_history_from_source_and_save_cache(self):
         self.tw.history.get_history()
