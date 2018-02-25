@@ -457,24 +457,24 @@ class TaskTest(TasklibTest):
         t = Task(self.tw, description='test')
         t.save()
 
-        self.assertEquals(t['description'], 'test')
+        self.assertEqual(t['description'], 'test')
 
         t['description'] = 'test-modified'
         t.save()
 
-        self.assertEquals(t['description'], 'test-modified')
+        self.assertEqual(t['description'], 'test-modified')
 
     def test_modify_simple_attribute_with_space(self):
         # Space can pose problems with parsing
         t = Task(self.tw, description='test task')
         t.save()
 
-        self.assertEquals(t['description'], 'test task')
+        self.assertEqual(t['description'], 'test task')
 
         t['description'] = 'test task modified'
         t.save()
 
-        self.assertEquals(t['description'], 'test task modified')
+        self.assertEqual(t['description'], 'test task modified')
 
     def test_empty_dependency_set_of_unsaved_task(self):
         t = Task(self.tw, description='test task')
