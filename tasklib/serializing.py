@@ -38,16 +38,22 @@ class SerializingObject(object):
       - If validation or normalization fails, normalizer is expected
         to raise ValueError.
     """
+    TIMESTAMP_FIELDS = {'entry', 'modified', 'start', 'end', 'due',
+                        'scheduled', 'until', 'wait'}
 
     def __init__(self, backend):
         self.backend = backend
 
     def _deserialize(self, key, value):
+        if key in self.TIMESTAMP_FIELDS:
+            return self.timestamp_deserializer(value)
         hydrate_func = getattr(self, 'deserialize_{0}'.format(key),
                                lambda x: x if x != '' else None)
         return hydrate_func(value)
 
     def _serialize(self, key, value):
+        if key in self.TIMESTAMP_FIELDS:
+            return self.timestamp_serializer(value)
         dehydrate_func = getattr(self, 'serialize_{0}'.format(key),
                                  lambda x: x if x is not None else '')
         return dehydrate_func(value)
@@ -62,6 +68,9 @@ class SerializingObject(object):
         # None value should not be converted by normalizer
         if value is None:
             return None
+
+        if key in self.TIMESTAMP_FIELDS:
+            return self.datetime_normalizer(value)
 
         normalize_func = getattr(self, 'normalize_{0}'.format(key),
                                  lambda x: x)
@@ -86,78 +95,6 @@ class SerializingObject(object):
         naive_timestamp = datetime.datetime.strptime(date_str, DATE_FORMAT)
         localized_timestamp = pytz.utc.localize(naive_timestamp)
         return localized_timestamp.astimezone(local_zone)
-
-    def serialize_entry(self, value):
-        return self.timestamp_serializer(value)
-
-    def deserialize_entry(self, value):
-        return self.timestamp_deserializer(value)
-
-    def normalize_entry(self, value):
-        return self.datetime_normalizer(value)
-
-    def serialize_modified(self, value):
-        return self.timestamp_serializer(value)
-
-    def deserialize_modified(self, value):
-        return self.timestamp_deserializer(value)
-
-    def normalize_modified(self, value):
-        return self.datetime_normalizer(value)
-
-    def serialize_start(self, value):
-        return self.timestamp_serializer(value)
-
-    def deserialize_start(self, value):
-        return self.timestamp_deserializer(value)
-
-    def normalize_start(self, value):
-        return self.datetime_normalizer(value)
-
-    def serialize_end(self, value):
-        return self.timestamp_serializer(value)
-
-    def deserialize_end(self, value):
-        return self.timestamp_deserializer(value)
-
-    def normalize_end(self, value):
-        return self.datetime_normalizer(value)
-
-    def serialize_due(self, value):
-        return self.timestamp_serializer(value)
-
-    def deserialize_due(self, value):
-        return self.timestamp_deserializer(value)
-
-    def normalize_due(self, value):
-        return self.datetime_normalizer(value)
-
-    def serialize_scheduled(self, value):
-        return self.timestamp_serializer(value)
-
-    def deserialize_scheduled(self, value):
-        return self.timestamp_deserializer(value)
-
-    def normalize_scheduled(self, value):
-        return self.datetime_normalizer(value)
-
-    def serialize_until(self, value):
-        return self.timestamp_serializer(value)
-
-    def deserialize_until(self, value):
-        return self.timestamp_deserializer(value)
-
-    def normalize_until(self, value):
-        return self.datetime_normalizer(value)
-
-    def serialize_wait(self, value):
-        return self.timestamp_serializer(value)
-
-    def deserialize_wait(self, value):
-        return self.timestamp_deserializer(value)
-
-    def normalize_wait(self, value):
-        return self.datetime_normalizer(value)
 
     def serialize_annotations(self, value):
         value = value if value is not None else []
