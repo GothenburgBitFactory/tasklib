@@ -483,7 +483,11 @@ class TaskHistory(TaskWarrior):
             data_line = re.sub(re.compile('({|, )(' + key + '):'),
                                r'\1"\2":', data_line)
         data_line = re.sub(r'(annotation_\d*):', r'"\1":', data_line)
-        history_entry = json.loads(data_line)
+        try:
+            history_entry = json.loads(data_line)
+        except Exception:
+            print('Error parsing line:\n{}'.format(data_line))
+            raise
 
         for key in self.backend.available_task_attrs:
             try:
