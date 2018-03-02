@@ -523,7 +523,12 @@ class TaskHistory(TaskWarrior):
     def _save_history(self):
         "Save the history cache"
         try:
-            with open(self.backend.config['history.cache.location'], 'wb') as f:
+            with open(
+                os.path.expanduser(
+                    self.backend.config['history.cache.location'],
+                ),
+                'wb',
+            ) as f:
                 pickle.dump(self.entries, f, pickle.HIGHEST_PROTOCOL)
             return True
         except KeyError:
