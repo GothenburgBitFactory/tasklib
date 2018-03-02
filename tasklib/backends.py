@@ -537,7 +537,7 @@ class TaskHistory(TaskWarrior):
     def _load_history_from_cache(self):
         "Load the history cache"
         with open(
-            self.backend.config['history.cache.location'],
+            os.path.expanduser(self.backend.config['history.cache.location']),
             'rb',
         ) as f:
             self.entries = pickle.load(f)
@@ -556,8 +556,11 @@ class TaskHistory(TaskWarrior):
 
     def get_history(self):
         try:
-            if os.path.isfile(self.backend.config['history.cache.location']) \
-                    and self._cache_is_updated():
+            if os.path.isfile(
+                os.path.expanduser(
+                    self.backend.config['history.cache.location'],
+                ),
+            ) and self._cache_is_updated():
                     self._load_history_from_cache()
             else:
                 self._load_history_from_source()
