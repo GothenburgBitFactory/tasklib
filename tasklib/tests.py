@@ -1735,7 +1735,7 @@ class TaskHistoryCacheTest(TasklibTest):
             'history.cache',
         )
         # The cache is set to 1 second
-        time.sleep(1.5)
+        time.sleep(2)
         self.assertFalse(self.tw.history._cache_is_updated())
 
     def test_get_history_from_source_and_save_cache(self):
@@ -1748,7 +1748,7 @@ class TaskHistoryCacheTest(TasklibTest):
             'tasklib/tests.data/history.cache',
             'history.cache',
         )
+        os.remove(os.path.join(self.tmp, 'undo.data'))
         # The cache is set to 1 second
-        time.sleep(1)
         self.tw.history.get_history()
         self.assertGreater(len(self.tw.history.entries), 0)
