@@ -547,7 +547,11 @@ class TaskHistory(TaskWarrior):
         `history.cache`, being the value an task calc now - {} compatible value
         """
         cache_date = self._convert_timestamp(
-            os.path.getmtime(self.backend.config['history.cache.location']),
+            os.path.getmtime(
+                os.path.expanduser(
+                    self.backend.config['history.cache.location'],
+                ),
+            ),
         )
         cache_oldest_date = self.backend.convert_datetime_string(
             'now - {}'.format(self.backend.config['history.cache']))
