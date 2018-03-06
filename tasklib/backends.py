@@ -19,6 +19,29 @@ logger = logging.getLogger(__name__)
 
 class Backend(object):
 
+    TASK_STANDARD_ATTRS = [
+        'annotations',
+        'entry',
+        'depends',
+        'description',
+        'due',
+        'end',
+        'imask',
+        'mask',
+        'modified',
+        'parent',
+        'priority',
+        'project',
+        'recur',
+        'scheduled',
+        'start',
+        'status',
+        'tags',
+        'until',
+        'uuid',
+        'wait',
+    ]
+
     @abc.abstractproperty
     def filter_class(self):
         """Returns the TaskFilter class used by this backend"""
@@ -428,30 +451,8 @@ class TaskWarrior(Backend):
     def sync(self):
         self.execute_command(['sync'])
 
-    def _get_task_attrs(self):
-        TASK_STANDARD_ATTRS = [
-            'annotations',
-            'entry',
-            'depends',
-            'description',
-            'due',
-            'end',
-            'imask',
-            'mask',
-            'modified',
-            'parent',
-            'priority',
-            'project',
-            'recur',
-            'scheduled',
-            'start',
-            'status',
-            'tags',
-            'until',
-            'uuid',
-            'wait',
-        ]
-        available_task_attrs = TASK_STANDARD_ATTRS
+    def _set_task_attrs(self):
+        available_task_attrs = self.TASK_STANDARD_ATTRS
         udas = set()
         for index in self.config:
             if 'uda' in index:
