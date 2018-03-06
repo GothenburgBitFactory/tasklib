@@ -455,7 +455,7 @@ class TaskWarrior(Backend):
         available_task_attrs = self.TASK_STANDARD_ATTRS
         udas = set()
         for index in self.config:
-            if 'uda' in index:
+            if index.startswith('uda.'):
                 udas.add(re.sub(r'.*uda\.(.*?)\..*', r'\1', index))
         available_task_attrs.extend(udas)
         self.available_task_attrs = tuple(available_task_attrs)
