@@ -245,7 +245,7 @@ class TaskWarrior(Backend):
 
     @property
     def config(self):
-        # First, check if memorized information is available
+        # First, check if memoized information is available
         if self._config:
             return self._config
 
