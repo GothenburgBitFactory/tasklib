@@ -487,7 +487,6 @@ class TaskHistory(TaskWarrior):
             history_entry = json.loads(data_line)
         except Exception:
             print('Error parsing line:\n{}'.format(data_line))
-
             raise
 
         for key in self.backend.available_task_attrs:
