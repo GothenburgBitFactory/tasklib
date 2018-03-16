@@ -480,7 +480,7 @@ class TaskHistory(TaskWarrior):
         data_line = re.sub('" ', '", ', data_line)
 
         for key in self.backend.available_task_attrs:
-            data_line = re.sub(re.compile('({|, )(' + key + '):'),
+            data_line = re.sub(re.compile('({|, +)(' + key + '):'),
                                r'\1"\2":', data_line)
         data_line = re.sub(r'(annotation_\d*):', r'"\1":', data_line)
         try:
