@@ -80,3 +80,6 @@ time 1517217171
 old [description:"Started twice task" entry:"1517217108" modified:"1517217155" start:"1517217155" status:"pending" uuid:"eddeddae-e965-4283-b4ac-c1370d90f5a7"]
 new [description:"Started twice task" entry:"1517217108" modified:"1517217171" status:"pending" uuid:"eddeddae-e965-4283-b4ac-c1370d90f5a7"]
 ---
+time 1517217182
+new [description:"Task with more than one space between arguments" entry:"1500364129" modified:"1500364129" priority:"M" status:"pending"  uuid:"d5caed10-00e9-4196-8468-8328d47ed975"]
+---
