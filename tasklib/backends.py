@@ -20,6 +20,29 @@ logger = logging.getLogger(__name__)
 
 class Backend(object):
 
+    TASK_STANDARD_ATTRS = [
+        'annotations',
+        'entry',
+        'depends',
+        'description',
+        'due',
+        'end',
+        'imask',
+        'mask',
+        'modified',
+        'parent',
+        'priority',
+        'project',
+        'recur',
+        'scheduled',
+        'start',
+        'status',
+        'tags',
+        'until',
+        'uuid',
+        'wait',
+    ]
+
     @abc.abstractproperty
     def filter_class(self):
         """Returns the TaskFilter class used by this backend"""
@@ -430,33 +453,11 @@ class TaskWarrior(Backend):
     def sync(self):
         self.execute_command(['sync'])
 
-    def _get_task_attrs(self):
-        TASK_STANDARD_ATTRS = [
-            'annotations',
-            'entry',
-            'depends',
-            'description',
-            'due',
-            'end',
-            'imask',
-            'mask',
-            'modified',
-            'parent',
-            'priority',
-            'project',
-            'recur',
-            'scheduled',
-            'start',
-            'status',
-            'tags',
-            'until',
-            'uuid',
-            'wait',
-        ]
-        available_task_attrs = TASK_STANDARD_ATTRS
+    def _set_task_attrs(self):
+        available_task_attrs = self.TASK_STANDARD_ATTRS
         udas = set()
         for index in self.config:
-            if 'uda' in index:
+            if index.startswith('uda.'):
                 udas.add(re.sub(r'.*uda\.(.*?)\..*', r'\1', index))
         available_task_attrs.extend(udas)
         self.available_task_attrs = tuple(available_task_attrs)
@@ -465,7 +466,7 @@ class TaskWarrior(Backend):
 class TaskHistory(TaskWarrior):
     def __init__(self, backend):
         self.backend = backend
-        self.backend._get_task_attrs()
+        self.backend._set_task_attrs()
 
     def _convert_timestamp(self, time_string):
         "Convert undo.data time string to datetime"

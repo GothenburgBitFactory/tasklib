@@ -937,6 +937,25 @@ class TaskTest(TasklibTest):
         task = self.tw.tasks.get(uuid='eddeddae-e965-4283-b4ac-c1370d90f5a7')
         self.assertEqual(task.active_time(), 33.0)
 
+    def test_set_task_attrs_without_udas(self):
+        self.tw._set_task_attrs()
+        self.assertTrue(all(
+            (attribute in self.tw.available_task_attrs
+             for attribute in TASK_STANDARD_ATTRS)))
+
+    def test_set_task_attrs_with_udas(self):
+        shutil.copyfile(
+            'tasklib/tests.data/taskrc_with_udas',
+            os.path.join(self.tmp, 'taskrc'),
+        )
+        self.tw = TaskWarrior(
+            data_location=self.tmp,
+            taskrc_location=os.path.join(self.tmp, 'taskrc'),
+        )
+        self.tw._set_task_attrs()
+        self.assertEqual(self.tw.config['uda.testuda.label'], 'UDA test')
+        self.assertEqual(self.tw.config['uda.testuda.type'], 'string')
+
 
 class TaskFromHookTest(TasklibTest):
 
@@ -1543,20 +1562,6 @@ class TaskWarriorBackendTest(TasklibTest):
         assert self.tw.config['nag'] == 'You have more urgent tasks.'
         assert self.tw.config['default.command'] == 'next'
         assert self.tw.config['dependency.indicator'] == 'D'
-
-    def test_get_task_attrs_without_udas(self):
-        self.tw._get_task_attrs()
-        self.assertTrue(all(
-            (attribute in self.tw.available_task_attrs
-             for attribute in TASK_STANDARD_ATTRS)))
-
-    # WIP: test udas
-    # def test_get_task_attrs_with_udas(self):
-    #     shutil.copyfile('tasklib/tests.data/uda-test-taskrc',
-    #                     os.path.join(self.tmp, '.taskrc'))
-    #     self.tw = TaskWarrior(data_location=self.tmp, taskrc_location='/')
-    #     self.tw._get_task_attrs()
-    #     self.assertIn('test-uda', TASK_STANDARD_ATTRS)
 
 
 class TaskHistoryTest(TasklibTest):
