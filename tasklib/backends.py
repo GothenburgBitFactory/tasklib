@@ -2,6 +2,7 @@ import abc
 import copy
 import datetime
 import json
+import pickle
 import logging
 import os
 import re
@@ -149,6 +150,7 @@ class TaskWarrior(Backend):
             self.overrides['data.location'] = data_location
 
         self.tasks = TaskQuerySet(self)
+        self.history = TaskHistory(self)
 
     def _get_command_args(self, args, config_override=None):
         command_args = ['task', 'rc:{0}'.format(self.taskrc_location)]
@@ -459,3 +461,115 @@ class TaskWarrior(Backend):
                 udas.add(re.sub(r'.*uda\.(.*?)\..*', r'\1', index))
         available_task_attrs.extend(udas)
         self.available_task_attrs = tuple(available_task_attrs)
+
+
+class TaskHistory(TaskWarrior):
+    def __init__(self, backend):
+        self.backend = backend
+        self.backend._set_task_attrs()
+
+    def _convert_timestamp(self, time_string):
+        "Convert undo.data time string to datetime"
+        return local_zone.localize(datetime.datetime.fromtimestamp(
+            float(time_string)))
+
+    def _convert_history_entry(self, data_line, data_type):
+        "Convert undo.data history entry to a dictionary"
+        data_line = re.sub('^{} \['.format(data_type),
+                           '{', data_line.strip())
+        data_line = re.sub('\]$', '}', data_line)
+        data_line = re.sub('" ', '", ', data_line)
+
+        for key in self.backend.available_task_attrs:
+            data_line = re.sub(re.compile('({|, +)(' + key + '):'),
+                               r'\1"\2":', data_line)
+        data_line = re.sub(r'(annotation_\d*):', r'"\1":', data_line)
+        try:
+            history_entry = json.loads(data_line)
+        except Exception:
+            print('Error parsing line:\n{}'.format(data_line))
+            raise
+
+        for key in self.backend.available_task_attrs:
+            try:
+                if re.match('\d{10}', history_entry[key]):
+                    history_entry[key] = self._convert_timestamp(
+                        history_entry[key])
+            except KeyError:
+                pass
+        return history_entry
+
+    def _load_history_from_source(self):
+        self.entries = []
+        history_entry = {}
+        with open(
+            os.path.join(self.backend.config['data.location'], 'undo.data',),
+            'r',
+        ) as f:
+            for line in f.readlines():
+                if re.match('^time ', line):
+                    history_entry['time'] = self._convert_timestamp(
+                            int(re.sub('^time ', '', line.strip())))
+                elif re.match('^new ', line):
+                    history_entry['new'] = \
+                        self._convert_history_entry(line, 'new')
+                elif re.match('^old ', line):
+                    history_entry['old'] = \
+                        self._convert_history_entry(line, 'old')
+                else:
+                    if 'new' in history_entry.keys():
+                        self.entries.append(history_entry)
+                    history_entry = {}
+
+    def _save_history(self):
+        "Save the history cache"
+        try:
+            with open(
+                os.path.expanduser(
+                    self.backend.config['history.cache.location'],
+                ),
+                'wb',
+            ) as f:
+                pickle.dump(self.entries, f, pickle.HIGHEST_PROTOCOL)
+            return True
+        except KeyError:
+            return False
+
+    def _load_history_from_cache(self):
+        "Load the history cache"
+        with open(
+            os.path.expanduser(self.backend.config['history.cache.location']),
+            'rb',
+        ) as f:
+            self.entries = pickle.load(f)
+
+    def _cache_is_updated(self):
+        """ Check if cache is older than the value specified in the config under
+        `history.cache`, being the value an task calc now - {} compatible value
+        """
+        cache_date = self._convert_timestamp(
+            os.path.getmtime(
+                os.path.expanduser(
+                    self.backend.config['history.cache.location'],
+                ),
+            ),
+        )
+        cache_oldest_date = self.backend.convert_datetime_string(
+            'now - {}'.format(self.backend.config['history.cache']))
+
+        return cache_date > cache_oldest_date
+
+    def get_history(self):
+        try:
+            if os.path.isfile(
+                os.path.expanduser(
+                    self.backend.config['history.cache.location'],
+                ),
+            ) and self._cache_is_updated():
+                    self._load_history_from_cache()
+            else:
+                self._load_history_from_source()
+                self._save_history()
+        except KeyError:
+            self._load_history_from_source()
+            self._save_history()

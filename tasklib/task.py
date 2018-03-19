@@ -3,6 +3,7 @@ import copy
 import importlib
 import json
 import logging
+import datetime
 import os
 import six
 import sys
@@ -445,6 +446,49 @@ class Task(TaskResource):
             self._update_data(to_update, update_original=True)
         else:
             self._load_data(new_data)
+
+    def active_time(self, period=None):
+        """ Measure the active time of a task, if period is set,
+        it will calculate the time from now to the period, for example if
+        period = 'now - 1d', it will just measure the active time of the
+        last 24h"""
+        active_time = 0
+        task_history = [
+            history_entry
+            for history_entry in self.backend.history.entries
+            if self['uuid'] in history_entry['new']['uuid']
+        ]
+        if period:
+            oldest_possible_date = self.backend.convert_datetime_string(period)
+
+        for history_entry in task_history:
+            if period and history_entry['time'] < oldest_possible_date:
+                continue
+            try:
+                if history_entry['old']['start']:
+                    try:
+                        if history_entry['new']['start']:
+                            pass
+                    except KeyError:
+                        entry_seconds = history_entry['time'] - \
+                            history_entry['old']['start']
+                        active_time += entry_seconds.total_seconds()
+            except KeyError:
+                pass
+
+        try:
+            if history_entry['new']['start']:
+                now = self.backend.convert_datetime_string(
+                    datetime.datetime.now().strftime('%Y%m%dT%H%M%S'))
+                if period and history_entry['time'] < oldest_possible_date:
+                    entry_seconds = now - oldest_possible_date
+                else:
+                    entry_seconds = now - history_entry['time']
+                active_time += entry_seconds.total_seconds()
+        except KeyError:
+            pass
+
+        return active_time
 
 
 class TaskQuerySet(object):

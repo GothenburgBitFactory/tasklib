@@ -9,10 +9,11 @@ import pytz
 import six
 import shutil
 import sys
+import time
 import tempfile
 import unittest
 
-from .backends import TaskWarrior
+from .backends import TaskWarrior, TaskHistory
 from .task import Task, ReadOnlyDictView
 from .lazy import LazyUUIDTask, LazyUUIDTaskSet
 from .serializing import DATE_FORMAT, local_zone
@@ -872,6 +873,70 @@ class TaskTest(TasklibTest):
         )
         self.assertNotEqual(rc, 0)
 
+    def test_task_active_time(self):
+        for task_file in [
+            'backlog.data',
+            'completed.data',
+            'pending.data',
+            'undo.data',
+        ]:
+            shutil.copyfile(
+                'tasklib/tests.data/{}'.format(task_file),
+                os.path.join(self.tmp, task_file),
+            )
+        self.tw.history = TaskHistory(self.tw)
+        self.tw.history.get_history()
+        task = self.tw.tasks.get(uuid='e06d3893-d716-4a22-a06b-0d41e924d2ca')
+        self.assertEqual(task.active_time(), 25.0)
+
+    def test_task_active_time_specifying_period_by_date(self):
+        for task_file in [
+            'backlog.data',
+            'completed.data',
+            'pending.data',
+            'undo.data',
+        ]:
+            shutil.copyfile(
+                'tasklib/tests.data/{}'.format(task_file),
+                os.path.join(self.tmp, task_file),
+            )
+        self.tw.history = TaskHistory(self.tw)
+        self.tw.history.get_history()
+        task = self.tw.tasks.get(uuid='e06d3893-d716-4a22-a06b-0d41e924d2ca')
+        self.assertEqual(task.active_time('1984-01-01'), 25.0)
+
+    def test_task_active_time_specifying_period_by_taskwarrior_string(self):
+        for task_file in [
+            'backlog.data',
+            'completed.data',
+            'pending.data',
+            'undo.data',
+        ]:
+            shutil.copyfile(
+                'tasklib/tests.data/{}'.format(task_file),
+                os.path.join(self.tmp, task_file),
+            )
+        self.tw.history = TaskHistory(self.tw)
+        self.tw.history.get_history()
+        task = self.tw.tasks.get(uuid='e06d3893-d716-4a22-a06b-0d41e924d2ca')
+        self.assertEqual(task.active_time('now - 1d'), 0)
+
+    def test_started_twice_task_active_time(self):
+        for task_file in [
+            'backlog.data',
+            'completed.data',
+            'pending.data',
+            'undo.data',
+        ]:
+            shutil.copyfile(
+                'tasklib/tests.data/{}'.format(task_file),
+                os.path.join(self.tmp, task_file),
+            )
+        self.tw.history = TaskHistory(self.tw)
+        self.tw.history.get_history()
+        task = self.tw.tasks.get(uuid='eddeddae-e965-4283-b4ac-c1370d90f5a7')
+        self.assertEqual(task.active_time(), 33.0)
+
     def test_set_task_attrs_without_udas(self):
         self.tw._set_task_attrs()
         self.assertTrue(all(
@@ -890,6 +955,7 @@ class TaskTest(TasklibTest):
         self.tw._set_task_attrs()
         self.assertEqual(self.tw.config['uda.testuda.label'], 'UDA test')
         self.assertEqual(self.tw.config['uda.testuda.type'], 'string')
+
 
 class TaskFromHookTest(TasklibTest):
 
@@ -1497,3 +1563,197 @@ class TaskWarriorBackendTest(TasklibTest):
         assert self.tw.config['default.command'] == 'next'
         assert self.tw.config['dependency.indicator'] == 'D'
 
+
+class TaskHistoryTest(TasklibTest):
+    def setUp(self):
+        super(TaskHistoryTest, self).setUp()
+        shutil.copyfile(
+            'tasklib/tests.data/undo.data',
+            os.path.join(self.tmp, 'undo.data'),
+        )
+        shutil.copyfile(
+            'tasklib/tests.data/empty-taskrc',
+            os.path.join(self.tmp, 'taskrc'),
+        )
+        self.tw = TaskWarrior(
+            data_location=self.tmp,
+            taskrc_location=os.path.join(self.tmp, 'taskrc'),
+        )
+        self.tw.history = TaskHistory(self.tw)
+
+    def test_conversion_from_undo_timestamp_to_datetime(self):
+        undo_timestamp = '1500364111'
+        desired_timestamp = local_zone.localize(
+            datetime.datetime.fromtimestamp(float(undo_timestamp)))
+        self.assertEqual(
+            self.tw.history._convert_timestamp(undo_timestamp),
+            desired_timestamp,
+        )
+
+    def test_parsing_of_old_history_entry(self):
+        old_entry = ('old [description:"Started once task" ' +
+                     'entry:"1500364111" modified:"1500364111" ' +
+                     'priority:"M" status:"pending" ' +
+                     'uuid:"1eb86cd0-1b7e-4688-ac9b-227c731bf433"]')
+        parsed = self.tw.history._convert_history_entry(old_entry, 'old')
+        self.assertEqual(parsed['modified'],
+                         self.tw.history._convert_timestamp("1500364111"))
+        self.assertEqual(parsed['uuid'], "1eb86cd0-1b7e-4688-ac9b-227c731bf433")
+        self.assertEqual(parsed['entry'],
+                         self.tw.history._convert_timestamp("1500364111"))
+        self.assertEqual(parsed['description'], "Started once task")
+        self.assertEqual(parsed['status'], 'pending')
+        self.assertEqual(parsed['priority'], 'M')
+
+    def test_parsing_of_new_history_entry(self):
+        new_entry = ('new [description:"Started once task" ' +
+                     'entry:"1500364111" modified:"1500364117" ' +
+                     'priority:"M" start:"1500364117" status:"pending" ' +
+                     'uuid:"1eb86cd0-1b7e-4688-ac9b-227c731bf433"]')
+        parsed = self.tw.history._convert_history_entry(new_entry, 'new')
+        self.assertEqual(parsed['modified'],
+                         self.tw.history._convert_timestamp("1500364117"))
+        self.assertEqual(parsed['uuid'], "1eb86cd0-1b7e-4688-ac9b-227c731bf433")
+        self.assertEqual(parsed['entry'],
+                         self.tw.history._convert_timestamp("1500364111"))
+        self.assertEqual(parsed['start'],
+                         self.tw.history._convert_timestamp("1500364117"))
+        self.assertEqual(parsed['description'], "Started once task")
+        self.assertEqual(parsed['status'], 'pending')
+        self.assertEqual(parsed['priority'], 'M')
+
+    def test_load_history_from_source(self):
+        self.tw.history._load_history_from_source()
+        self.assertEqual(
+            self.tw.history.entries[0],
+            {
+                'new': {
+                    'modified': local_zone.localize(
+                        datetime.datetime(2017, 7, 18, 9, 48, 31),
+                    ),
+                    'uuid': '1eb86cd0-1b7e-4688-ac9b-227c731bf433',
+                    'description': 'Started once task',
+                    'status': 'pending',
+                    'priority': 'M',
+                    'entry': local_zone.localize(
+                        datetime.datetime(2017, 7, 18, 9, 48, 31),
+                    ),
+                },
+                'time': local_zone.localize(
+                    datetime.datetime(2017, 7, 18, 9, 48, 31),
+                ),
+            },
+        )
+        self.assertEqual(
+            self.tw.history.entries[1],
+            {
+                'new': {
+                    'start': local_zone.localize(
+                        datetime.datetime(2017, 7, 18, 9, 48, 37),
+                    ),
+                    'modified': local_zone.localize(
+                        datetime.datetime(2017, 7, 18, 9, 48, 37),
+                    ),
+                    'uuid': '1eb86cd0-1b7e-4688-ac9b-227c731bf433',
+                    'description': 'Started once task',
+                    'status': 'pending',
+                    'priority': 'M',
+                    'entry': local_zone.localize(
+                        datetime.datetime(2017, 7, 18, 9, 48, 31),
+                    ),
+                },
+                'time': local_zone.localize(
+                    datetime.datetime(2017, 7, 18, 9, 48, 37),
+                ),
+                'old': {
+                    'modified': local_zone.localize(
+                        datetime.datetime(2017, 7, 18, 9, 48, 31),
+                    ),
+                    'uuid': '1eb86cd0-1b7e-4688-ac9b-227c731bf433',
+                    'description': 'Started once task',
+                    'status': 'pending',
+                    'priority': 'M',
+                    'entry': local_zone.localize(
+                        datetime.datetime(2017, 7, 18, 9, 48, 31),
+                    ),
+                },
+            },
+        )
+
+    def test_dont_save_history_to_cache_when_not_set(self):
+        self.tw.history._load_history_from_source()
+        self.assertFalse(self.tw.history._save_history())
+
+
+class TaskHistoryCacheTest(TasklibTest):
+    def setUp(self):
+        super(TaskHistoryCacheTest, self).setUp()
+        shutil.copyfile(
+            'tasklib/tests.data/undo.data',
+            os.path.join(self.tmp, 'undo.data'),
+        )
+        shutil.copyfile(
+            'tasklib/tests.data/history-cache-taskrc',
+            os.path.join(self.tmp, 'taskrc'),
+        )
+        self.tw = TaskWarrior(
+            data_location=self.tmp,
+            taskrc_location=os.path.join(self.tmp, 'taskrc'),
+        )
+        self.tw.history = TaskHistory(self.tw)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp)
+        try:
+            os.remove(self.tw.config['history.cache.location'])
+        except Exception:
+            pass
+
+    def test_save_history_to_cache_when_set(self):
+        self.tw.history._load_history_from_source()
+        self.assertTrue(self.tw.history._save_history())
+
+    def test_load_history_from_cache(self):
+        shutil.copyfile(
+            'tasklib/tests.data/history.cache',
+            'history.cache',
+        )
+        self.tw.history._load_history_from_source()
+        source_loaded_entries = self.tw.history.entries
+        self.tw.history.entries = ''
+        self.tw.history._load_history_from_cache()
+        self.assertEqual(
+            source_loaded_entries,
+            self.tw.history.entries,
+        )
+
+    def test_detect_cache_is_not_outdated(self):
+        shutil.copyfile(
+            'tasklib/tests.data/history.cache',
+            'history.cache',
+        )
+        self.assertTrue(self.tw.history._cache_is_updated())
+
+    def test_detect_cache_is_outdated(self):
+        shutil.copyfile(
+            'tasklib/tests.data/history.cache',
+            'history.cache',
+        )
+        # The cache is set to 1 second
+        time.sleep(2)
+        self.assertFalse(self.tw.history._cache_is_updated())
+
+    def test_get_history_from_source_and_save_cache(self):
+        self.tw.history.get_history()
+        self.assertGreater(len(self.tw.history.entries), 0)
+        self.assertTrue(os.path.isfile('history.cache'))
+
+    def test_get_history_from_cache(self):
+        shutil.copyfile(
+            'tasklib/tests.data/history.cache',
+            'history.cache',
+        )
+        os.remove(os.path.join(self.tmp, 'undo.data'))
+        # The cache is set to 1 second
+        self.tw.history.get_history()
+        self.assertGreater(len(self.tw.history.entries), 0)
