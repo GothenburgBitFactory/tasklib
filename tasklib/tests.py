@@ -939,9 +939,14 @@ class TaskTest(TasklibTest):
 
     def test_set_task_attrs_without_udas(self):
         self.tw._set_task_attrs()
-        self.assertTrue(all(
-            (attribute in self.tw.available_task_attrs
-             for attribute in TASK_STANDARD_ATTRS)))
+        self.assertTrue(
+            all(
+                (
+                    attribute in self.tw.available_task_attrs
+                    for attribute in TASK_STANDARD_ATTRS
+                ),
+            ),
+        )
 
     def test_set_task_attrs_with_udas(self):
         shutil.copyfile(
@@ -1584,40 +1589,55 @@ class TaskHistoryTest(TasklibTest):
     def test_conversion_from_undo_timestamp_to_datetime(self):
         undo_timestamp = '1500364111'
         desired_timestamp = local_zone.localize(
-            datetime.datetime.fromtimestamp(float(undo_timestamp)))
+            datetime.datetime.fromtimestamp(float(undo_timestamp)),
+        )
         self.assertEqual(
             self.tw.history._convert_timestamp(undo_timestamp),
             desired_timestamp,
         )
 
     def test_parsing_of_old_history_entry(self):
-        old_entry = ('old [description:"Started once task" ' +
-                     'entry:"1500364111" modified:"1500364111" ' +
-                     'priority:"M" status:"pending" ' +
-                     'uuid:"1eb86cd0-1b7e-4688-ac9b-227c731bf433"]')
+        old_entry = (
+            'old [description:"Started once task" '
+            'entry:"1500364111" modified:"1500364111" '
+            'priority:"M" status:"pending" '
+            'uuid:"1eb86cd0-1b7e-4688-ac9b-227c731bf433"]'
+        )
         parsed = self.tw.history._convert_history_entry(old_entry, 'old')
-        self.assertEqual(parsed['modified'],
-                         self.tw.history._convert_timestamp("1500364111"))
+        self.assertEqual(
+            parsed['modified'],
+            self.tw.history._convert_timestamp("1500364111"),
+        )
         self.assertEqual(parsed['uuid'], "1eb86cd0-1b7e-4688-ac9b-227c731bf433")
-        self.assertEqual(parsed['entry'],
-                         self.tw.history._convert_timestamp("1500364111"))
+        self.assertEqual(
+            parsed['entry'],
+            self.tw.history._convert_timestamp("1500364111"),
+        )
         self.assertEqual(parsed['description'], "Started once task")
         self.assertEqual(parsed['status'], 'pending')
         self.assertEqual(parsed['priority'], 'M')
 
     def test_parsing_of_new_history_entry(self):
-        new_entry = ('new [description:"Started once task" ' +
-                     'entry:"1500364111" modified:"1500364117" ' +
-                     'priority:"M" start:"1500364117" status:"pending" ' +
-                     'uuid:"1eb86cd0-1b7e-4688-ac9b-227c731bf433"]')
+        new_entry = (
+            'new [description:"Started once task" '
+            'entry:"1500364111" modified:"1500364117" '
+            'priority:"M" start:"1500364117" status:"pending" '
+            'uuid:"1eb86cd0-1b7e-4688-ac9b-227c731bf433"]'
+        )
         parsed = self.tw.history._convert_history_entry(new_entry, 'new')
-        self.assertEqual(parsed['modified'],
-                         self.tw.history._convert_timestamp("1500364117"))
+        self.assertEqual(
+            parsed['modified'],
+            self.tw.history._convert_timestamp("1500364117"),
+        )
         self.assertEqual(parsed['uuid'], "1eb86cd0-1b7e-4688-ac9b-227c731bf433")
-        self.assertEqual(parsed['entry'],
-                         self.tw.history._convert_timestamp("1500364111"))
-        self.assertEqual(parsed['start'],
-                         self.tw.history._convert_timestamp("1500364117"))
+        self.assertEqual(
+            parsed['entry'],
+            self.tw.history._convert_timestamp("1500364111"),
+        )
+        self.assertEqual(
+            parsed['start'],
+            self.tw.history._convert_timestamp("1500364117"),
+        )
         self.assertEqual(parsed['description'], "Started once task")
         self.assertEqual(parsed['status'], 'pending')
         self.assertEqual(parsed['priority'], 'M')

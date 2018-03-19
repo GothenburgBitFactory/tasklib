@@ -479,7 +479,8 @@ class Task(TaskResource):
         try:
             if history_entry['new']['start']:
                 now = self.backend.convert_datetime_string(
-                    datetime.datetime.now().strftime('%Y%m%dT%H%M%S'))
+                    datetime.datetime.now().strftime('%Y%m%dT%H%M%S'),
+                )
                 if period and history_entry['time'] < oldest_possible_date:
                     entry_seconds = now - oldest_possible_date
                 else:
