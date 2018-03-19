@@ -470,19 +470,26 @@ class TaskHistory(TaskWarrior):
 
     def _convert_timestamp(self, time_string):
         "Convert undo.data time string to datetime"
-        return local_zone.localize(datetime.datetime.fromtimestamp(
-            float(time_string)))
+        return local_zone.localize(
+            datetime.datetime.fromtimestamp(float(time_string)),
+        )
 
     def _convert_history_entry(self, data_line, data_type):
         "Convert undo.data history entry to a dictionary"
-        data_line = re.sub('^{} \['.format(data_type),
-                           '{', data_line.strip())
+        data_line = re.sub(
+            '^{} \['.format(data_type),
+            '{',
+            data_line.strip(),
+        )
         data_line = re.sub('\]$', '}', data_line)
         data_line = re.sub('" ', '", ', data_line)
 
         for key in self.backend.available_task_attrs:
-            data_line = re.sub(re.compile('({|, +)(' + key + '):'),
-                               r'\1"\2":', data_line)
+            data_line = re.sub(
+                re.compile('({|, +)(' + key + '):'),
+                r'\1"\2":',
+                data_line,
+            )
         data_line = re.sub(r'(annotation_\d*):', r'"\1":', data_line)
         try:
             history_entry = json.loads(data_line)
@@ -494,7 +501,8 @@ class TaskHistory(TaskWarrior):
             try:
                 if re.match('\d{10}', history_entry[key]):
                     history_entry[key] = self._convert_timestamp(
-                        history_entry[key])
+                        history_entry[key],
+                    )
             except KeyError:
                 pass
         return history_entry
@@ -503,13 +511,17 @@ class TaskHistory(TaskWarrior):
         self.entries = []
         history_entry = {}
         with open(
-            os.path.join(self.backend.config['data.location'], 'undo.data',),
+            os.path.join(
+                self.backend.config['data.location'],
+                'undo.data',
+            ),
             'r',
         ) as f:
             for line in f.readlines():
                 if re.match('^time ', line):
                     history_entry['time'] = self._convert_timestamp(
-                            int(re.sub('^time ', '', line.strip())))
+                            int(re.sub('^time ', '', line.strip())),
+                    )
                 elif re.match('^new ', line):
                     history_entry['new'] = \
                         self._convert_history_entry(line, 'new')
