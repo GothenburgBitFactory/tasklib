@@ -470,7 +470,7 @@ class Task(TaskResource):
                         if history_entry['new']['start']:
                             pass
                     except KeyError:
-                        entry_seconds = history_entry['time'] - \
+                        entry_seconds = history_entry['new']['modified'] - \
                             history_entry['old']['start']
                         active_time += entry_seconds.total_seconds()
             except KeyError:
