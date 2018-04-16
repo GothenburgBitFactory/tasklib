@@ -476,18 +476,23 @@ class Task(TaskResource):
             except KeyError:
                 pass
 
-        try:
-            if history_entry['new']['start']:
-                now = self.backend.convert_datetime_string(
-                    datetime.datetime.now().strftime('%Y%m%dT%H%M%S'),
-                )
-                if period and history_entry['time'] < oldest_possible_date:
-                    entry_seconds = now - oldest_possible_date
-                else:
-                    entry_seconds = now - history_entry['time']
-                active_time += entry_seconds.total_seconds()
-        except KeyError:
-            pass
+            # Calculate the tasks that are active now
+            try:
+                history_entry['old']
+            except KeyError:
+                try:
+                    if history_entry['new']['start']:
+                        now = self.backend.convert_datetime_string(
+                            datetime.datetime.now().strftime('%Y%m%dT%H%M%S'),
+                        )
+                        if period and \
+                           history_entry['time'] < oldest_possible_date:
+                            entry_seconds = now - oldest_possible_date
+                        else:
+                            entry_seconds = now - history_entry['time']
+                        active_time += entry_seconds.total_seconds()
+                except KeyError:
+                    pass
 
         return active_time
 
