@@ -962,6 +962,33 @@ class TaskFromHookTest(TasklibTest):
         )
 
 
+class ProjectTest(TasklibTest):
+
+    def test_get_projects(self):
+        Task(self.tw, description='task 1', project='first_project').save()
+        Task(self.tw, description='task 2', project='second_project').save()
+        Task(
+            self.tw,
+            description='task 3',
+            project='first_project.first_subproject'
+        ).save()
+        Task(
+            self.tw,
+            description='task 4',
+            project='first_project.first_subproject.first_subsubproject'
+        ).save()
+        desired_projects = {
+            'first_project': {
+                'first_subproject': {
+                    'first_subsubproject': {},
+                },
+            },
+            'second_project': {},
+        }
+        self.tw.get_projects()
+        self.assertEqual(self.tw.projects, desired_projects)
+
+
 class TimezoneAwareDatetimeTest(TasklibTest):
 
     def setUp(self):

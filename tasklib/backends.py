@@ -427,3 +427,17 @@ class TaskWarrior(Backend):
 
     def sync(self):
         self.execute_command(['sync'])
+
+    def get_projects(self):
+        raw = self.execute_command(['projects'])[3:-2]
+        self.projects = {}
+        for line in raw:
+            if re.match(r'^[^ ].*', line):
+                key = line.split(' ')[0]
+                self.projects[key] = {}
+            elif re.match(r'^  [^ ].*', line):
+                subkey = line.lstrip().split(' ')[0]
+                self.projects[key][subkey] = {}
+            elif re.match(r'^    [^ ].*', line):
+                subsubkey = line.lstrip().split(' ')[0]
+                self.projects[key][subkey][subsubkey] = {}
