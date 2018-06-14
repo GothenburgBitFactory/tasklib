@@ -427,3 +427,10 @@ class TaskWarrior(Backend):
 
     def sync(self):
         self.execute_command(['sync'])
+
+    def save_config(self):
+        'Overwrite the config file with the values of the self.config object'
+
+        with open(self.taskrc_location, 'w') as f:
+            for key, value in sorted(self.config.viewed_dict.items()):
+                f.write('{}={}\n'.format(key, value))
