@@ -259,6 +259,8 @@ class TaskWarrior(Backend):
         config_regex = re.compile(r'^(?P<key>[^\s]+)\s+(?P<value>[^\s].*$)')
 
         for line in raw_output:
+            if 'Some of your .taskrc' in line or 'Your .taskrc file' in line:
+                continue
             match = config_regex.match(line)
             if match:
                 config[match.group('key')] = match.group('value').strip()

@@ -1491,3 +1491,5 @@ class TaskWarriorBackendTest(TasklibTest):
             f_contents = f.read()
             assert 'default.command=next' in f_contents
             assert 'avoidlastcolumn=no\nbulk=0' in f_contents
+            assert 'Some=of your .taskrc variables differ from' + \
+                ' the default values.' not in f_contents
