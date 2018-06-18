@@ -8,7 +8,7 @@ import re
 import six
 import subprocess
 
-from .task import Task, TaskQuerySet, ReadOnlyDictView
+from .task import Task, TaskQuerySet
 from .filters import TaskWarriorFilter
 from .serializing import local_zone
 
@@ -266,7 +266,7 @@ class TaskWarrior(Backend):
                 config[match.group('key')] = match.group('value').strip()
 
         # Memoize the config dict
-        self._config = ReadOnlyDictView(config)
+        self._config = config
 
         return self._config
 
@@ -434,5 +434,5 @@ class TaskWarrior(Backend):
         'Overwrite the config file with the values of the self.config object'
 
         with open(self.taskrc_location, 'w') as f:
-            for key, value in sorted(self.config.viewed_dict.items()):
+            for key, value in sorted(self.config.items()):
                 f.write('{}={}\n'.format(key, value))
