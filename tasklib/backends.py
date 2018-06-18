@@ -8,7 +8,7 @@ import re
 import six
 import subprocess
 
-from .task import Task, TaskQuerySet, ReadOnlyDictView
+from .task import Task, TaskQuerySet
 from .filters import TaskWarriorFilter
 from .serializing import local_zone
 
@@ -259,12 +259,14 @@ class TaskWarrior(Backend):
         config_regex = re.compile(r'^(?P<key>[^\s]+)\s+(?P<value>[^\s].*$)')
 
         for line in raw_output:
+            if 'Some of your .taskrc' in line or 'Your .taskrc file' in line:
+                continue
             match = config_regex.match(line)
             if match:
                 config[match.group('key')] = match.group('value').strip()
 
         # Memoize the config dict
-        self._config = ReadOnlyDictView(config)
+        self._config = config
 
         return self._config
 
@@ -427,3 +429,10 @@ class TaskWarrior(Backend):
 
     def sync(self):
         self.execute_command(['sync'])
+
+    def save_config(self):
+        'Overwrite the config file with the values of the self.config object'
+
+        with open(self.taskrc_location, 'w') as f:
+            for key, value in sorted(self.config.items()):
+                f.write('{}={}\n'.format(key, value))
