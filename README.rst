@@ -30,7 +30,7 @@ Usage
 
 tasklib has a similar API to that of Django's ORM::
 
-    >>> from tasklib.task import TaskWarrior
+    >>> from tasklib import TaskWarrior
 
     >>> tw = TaskWarrior('/home/rob/.task')
     >>> tasks = tw.tasks.pending()
@@ -40,7 +40,7 @@ tasklib has a similar API to that of Django's ORM::
     ['Tidy the house']
     >>> type(tasks[0])
     <class 'tasklib.task.Task'>
-    >>> task[0].done()
+    >>> tasks[0].done()
     >>> tasks = tw.tasks.pending()
     >>> tasks
     ['Learn German']
