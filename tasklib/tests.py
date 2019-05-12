@@ -47,12 +47,29 @@ def total_seconds_2_6(x):
 
 class TasklibTest(unittest.TestCase):
 
+    def get_taskwarrior(self, **kwargs):
+        tw_kwargs = dict(
+            data_location=self.tmp,
+            taskrc_location='/',
+        )
+        tw_kwargs.update(kwargs)
+        return TaskWarrior(**tw_kwargs)
+
     def setUp(self):
         self.tmp = tempfile.mkdtemp(dir='.')
-        self.tw = TaskWarrior(data_location=self.tmp, taskrc_location='/')
+        self.tw = self.get_taskwarrior()
 
     def tearDown(self):
         shutil.rmtree(self.tmp)
+
+
+class TaskWarriorTest(TasklibTest):
+
+    def test_custom_command(self):
+        # ensure that a custom command which contains multiple parts
+        # is properly split up
+        tw = self.get_taskwarrior(task_command='wsl task')
+        self.assertEqual(tw._get_task_command(), ['wsl', 'task'])
 
 
 class TaskFilterTest(TasklibTest):
