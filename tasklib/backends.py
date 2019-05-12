@@ -133,7 +133,7 @@ class TaskWarrior(Backend):
         return self.task_command.split()
 
     def _get_command_args(self, args, config_override=None):
-        command_args = self._get_task_command() + ['rc:{0}'.format(self.taskrc_location)]
+        command_args = self._get_task_command() + ['rc={0}'.format(self.taskrc_location)]
         overrides = self.overrides.copy()
         overrides.update(config_override or dict())
         for item in overrides.items():
