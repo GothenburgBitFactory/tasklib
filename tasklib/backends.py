@@ -94,16 +94,22 @@ class TaskWarrior(Backend):
     VERSION_2_4_4 = six.u('2.4.4')
     VERSION_2_4_5 = six.u('2.4.5')
 
-    def __init__(self, data_location=None, create=True, taskrc_location='~/.taskrc'):
-        self.taskrc_location = os.path.expanduser(taskrc_location)
+    def __init__(self, data_location=None, create=True,
+                 taskrc_location=None, task_command='task',
+                 version_override=None):
+        self.taskrc_location = None
+        if taskrc_location:
+            self.taskrc_location = os.path.expanduser(taskrc_location)
 
-        # If taskrc does not exist, pass / to use defaults and avoid creating
-        # dummy .taskrc file by TaskWarrior
-        if not os.path.exists(self.taskrc_location):
-            self.taskrc_location = '/'
+            # If taskrc does not exist, pass / to use defaults and avoid creating
+            # dummy .taskrc file by TaskWarrior
+            if not os.path.exists(self.taskrc_location):
+                self.taskrc_location = '/'
+
+        self.task_command = task_command
 
         self._config = None
-        self.version = self._get_version()
+        self.version = version_override or self._get_version()
         self.overrides = {
             'confirmation': 'no',
             'dependency.confirmation': 'no',  # See TW-1483 or taskrc man page
@@ -126,8 +132,11 @@ class TaskWarrior(Backend):
 
         self.tasks = TaskQuerySet(self)
 
+    def _get_task_command(self):
+        return self.task_command.split()
+
     def _get_command_args(self, args, config_override=None):
-        command_args = ['task', 'rc:{0}'.format(self.taskrc_location)]
+        command_args = self._get_task_command()
         overrides = self.overrides.copy()
         overrides.update(config_override or dict())
         for item in overrides.items():
@@ -140,7 +149,7 @@ class TaskWarrior(Backend):
 
     def _get_version(self):
         p = subprocess.Popen(
-            ['task', '--version'],
+            self._get_task_command() + ['--version'],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
         stdout, stderr = [x.decode('utf-8') for x in p.communicate()]
@@ -214,21 +223,25 @@ class TaskWarrior(Backend):
         if self.version < self.VERSION_2_4_0:
             return task._data['description']
         else:
-            return six.u("description:'{0}'").format(task._data['description'] or '')
+            return six.u("description:'{0}'").format(
+                task._data['description'] or '',
+            )
 
     def convert_datetime_string(self, value):
 
         if self.version >= self.VERSION_2_4_0:
-            # For strings, use 'task calc' to evaluate the string to datetime
+            # For strings, use 'calc' to evaluate the string to datetime
             # available since TW 2.4.0
             args = value.split()
             result = self.execute_command(['calc'] + args)
             naive = datetime.datetime.strptime(result[0], DATE_FORMAT_CALC)
             localized = local_zone.localize(naive)
         else:
-            raise ValueError("Provided value could not be converted to "
-                             "datetime, its type is not supported: {}"
-                             .format(type(value)))
+            raise ValueError(
+                'Provided value could not be converted to '
+                'datetime, its type is not supported: {}'
+                .format(type(value)),
+            )
 
         return localized
 
@@ -269,8 +282,11 @@ class TaskWarrior(Backend):
             args, config_override=config_override)
         logger.debug(u' '.join(command_args))
 
+        env = os.environ.copy()
+        if self.taskrc_location:
+            env['TASKRC'] = self.taskrc_location
         p = subprocess.Popen(command_args, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+                             stderr=subprocess.PIPE, env=env)
         stdout, stderr = [x.decode('utf-8') for x in p.communicate()]
         if p.returncode and allow_failure:
             if stderr.strip():
@@ -338,8 +354,10 @@ class TaskWarrior(Backend):
             # Expected output: Created task 1.
             #                  Created task 1 (recurrence template).
             if len(id_lines) != 1 or len(id_lines[0].split(' ')) not in (3, 5):
-                raise TaskWarriorException("Unexpected output when creating "
-                                           "task: %s" % '\n'.join(id_lines))
+                raise TaskWarriorException(
+                    'Unexpected output when creating '
+                    'task: %s' % '\n'.join(id_lines),
+                )
 
             # Circumvent the ID storage, since ID is considered read-only
             identifier = id_lines[0].split(' ')[2].rstrip('.')
@@ -411,8 +429,8 @@ class TaskWarrior(Backend):
         # If more than 1 task has been matched still, raise an exception
         if not valid(output):
             raise TaskWarriorException(
-                "Unique identifiers {0} with description: {1} matches "
-                "multiple tasks: {2}".format(
+                'Unique identifiers {0} with description: {1} matches '
+                'multiple tasks: {2}'.format(
                     task['uuid'] or task['id'], task['description'], output)
             )
 
