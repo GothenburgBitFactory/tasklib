@@ -95,13 +95,15 @@ class TaskWarrior(Backend):
     VERSION_2_4_5 = six.u('2.4.5')
 
     def __init__(self, data_location=None, create=True,
-                 taskrc_location='~/.taskrc', task_command='task'):
-        self.taskrc_location = os.path.expanduser(taskrc_location)
+                 taskrc_location=None, task_command='task'):
+        self.taskrc_location = None
+        if taskrc_location:
+            self.taskrc_location = os.path.expanduser(taskrc_location)
 
-        # If taskrc does not exist, pass / to use defaults and avoid creating
-        # dummy .taskrc file by TaskWarrior
-        if not os.path.exists(self.taskrc_location):
-            self.taskrc_location = '/'
+            # If taskrc does not exist, pass / to use defaults and avoid creating
+            # dummy .taskrc file by TaskWarrior
+            if not os.path.exists(self.taskrc_location):
+                self.taskrc_location = '/'
 
         self.task_command = task_command
 
@@ -133,7 +135,7 @@ class TaskWarrior(Backend):
         return self.task_command.split()
 
     def _get_command_args(self, args, config_override=None):
-        command_args = self._get_task_command() + ['rc:{0}'.format(self.taskrc_location)]
+        command_args = self._get_task_command()
         overrides = self.overrides.copy()
         overrides.update(config_override or dict())
         for item in overrides.items():
@@ -279,8 +281,11 @@ class TaskWarrior(Backend):
             args, config_override=config_override)
         logger.debug(u' '.join(command_args))
 
+        env = os.environ.copy()
+        if self.taskrc_location:
+            env['TASKRC'] = self.taskrc_location
         p = subprocess.Popen(command_args, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+                             stderr=subprocess.PIPE, env=env)
         stdout, stderr = [x.decode('utf-8') for x in p.communicate()]
         if p.returncode and allow_failure:
             if stderr.strip():
