@@ -95,7 +95,8 @@ class TaskWarrior(Backend):
     VERSION_2_4_5 = six.u('2.4.5')
 
     def __init__(self, data_location=None, create=True,
-                 taskrc_location=None, task_command='task'):
+                 taskrc_location=None, task_command='task',
+                 version_override=None):
         self.taskrc_location = None
         if taskrc_location:
             self.taskrc_location = os.path.expanduser(taskrc_location)
@@ -108,7 +109,7 @@ class TaskWarrior(Backend):
         self.task_command = task_command
 
         self._config = None
-        self.version = self._get_version()
+        self.version = version_override or self._get_version()
         self.overrides = {
             'confirmation': 'no',
             'dependency.confirmation': 'no',  # See TW-1483 or taskrc man page

@@ -4,6 +4,7 @@ import copy
 import datetime
 import itertools
 import json
+import os
 import pytz
 import six
 import shutil
@@ -68,7 +69,11 @@ class TaskWarriorTest(TasklibTest):
     def test_custom_command(self):
         # ensure that a custom command which contains multiple parts
         # is properly split up
-        tw = self.get_taskwarrior(task_command='wsl task')
+        tw = self.get_taskwarrior(
+            task_command='wsl task',
+            # prevent `_get_version` from running as `wsl` may not exist
+            version_override=os.getenv('TASK_VERSION'),
+        )
         self.assertEqual(tw._get_task_command(), ['wsl', 'task'])
 
 
