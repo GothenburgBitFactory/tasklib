@@ -106,7 +106,7 @@ class LazyUUIDTaskSet(object):
         return 'LazyUUIDTaskSet([{0}])'.format(', '.join(self._uuids))
 
     def __eq__(self, other):
-        return set(t['uuid'] for t in other) == self._uuids
+        return (set(t['uuid'] for t in other) if other else set()) == self._uuids
 
     def __ne__(self, other):
         return not (self == other)

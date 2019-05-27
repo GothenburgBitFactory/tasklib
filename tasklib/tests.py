@@ -530,6 +530,18 @@ class TaskTest(TasklibTest):
 
         self.assertEqual(t['depends'], set([dependency]))
 
+    def test_set_simple_dependency_lazyuuidtaskset(self):
+        # Adds only one dependency as a LazyUUIDTaskSet to task with no dependencies
+        t = Task(self.tw, description='test task')
+        dependency = Task(self.tw, description='needs to be done first')
+
+        t.save()
+        dependency.save()
+
+        t['depends'] = LazyUUIDTaskSet(self.tw, [dependency['uuid']])
+
+        self.assertEqual(t['depends'], LazyUUIDTaskSet(self.tw, [dependency['uuid']]))
+
     def test_set_complex_dependency_set(self):
         # Adds two dependencies to task with no dependencies
         t = Task(self.tw, description='test task')
@@ -543,6 +555,20 @@ class TaskTest(TasklibTest):
         t['depends'] = set([dependency1, dependency2])
 
         self.assertEqual(t['depends'], set([dependency1, dependency2]))
+
+    def test_set_complex_dependency_lazyuuidtaskset(self):
+        # Adds two dependencies as a LazyUUIDTaskSet to task with no dependencies
+        t = Task(self.tw, description='test task')
+        dependency1 = Task(self.tw, description='needs to be done first')
+        dependency2 = Task(self.tw, description='needs to be done second')
+
+        t.save()
+        dependency1.save()
+        dependency2.save()
+
+        t['depends'] = LazyUUIDTaskSet(self.tw, [dependency1['uuid'], dependency2['uuid']])
+
+        self.assertEqual(t['depends'], LazyUUIDTaskSet(self.tw, [dependency1['uuid'], dependency2['uuid']]))
 
     def test_remove_from_dependency_set(self):
         # Removes dependency from task with two dependencies
@@ -561,6 +587,23 @@ class TaskTest(TasklibTest):
 
         self.assertEqual(t['depends'], set([dependency1]))
 
+    def test_remove_from_dependency_lazyuuidtaskset(self):
+        # Removes dependency from task with two dependencies as LazyUUIDTaskSet
+        t = Task(self.tw, description='test task')
+        dependency1 = Task(self.tw, description='needs to be done first')
+        dependency2 = Task(self.tw, description='needs to be done second')
+
+        dependency1.save()
+        dependency2.save()
+
+        t['depends'] = LazyUUIDTaskSet(self.tw, [dependency1['uuid'], dependency2['uuid']])
+        t.save()
+
+        t['depends'].remove(dependency2)
+        t.save()
+
+        self.assertEqual(t['depends'], LazyUUIDTaskSet(self.tw, [dependency1['uuid']]))
+
     def test_add_to_dependency_set(self):
         # Adds dependency to task with one dependencies
         t = Task(self.tw, description='test task')
@@ -578,8 +621,42 @@ class TaskTest(TasklibTest):
 
         self.assertEqual(t['depends'], set([dependency1, dependency2]))
 
+    def test_add_to_dependency_lazyuuidtaskset(self):
+        # Adds dependency to task with one dependencies as LazyUUIDTaskSet
+        t = Task(self.tw, description='test task')
+        dependency1 = Task(self.tw, description='needs to be done first')
+        dependency2 = Task(self.tw, description='needs to be done second')
+
+        dependency1.save()
+        dependency2.save()
+
+        t['depends'] = LazyUUIDTaskSet(self.tw, [dependency1['uuid']])
+        t.save()
+
+        t['depends'].add(dependency2)
+        t.save()
+
+        self.assertEqual(t['depends'], LazyUUIDTaskSet(self.tw, [dependency1['uuid'], dependency2['uuid']]))
+
+    def test_add_lazyuuidtaskset_to_dependency_lazyuuidtaskset(self):
+        # Adds dependency as LazyUUIDTaskSet to task with one dependencies as LazyUUIDTaskSet
+        t = Task(self.tw, description='test task')
+        dependency1 = Task(self.tw, description='needs to be done first')
+        dependency2 = Task(self.tw, description='needs to be done second')
+
+        dependency1.save()
+        dependency2.save()
+
+        t['depends'] = LazyUUIDTaskSet(self.tw, [dependency1['uuid']])
+        t.save()
+
+        t['depends'] = LazyUUIDTaskSet(self.tw, [dependency2['uuid']]).union(t['depends'])
+        t.save()
+
+        self.assertEqual(t['depends'], LazyUUIDTaskSet(self.tw, [dependency1['uuid'], dependency2['uuid']]))
+
     def test_add_to_empty_dependency_set(self):
-        # Adds dependency to task with one dependencies
+        # Adds dependency to task with no dependencies
         t = Task(self.tw, description='test task')
         dependency = Task(self.tw, description='needs to be done first')
 
@@ -589,6 +666,18 @@ class TaskTest(TasklibTest):
         t.save()
 
         self.assertEqual(t['depends'], set([dependency]))
+
+    def test_add_to_empty_dependency_lazyuuidtaskset(self):
+        # Adds dependency as LazyUUIDTaskSet to task with no dependencies
+        t = Task(self.tw, description='test task')
+        dependency = Task(self.tw, description='needs to be done first')
+
+        dependency.save()
+
+        t['depends'] = LazyUUIDTaskSet(self.tw, [dependency['uuid']])
+        t.save()
+
+        self.assertEqual(t['depends'], LazyUUIDTaskSet(self.tw, [dependency['uuid']]))
 
     def test_simple_dependency_set_save_repeatedly(self):
         # Adds only one dependency to task with no dependencies
@@ -611,6 +700,40 @@ class TaskTest(TasklibTest):
         t.save()
 
         self.assertEqual(t['depends'], set([dependency]))
+
+    def test_simple_dependency_lazyuuidtaskset_save_repeatedly(self):
+        # Adds only one dependency as LazyUUIDTaskSet to task with no dependencies
+        t = Task(self.tw, description='test task')
+        dependency = Task(self.tw, description='needs to be done first')
+        dependency.save()
+
+        t['depends'] = LazyUUIDTaskSet(self.tw, [dependency['uuid']])
+        t.save()
+
+        # We taint the task, but keep depends intact
+        t['description'] = 'test task modified'
+        t.save()
+
+        self.assertEqual(t['depends'], LazyUUIDTaskSet(self.tw, [dependency['uuid']]))
+
+        # We taint the task, but assign the same set to the depends
+        t['depends'] = LazyUUIDTaskSet(self.tw, [dependency['uuid']])
+        t['description'] = 'test task modified again'
+        t.save()
+
+        self.assertEqual(t['depends'], LazyUUIDTaskSet(self.tw, [dependency['uuid']]))
+
+    def test_simple_dependency_lazyuuidtaskset_save_before_repeatedly(self):
+        # Adds only one dependency as LazyUUIDTaskSet to a saved task with no dependencies
+        t = Task(self.tw, description='test task')
+        dependency = Task(self.tw, description='needs to be done first')
+        dependency.save()
+        t.save()
+
+        t['depends'] = LazyUUIDTaskSet(self.tw, [dependency['uuid']])
+        t.save()
+
+        self.assertEqual(t['depends'], LazyUUIDTaskSet(self.tw, [dependency['uuid']]))
 
     def test_compare_different_tasks(self):
         # Negative: compare two different tasks
