@@ -165,7 +165,7 @@ class TaskWarrior(Backend):
 
             # Empty values should not be enclosed in quotation marks, see
             # TW-1510
-            if serialized_value is '':
+            if serialized_value == '':
                 escaped_serialized_value = ''
             else:
                 escaped_serialized_value = six.u("'{0}'").format(

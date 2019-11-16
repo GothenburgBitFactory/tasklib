@@ -19,7 +19,7 @@ class LazyUUIDTask(object):
 
     def __getitem__(self, key):
         # LazyUUIDTask does not provide anything else other than 'uuid'
-        if key is 'uuid':
+        if key == 'uuid':
             return self._uuid
         else:
             self.replace()
