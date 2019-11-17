@@ -13,10 +13,11 @@ env:
   - TASK_VERSION=v2.5.1
 python:
   - "2.7"
-  - "3.3"
   - "3.4"
   - "3.5"
   - "3.6"
+  - "3.7"
+  - "3.8"
 install:
   - pip install -e .
   - pip install coveralls
