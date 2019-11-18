@@ -125,7 +125,7 @@ class TaskResource(SerializingObject):
 
         # Empty string denotes empty serialized value, we do not want
         # to pass that to TaskWarrior.
-        data_tuples = filter(lambda t: t[1] is not '', data_tuples)
+        data_tuples = filter(lambda t: t[1] != '', data_tuples)
         data = dict(data_tuples)
         return json.dumps(data, separators=(',', ':'))
 
@@ -477,7 +477,7 @@ class TaskQuerySet(object):
 
     def __len__(self):
         if self._result_cache is None:
-            self._result_cache = list(self)
+            self._result_cache = list(self.__iter__())
         return len(self._result_cache)
 
     def __iter__(self):
