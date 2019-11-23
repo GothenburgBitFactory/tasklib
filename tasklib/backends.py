@@ -7,6 +7,7 @@ import os
 import re
 import six
 import subprocess
+import locale
 
 from .task import Task, TaskQuerySet, ReadOnlyDictView
 from .filters import TaskWarriorFilter
@@ -142,7 +143,7 @@ class TaskWarrior(Backend):
         for item in overrides.items():
             command_args.append('rc.{0}={1}'.format(*item))
         command_args.extend([
-            x.decode('utf-8') if isinstance(x, six.binary_type)
+            x.decode(locale.nl_langinfo(locale.CODESET)) if isinstance(x, six.binary_type)
             else six.text_type(x) for x in args
         ])
         return command_args
@@ -152,7 +153,7 @@ class TaskWarrior(Backend):
             self._get_task_command() + ['--version'],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
-        stdout, stderr = [x.decode('utf-8') for x in p.communicate()]
+        stdout, stderr = [x.decode(locale.nl_langinfo(locale.CODESET)) for x in p.communicate()]
         return stdout.strip('\n')
 
     def _get_modified_task_fields_as_args(self, task):
@@ -287,7 +288,7 @@ class TaskWarrior(Backend):
             env['TASKRC'] = self.taskrc_location
         p = subprocess.Popen(command_args, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE, env=env)
-        stdout, stderr = [x.decode('utf-8') for x in p.communicate()]
+        stdout, stderr = [x.decode(locale.nl_langinfo(locale.CODESET)) for x in p.communicate()]
         if p.returncode and allow_failure:
             if stderr.strip():
                 error_msg = stderr.strip()
