@@ -6,6 +6,7 @@ import logging
 import os
 import re
 import subprocess
+from functools import lru_cache
 
 from .task import Task, TaskQuerySet, ReadOnlyDictView
 from .filters import TaskWarriorFilter
@@ -319,6 +320,10 @@ class TaskWarrior(Backend):
 
     def undo(self):
         self.execute_command(['undo'])
+
+    @lru_cache(maxsize=128)
+    def get_task(self, uuid):
+        return self.tasks.get(uuid=uuid)
 
     # Backend interface implementation
 

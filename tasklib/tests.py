@@ -144,6 +144,17 @@ class TaskFilterTest(TasklibTest):
         ).save()
         self.assertEqual(len(self.tw.tasks.recurring()), 1)
 
+    def test_get_task(self):
+        task = Task(self.tw, description='test task')
+        task.save()
+
+        fetched_task = self.tw.get_task(task['uuid'])
+        self.assertEqual(fetched_task, task)
+
+        # ensure `tw.tasks` is not queried as the task is cached
+        self.tw.tasks = None
+        self.tw.get_task(task['uuid'])
+
     def test_filtering_by_attribute(self):
         Task(self.tw, description='no priority task').save()
         Task(self.tw, priority='H', description='high priority task').save()

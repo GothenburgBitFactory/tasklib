@@ -71,8 +71,7 @@ class LazyUUIDTask(object):
         Performs conversion to the regular Task object, referenced by the
         stored UUID.
         """
-
-        replacement = self._tw.tasks.get(uuid=self._uuid)
+        replacement = self._tw.get_task(self._uuid)
         self.__class__ = replacement.__class__
         self.__dict__ = replacement.__dict__
 
