@@ -1,5 +1,4 @@
 import abc
-import six
 from .serializing import SerializingObject
 
 
@@ -68,7 +67,7 @@ class TaskWarriorFilter(TaskFilter, SerializingObject):
                 modifier = '.is' if value else '.none'
                 key = key + modifier if '.' not in key else key
 
-            self.filter_params.append(six.u("{0}:{1}").format(key, value))
+            self.filter_params.append("{0}:{1}".format(key, value))
 
     def get_filter_params(self):
         return [f for f in self.filter_params if f]

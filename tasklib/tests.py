@@ -6,11 +6,11 @@ import itertools
 import json
 import os
 import pytz
-import six
 import shutil
 import sys
 import tempfile
 import unittest
+from io import StringIO
 
 from .backends import TaskWarrior
 from .task import Task, ReadOnlyDictView
@@ -144,6 +144,17 @@ class TaskFilterTest(TasklibTest):
         ).save()
         self.assertEqual(len(self.tw.tasks.recurring()), 1)
 
+    def test_get_task(self):
+        task = Task(self.tw, description='test task')
+        task.save()
+
+        fetched_task = self.tw.get_task(task['uuid'])
+        self.assertEqual(fetched_task, task)
+
+        # ensure `tw.tasks` is not queried as the task is cached
+        self.tw.tasks = None
+        self.tw.get_task(task['uuid'])
+
     def test_filtering_by_attribute(self):
         Task(self.tw, description='no priority task').save()
         Task(self.tw, priority='H', description='high priority task').save()
@@ -263,7 +274,7 @@ class TaskFilterTest(TasklibTest):
     def test_filter_dummy_by_modified(self):
         # Older TW version does not support bumping modified
         # on save
-        if self.tw.version < six.text_type('2.2.0'):
+        if self.tw.version < '2.2.0':
             # Python2.6 does not support SkipTest. As a workaround
             # mark the test as passed by exiting.
             if getattr(unittest, 'SkipTest', None) is not None:
@@ -1019,7 +1030,7 @@ class TaskTest(TasklibTest):
 
 class TaskFromHookTest(TasklibTest):
 
-    input_add_data = six.StringIO(
+    input_add_data = StringIO(
         '{"description":"Buy some milk",'
         '"entry":"20141118T050231Z",'
         '"status":"pending",'
@@ -1027,7 +1038,7 @@ class TaskFromHookTest(TasklibTest):
         '"uuid":"a360fc44-315c-4366-b70c-ea7e7520b749"}',
     )
 
-    input_add_data_recurring = six.StringIO(
+    input_add_data_recurring = StringIO(
         '{"description":"Mow the lawn",'
         '"entry":"20160210T224304Z",'
         '"parent":"62da6227-519c-42c2-915d-dccada926ad7",'
@@ -1036,7 +1047,7 @@ class TaskFromHookTest(TasklibTest):
         '"uuid":"81305335-0237-49ff-8e87-b3cdc2369cec"}',
     )
 
-    input_modify_data = six.StringIO(
+    input_modify_data = StringIO(
         '\n'.join([
             input_add_data.getvalue(),
             (
@@ -1187,7 +1198,7 @@ class TimezoneAwareDatetimeTest(TasklibTest):
 class DatetimeStringTest(TasklibTest):
 
     def test_simple_now_conversion(self):
-        if self.tw.version < six.text_type('2.4.0'):
+        if self.tw.version < '2.4.0':
             # Python2.6 does not support SkipTest. As a workaround
             # mark the test as passed by exiting.
             if getattr(unittest, 'SkipTest', None) is not None:
@@ -1207,7 +1218,7 @@ class DatetimeStringTest(TasklibTest):
             self.assertTrue((t['due'] - now).total_seconds() < 5)
 
     def test_simple_eoy_conversion(self):
-        if self.tw.version < six.text_type('2.4.0'):
+        if self.tw.version < '2.4.0':
             # Python2.6 does not support SkipTest. As a workaround
             # mark the test as passed by exiting.
             if getattr(unittest, 'SkipTest', None) is not None:
@@ -1228,7 +1239,7 @@ class DatetimeStringTest(TasklibTest):
         self.assertEqual(eoy, t['due'])
 
     def test_complex_eoy_conversion(self):
-        if self.tw.version < six.text_type('2.4.0'):
+        if self.tw.version < '2.4.0':
             # Python2.6 does not support SkipTest. As a workaround
             # mark the test as passed by exiting.
             if getattr(unittest, 'SkipTest', None) is not None:
@@ -1251,7 +1262,7 @@ class DatetimeStringTest(TasklibTest):
         self.assertEqual(due_date, t['due'])
 
     def test_filtering_with_string_datetime(self):
-        if self.tw.version < six.text_type('2.4.0'):
+        if self.tw.version < '2.4.0':
             # Python2.6 does not support SkipTest. As a workaround
             # mark the test as passed by exiting.
             if getattr(unittest, 'SkipTest', None) is not None:
@@ -1330,12 +1341,12 @@ class AnnotationTest(TasklibTest):
 class UnicodeTest(TasklibTest):
 
     def test_unicode_task(self):
-        Task(self.tw, description=six.u('†åßk')).save()
+        Task(self.tw, description='†åßk').save()
         self.tw.tasks.get()
 
     def test_filter_by_unicode_task(self):
-        Task(self.tw, description=six.u('†åßk')).save()
-        tasks = self.tw.tasks.filter(description=six.u('†åßk'))
+        Task(self.tw, description='†åßk').save()
+        tasks = self.tw.tasks.filter(description='†åßk')
         self.assertEqual(len(tasks), 1)
 
     def test_non_unicode_task(self):

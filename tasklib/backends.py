@@ -5,8 +5,8 @@ import json
 import logging
 import os
 import re
-import six
 import subprocess
+from functools import lru_cache
 
 from .task import Task, TaskQuerySet, ReadOnlyDictView
 from .filters import TaskWarriorFilter
@@ -84,15 +84,15 @@ class TaskWarriorException(Exception):
 
 class TaskWarrior(Backend):
 
-    VERSION_2_1_0 = six.u('2.1.0')
-    VERSION_2_2_0 = six.u('2.2.0')
-    VERSION_2_3_0 = six.u('2.3.0')
-    VERSION_2_4_0 = six.u('2.4.0')
-    VERSION_2_4_1 = six.u('2.4.1')
-    VERSION_2_4_2 = six.u('2.4.2')
-    VERSION_2_4_3 = six.u('2.4.3')
-    VERSION_2_4_4 = six.u('2.4.4')
-    VERSION_2_4_5 = six.u('2.4.5')
+    VERSION_2_1_0 = '2.1.0'
+    VERSION_2_2_0 = '2.2.0'
+    VERSION_2_3_0 = '2.3.0'
+    VERSION_2_4_0 = '2.4.0'
+    VERSION_2_4_1 = '2.4.1'
+    VERSION_2_4_2 = '2.4.2'
+    VERSION_2_4_3 = '2.4.3'
+    VERSION_2_4_4 = '2.4.4'
+    VERSION_2_4_5 = '2.4.5'
 
     def __init__(self, data_location=None, create=True,
                  taskrc_location=None, task_command='task',
@@ -142,8 +142,8 @@ class TaskWarrior(Backend):
         for item in overrides.items():
             command_args.append('rc.{0}={1}'.format(*item))
         command_args.extend([
-            x.decode('utf-8') if isinstance(x, six.binary_type)
-            else six.text_type(x) for x in args
+            x.decode('utf-8') if isinstance(x, bytes)
+            else str(x) for x in args
         ])
         return command_args
 
@@ -168,10 +168,10 @@ class TaskWarrior(Backend):
             if serialized_value == '':
                 escaped_serialized_value = ''
             else:
-                escaped_serialized_value = six.u("'{0}'").format(
+                escaped_serialized_value = "'{0}'".format(
                     serialized_value)
 
-            format_default = lambda task: six.u("{0}:{1}").format(
+            format_default = lambda task: "{0}:{1}".format(
                 field, escaped_serialized_value)
 
             format_func = getattr(self, 'format_{0}'.format(field),
@@ -223,7 +223,7 @@ class TaskWarrior(Backend):
         if self.version < self.VERSION_2_4_0:
             return task._data['description']
         else:
-            return six.u("description:'{0}'").format(
+            return "description:'{0}'".format(
                 task._data['description'] or '',
             )
 
@@ -320,6 +320,10 @@ class TaskWarrior(Backend):
 
     def undo(self):
         self.execute_command(['undo'])
+
+    @lru_cache(maxsize=128)
+    def get_task(self, uuid):
+        return self.tasks.get(uuid=uuid)
 
     # Backend interface implementation
 

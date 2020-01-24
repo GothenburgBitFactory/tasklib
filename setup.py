@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
-install_requirements = ['six>=1.4', 'pytz', 'tzlocal']
+install_requirements = ['pytz', 'tzlocal']
 
-version = '1.3.0'
+version = '2.1.0'
 
 try:
     import importlib
@@ -26,12 +26,11 @@ setup(
     classifiers=[
         'Development Status :: 4 - Beta',
         'Programming Language :: Python',
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.6",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.2",
-        "Programming Language :: Python :: 3.3",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         'License :: OSI Approved :: BSD License',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Intended Audience :: Developers',
