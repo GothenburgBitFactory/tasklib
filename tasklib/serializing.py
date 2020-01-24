@@ -2,7 +2,6 @@ import datetime
 import importlib
 import json
 import pytz
-import six
 import tzlocal
 
 
@@ -177,7 +176,7 @@ class SerializingObject(object):
         return ','.join(tags) if tags else ''
 
     def deserialize_tags(self, tags):
-        if isinstance(tags, six.string_types):
+        if isinstance(tags, str):
             return set(tags.split(',')) if tags else set()
         return set(tags or [])
 
@@ -236,7 +235,7 @@ class SerializingObject(object):
                 # If the value is already localized, there is no need to change
                 # time zone at this point. Also None is a valid value too.
                 localized = value
-        elif isinstance(value, six.string_types):
+        elif isinstance(value, str):
             localized = self.backend.convert_datetime_string(value)
         else:
             raise ValueError("Provided value could not be converted to "
@@ -247,7 +246,7 @@ class SerializingObject(object):
 
     def normalize_uuid(self, value):
         # Enforce sane UUID
-        if not isinstance(value, six.string_types) or value == '':
+        if not isinstance(value, str) or value == '':
             raise ValueError("UUID must be a valid non-empty string, "
                              "not: {}".format(value))
 

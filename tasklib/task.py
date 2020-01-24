@@ -4,7 +4,6 @@ import importlib
 import json
 import logging
 import os
-import six
 import sys
 
 from .serializing import SerializingObject
@@ -41,10 +40,10 @@ class ReadOnlyDictView(object):
     def __len__(self):
         return len(self.viewed_dict)
 
-    def __unicode__(self):
-        return six.u('ReadOnlyDictView: {0}'.format(repr(self.viewed_dict)))
+    def __str__(self):
+        return 'ReadOnlyDictView: {0}'.format(repr(self.viewed_dict))
 
-    __repr__ = __unicode__
+    __repr__ = __str__
 
     def get(self, key, default=None):
         return copy.deepcopy(self.viewed_dict.get(key, default))
@@ -106,10 +105,7 @@ class TaskResource(SerializingObject):
         self._data[key] = value
 
     def __str__(self):
-        s = six.text_type(self.__unicode__())
-        if not six.PY3:
-            s = s.encode('utf-8')
-        return s
+        return str(self['description'])
 
     def __repr__(self):
         return str(self)
@@ -121,7 +117,7 @@ class TaskResource(SerializingObject):
 
         # We need to remove spaces for TW-1504, use custom separators
         data_tuples = ((key, self._serialize(key, value))
-                       for key, value in six.iteritems(self._data))
+                       for key, value in self._data.items())
 
         # Empty string denotes empty serialized value, we do not want
         # to pass that to TaskWarrior.
@@ -160,9 +156,6 @@ class TaskAnnotation(TaskResource):
     def remove(self):
         self.task.remove_annotation(self)
 
-    def __unicode__(self):
-        return self['description']
-
     def __eq__(self, other):
         # consider 2 annotations equal if they belong to the same task, and
         # their data dics are the same
@@ -170,8 +163,6 @@ class TaskAnnotation(TaskResource):
 
     def __ne__(self, other):
         return not self.__eq__(other)
-
-    __repr__ = __unicode__
 
 
 class Task(TaskResource):
@@ -266,14 +257,14 @@ class Task(TaskResource):
 
         # Rather unfortunate syntax due to python2.6 comaptiblity
         self._data = dict((key, self._normalize(key, value))
-                          for (key, value) in six.iteritems(kwargs))
+                          for (key, value) in kwargs.items())
         self._original_data = copy.deepcopy(self._data)
 
         # Provide read only access to the original data
         self.original = ReadOnlyDictView(self._original_data)
 
-    def __unicode__(self):
-        return self['description']
+    def __str__(self):
+        return str(self['description'])
 
     def __eq__(self, other):
         if self['uuid'] and other['uuid']:
@@ -296,23 +287,23 @@ class Task(TaskResource):
 
     @property
     def completed(self):
-        return self['status'] == six.text_type('completed')
+        return self['status'] == 'completed'
 
     @property
     def deleted(self):
-        return self['status'] == six.text_type('deleted')
+        return self['status'] == 'deleted'
 
     @property
     def waiting(self):
-        return self['status'] == six.text_type('waiting')
+        return self['status'] == 'waiting'
 
     @property
     def pending(self):
-        return self['status'] == six.text_type('pending')
+        return self['status'] == 'pending'
 
     @property
     def recurring(self):
-        return self['status'] == six.text_type('recurring')
+        return self['status'] == 'recurring'
 
     @property
     def active(self):
