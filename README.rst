@@ -10,13 +10,12 @@ tasklib
 tasklib is a Python library for interacting with taskwarrior_ databases, using
 a queryset API similar to that of Django's ORM.
 
-Supports Python 3.5 and above, with taskwarrior 2.1.x and above.
-Older versions of taskwarrior are untested and may not work.
-
 Requirements
 ------------
 
+* Python 3.5 or above
 * taskwarrior_ v2.1.x or above.
+Older versions of taskwarrior are untested and may not work.
 
 Installation
 ------------
@@ -32,7 +31,7 @@ tasklib has a similar API to that of Django's ORM::
 
     >>> from tasklib import TaskWarrior
 
-    >>> tw = TaskWarrior('/home/rob/.task')
+    >>> tw = TaskWarrior('~/.task')
     >>> tasks = tw.tasks.pending()
     >>> tasks
     ['Tidy the house', 'Learn German']
