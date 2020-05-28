@@ -176,9 +176,11 @@ class SerializingObject(object):
         return list(tags)
 
     def deserialize_tags(self, tags):
+        if not tags:
+            set()
         if isinstance(tags, str):
-            return set(tags.split(',')) if tags else set()
-        return set(tags or [])
+            return set(tags.split(','))
+        return set(tags)
 
     def serialize_parent(self, parent):
         return parent['uuid'] if parent else ''
