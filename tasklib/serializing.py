@@ -173,7 +173,7 @@ class SerializingObject(object):
         return [TaskAnnotation(self, d) for d in data] if data else []
 
     def serialize_tags(self, tags):
-        return ','.join(tags) if tags else ''
+        return list(tags)
 
     def deserialize_tags(self, tags):
         if isinstance(tags, str):
