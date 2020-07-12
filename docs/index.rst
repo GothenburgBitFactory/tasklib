@@ -21,7 +21,7 @@ Install via pip (recommended)::
 
 Or clone from github::
 
-    git clone https://github.com/robgolding63/tasklib.git
+    git clone https://github.com/robgolding/tasklib.git
     cd tasklib
     python setup.py install
 
