@@ -344,7 +344,7 @@ in Python, this can cause some unexpected behaviour:
 
     >>> from datetime import datetime
     >>> now = datetime.now()
-    >>> t = Task(tw, description="take out the trash now") 
+    >>> t = Task(tw, description="take out the trash now")
     >>> t['due'] = now
     >>> now
     datetime.datetime(2015, 2, 1, 19, 44, 4, 770001)
