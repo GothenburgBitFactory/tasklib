@@ -212,7 +212,7 @@ Tasks can also be filtered using raw commands, like so::
     ['Upgrade Ubuntu Server']
 
 Although this practice is discouraged, as by using raw commands you may lose
-some of the portablility of your commands over different TaskWarrior versions.
+some of the portability of your commands over different TaskWarrior versions.
 
 However, you can mix raw commands with keyword filters, as in the given example::
 
@@ -306,7 +306,7 @@ Dealing with dates and time
 
 Any timestamp-like attributes of the tasks are converted to timezone-aware
 datetime objects. To achieve this, Tasklib leverages ``pytz`` Python module,
-which brings the Olsen timezone databaze to Python.
+which brings the Olsen timezone database to Python.
 
 This shields you from annoying details of Daylight Saving Time shifts
 or conversion between different timezones. For example, to list all the
@@ -330,7 +330,7 @@ You can also use simple dates when filtering:
 In such case, a 00:00:00 is used as the time component.
 
 Of course, you can use datetime naive objects when initializing Task object
-or assigning values to datetime atrributes:
+or assigning values to datetime attributes:
 
     >>> t = Task(tw, description="Buy new shoes", due=date(2015,2,5))
     >>> t['due']
@@ -401,7 +401,7 @@ For the list of acceptable formats and keywords, please consult:
 * http://taskwarrior.org/docs/dates.html
 * http://taskwarrior.org/docs/named_dates.html
 
-However, as each such assigment involves call to 'task calc' for conversion,
+However, as each such assignment involves call to 'task calc' for conversion,
 it might cause some performance issues when assigning strings to datetime
 attributes repeatedly, in a automated manner.
 
@@ -572,8 +572,8 @@ We can also speficy UDAs as arguments in the TaskFilter::
 Syncing
 -------
 
-If you have configurated the needed config variables in your .taskrc, syncing
-is as easy as::
+If you have configured the required configuration variables in your .taskrc,
+syncing is as easy as::
 
     >>> tw = TaskWarrior()
     >>> tw.execute_command(['sync'])
