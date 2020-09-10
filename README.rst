@@ -15,6 +15,7 @@ Requirements
 
 * Python 3.5 or above
 * taskwarrior_ v2.1.x or above.
+
 Older versions of taskwarrior are untested and may not work.
 
 Installation
