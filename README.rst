@@ -1,11 +1,11 @@
 tasklib
 =======
 
-.. image:: https://travis-ci.org/robgolding63/tasklib.png?branch=develop
-    :target: http://travis-ci.org/robgolding63/tasklib
+.. image:: https://travis-ci.org/robgolding/tasklib.png?branch=develop
+    :target: http://travis-ci.org/robgolding/tasklib
 
-.. image:: https://coveralls.io/repos/robgolding63/tasklib/badge.png?branch=develop
-    :target: https://coveralls.io/r/robgolding63/tasklib?branch=develop
+.. image:: https://coveralls.io/repos/robgolding/tasklib/badge.png?branch=develop
+    :target: https://coveralls.io/r/robgolding/tasklib?branch=develop
 
 tasklib is a Python library for interacting with taskwarrior_ databases, using
 a queryset API similar to that of Django's ORM.
