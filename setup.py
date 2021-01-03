@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 install_requirements = ['pytz', 'tzlocal']
 
-version = '2.2.1'
+version = '2.3.0'
 
 try:
     import importlib
@@ -17,8 +17,8 @@ setup(
     author='Rob Golding',
     author_email='rob@robgolding.com',
     license='BSD',
-    url='https://github.com/robgolding63/tasklib',
-    download_url='https://github.com/robgolding63/tasklib/downloads',
+    url='https://github.com/robgolding/tasklib',
+    download_url='https://github.com/robgolding/tasklib/downloads',
     packages=find_packages(),
     include_package_data=True,
     test_suite='tasklib.tests',
