@@ -72,7 +72,7 @@ class TaskWarriorTest(TasklibTest):
         tw = self.get_taskwarrior(
             task_command='wsl task',
             # prevent `_get_version` from running as `wsl` may not exist
-            version_override=os.getenv('TASK_VERSION'),
+            version_override=os.getenv('TASK_VERSION', 'v1.2.3'),
         )
         self.assertEqual(tw._get_task_command(), ['wsl', 'task'])
 
