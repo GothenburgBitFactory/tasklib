@@ -8,7 +8,7 @@ import tzlocal
 from .lazy import LazyUUIDTaskSet, LazyUUIDTask
 
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
-local_zone = tzlocal.get_localzone()
+local_zone = pytz.timezone(str(tzlocal.get_localzone()))
 
 
 class SerializingObject(object):
@@ -230,7 +230,7 @@ class SerializingObject(object):
         elif isinstance(value, datetime.datetime):
             if value.tzinfo is None:
                 # Convert to localized datetime object
-                localized = pytz.timezone(str(local_zone)).localize(value)
+                localized = local_zone.localize(value)
             else:
                 # If the value is already localized, there is no need to change
                 # time zone at this point. Also None is a valid value too.
