@@ -230,7 +230,7 @@ class SerializingObject(object):
         elif isinstance(value, datetime.datetime):
             if value.tzinfo is None:
                 # Convert to localized datetime object
-                localized = local_zone.localize(value)
+                localized = pytz.timezone(str(local_zone)).localize(value)
             else:
                 # If the value is already localized, there is no need to change
                 # time zone at this point. Also None is a valid value too.
