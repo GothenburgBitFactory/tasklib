@@ -1,9 +1,5 @@
 language: python
 env:
-  - TASK_VERSION=v2.1.1
-  - TASK_VERSION=v2.1.2
-  - TASK_VERSION=v2.2.0
-  - TASK_VERSION=v2.3.0
   - TASK_VERSION=v2.4.0
   - TASK_VERSION=v2.4.1
   - TASK_VERSION=v2.4.2
@@ -11,11 +7,14 @@ env:
   - TASK_VERSION=v2.4.4
   - TASK_VERSION=v2.5.0
   - TASK_VERSION=v2.5.1
+  - TASK_VERSION=v2.5.2
+  - TASK_VERSION=v2.5.3
 python:
   - "3.5"
   - "3.6"
   - "3.7"
   - "3.8"
+  - "3.9"
 install:
   - pip install -e .
   - pip install coveralls
