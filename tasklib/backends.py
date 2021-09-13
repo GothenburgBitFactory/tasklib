@@ -84,9 +84,6 @@ class TaskWarriorException(Exception):
 
 class TaskWarrior(Backend):
 
-    VERSION_2_1_0 = '2.1.0'
-    VERSION_2_2_0 = '2.2.0'
-    VERSION_2_3_0 = '2.3.0'
     VERSION_2_4_0 = '2.4.0'
     VERSION_2_4_1 = '2.4.1'
     VERSION_2_4_2 = '2.4.2'
@@ -218,31 +215,17 @@ class TaskWarrior(Backend):
         )
 
     def format_description(self, task):
-        # Task version older than 2.4.0 ignores first word of the
-        # task description if description: prefix is used
-        if self.version < self.VERSION_2_4_0:
-            return task._data['description']
-        else:
-            return "description:'{0}'".format(
-                task._data['description'] or '',
-            )
+        return "description:'{0}'".format(
+            task._data['description'] or '',
+        )
 
     def convert_datetime_string(self, value):
-
-        if self.version >= self.VERSION_2_4_0:
-            # For strings, use 'calc' to evaluate the string to datetime
-            # available since TW 2.4.0
-            args = value.split()
-            result = self.execute_command(['calc'] + args)
-            naive = datetime.datetime.strptime(result[0], DATE_FORMAT_CALC)
-            localized = local_zone.localize(naive)
-        else:
-            raise ValueError(
-                'Provided value could not be converted to '
-                'datetime, its type is not supported: {}'
-                .format(type(value)),
-            )
-
+        # For strings, use 'calc' to evaluate the string to datetime
+        # available since TW 2.4.0
+        args = value.split()
+        result = self.execute_command(['calc'] + args)
+        naive = datetime.datetime.strptime(result[0], DATE_FORMAT_CALC)
+        localized = local_zone.localize(naive)
         return localized
 
     @property
@@ -387,10 +370,6 @@ class TaskWarrior(Backend):
         self.execute_command([task['uuid'], 'stop'])
 
     def complete_task(self, task):
-        # Older versions of TW do not stop active task at completion
-        if self.version < self.VERSION_2_4_0 and task.active:
-            task.stop()
-
         self.execute_command([task['uuid'], 'done'])
 
     def annotate_task(self, task, annotation):
