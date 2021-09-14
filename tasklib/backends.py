@@ -330,7 +330,10 @@ class TaskWarrior(Backend):
 
         args = [task['uuid'], 'modify'] if task.saved else ['add']
         args.extend(self._get_modified_task_fields_as_args(task))
-        output = self.execute_command(args)
+        output = self.execute_command(
+            args,
+            config_override={'verbose': 'new-uuid'}
+        )
 
         # Parse out the new ID, if the task is being added for the first time
         if not task.saved:
@@ -338,8 +341,8 @@ class TaskWarrior(Backend):
 
             # Complain loudly if it seems that more tasks were created
             # Should not happen.
-            # Expected output: Created task 1.
-            #                  Created task 1 (recurrence template).
+            # Expected output: Created task bd23f69a-a078-48a4-ac11-afba0643eca9.
+            #                  Created task bd23f69a-a078-48a4-ac11-afba0643eca9 (recurrence template).
             if len(id_lines) != 1 or len(id_lines[0].split(' ')) not in (3, 5):
                 raise TaskWarriorException(
                     'Unexpected output when creating '
@@ -349,11 +352,8 @@ class TaskWarrior(Backend):
             # Circumvent the ID storage, since ID is considered read-only
             identifier = id_lines[0].split(' ')[2].rstrip('.')
 
-            # Identifier can be either ID or UUID for completed tasks
-            try:
-                task._data['id'] = int(identifier)
-            except ValueError:
-                task._data['uuid'] = identifier
+            # Identifier is UUID, because we used new-uuid verbosity override
+            task._data['uuid'] = identifier
 
         # Refreshing is very important here, as not only modification time
         # is updated, but arbitrary attribute may have changed due hooks
@@ -385,7 +385,11 @@ class TaskWarrior(Backend):
         # of newly saved tasks. Any other place in the code is fine
         # with using UUID only.
         args = [task['uuid'] or task['id'], 'export']
-        output = self.execute_command(args)
+        output = self.execute_command(
+            args,
+            # Supress GC, which can change ID numbers (undesirable for refresh)
+            config_override={'gc': '0'}
+        )
 
         def valid(output):
             return len(output) == 1 and output[0].startswith('{')
