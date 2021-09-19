@@ -84,9 +84,6 @@ class TaskWarriorException(Exception):
 
 class TaskWarrior(Backend):
 
-    VERSION_2_1_0 = '2.1.0'
-    VERSION_2_2_0 = '2.2.0'
-    VERSION_2_3_0 = '2.3.0'
     VERSION_2_4_0 = '2.4.0'
     VERSION_2_4_1 = '2.4.1'
     VERSION_2_4_2 = '2.4.2'
@@ -218,31 +215,17 @@ class TaskWarrior(Backend):
         )
 
     def format_description(self, task):
-        # Task version older than 2.4.0 ignores first word of the
-        # task description if description: prefix is used
-        if self.version < self.VERSION_2_4_0:
-            return task._data['description']
-        else:
-            return "description:'{0}'".format(
-                task._data['description'] or '',
-            )
+        return "description:'{0}'".format(
+            task._data['description'] or '',
+        )
 
     def convert_datetime_string(self, value):
-
-        if self.version >= self.VERSION_2_4_0:
-            # For strings, use 'calc' to evaluate the string to datetime
-            # available since TW 2.4.0
-            args = value.split()
-            result = self.execute_command(['calc'] + args)
-            naive = datetime.datetime.strptime(result[0], DATE_FORMAT_CALC)
-            localized = local_zone.localize(naive)
-        else:
-            raise ValueError(
-                'Provided value could not be converted to '
-                'datetime, its type is not supported: {}'
-                .format(type(value)),
-            )
-
+        # For strings, use 'calc' to evaluate the string to datetime
+        # available since TW 2.4.0
+        args = value.split()
+        result = self.execute_command(['calc'] + args)
+        naive = datetime.datetime.strptime(result[0], DATE_FORMAT_CALC)
+        localized = local_zone.localize(naive)
         return localized
 
     @property
@@ -329,7 +312,7 @@ class TaskWarrior(Backend):
 
     def filter_tasks(self, filter_obj):
         self.enforce_recurrence()
-        args = ['export'] + filter_obj.get_filter_params()
+        args = filter_obj.get_filter_params() + ["export"]
         tasks = []
         for line in self.execute_command(args):
             if line:
@@ -347,7 +330,10 @@ class TaskWarrior(Backend):
 
         args = [task['uuid'], 'modify'] if task.saved else ['add']
         args.extend(self._get_modified_task_fields_as_args(task))
-        output = self.execute_command(args)
+        output = self.execute_command(
+            args,
+            config_override={'verbose': 'new-uuid'}
+        )
 
         # Parse out the new ID, if the task is being added for the first time
         if not task.saved:
@@ -355,8 +341,8 @@ class TaskWarrior(Backend):
 
             # Complain loudly if it seems that more tasks were created
             # Should not happen.
-            # Expected output: Created task 1.
-            #                  Created task 1 (recurrence template).
+            # Expected output: Created task bd23f69a-a078-48a4-ac11-afba0643eca9.
+            #                  Created task bd23f69a-a078-48a4-ac11-afba0643eca9 (recurrence template).
             if len(id_lines) != 1 or len(id_lines[0].split(' ')) not in (3, 5):
                 raise TaskWarriorException(
                     'Unexpected output when creating '
@@ -366,11 +352,8 @@ class TaskWarrior(Backend):
             # Circumvent the ID storage, since ID is considered read-only
             identifier = id_lines[0].split(' ')[2].rstrip('.')
 
-            # Identifier can be either ID or UUID for completed tasks
-            try:
-                task._data['id'] = int(identifier)
-            except ValueError:
-                task._data['uuid'] = identifier
+            # Identifier is UUID, because we used new-uuid verbosity override
+            task._data['uuid'] = identifier
 
         # Refreshing is very important here, as not only modification time
         # is updated, but arbitrary attribute may have changed due hooks
@@ -387,10 +370,6 @@ class TaskWarrior(Backend):
         self.execute_command([task['uuid'], 'stop'])
 
     def complete_task(self, task):
-        # Older versions of TW do not stop active task at completion
-        if self.version < self.VERSION_2_4_0 and task.active:
-            task.stop()
-
         self.execute_command([task['uuid'], 'done'])
 
     def annotate_task(self, task, annotation):
@@ -406,7 +385,11 @@ class TaskWarrior(Backend):
         # of newly saved tasks. Any other place in the code is fine
         # with using UUID only.
         args = [task['uuid'] or task['id'], 'export']
-        output = self.execute_command(args)
+        output = self.execute_command(
+            args,
+            # Supress GC, which can change ID numbers (undesirable for refresh)
+            config_override={'gc': '0'}
+        )
 
         def valid(output):
             return len(output) == 1 and output[0].startswith('{')
@@ -427,8 +410,7 @@ class TaskWarrior(Backend):
             for key, value in data.items():
                 taskfilter.add_filter_param(key, value)
 
-            output = self.execute_command(['export'] +
-                                          taskfilter.get_filter_params())
+            output = self.execute_command(taskfilter.get_filter_params() + ['export'])
 
         # If more than 1 task has been matched still, raise an exception
         if not valid(output):

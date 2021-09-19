@@ -72,7 +72,7 @@ class TaskWarriorTest(TasklibTest):
         tw = self.get_taskwarrior(
             task_command='wsl task',
             # prevent `_get_version` from running as `wsl` may not exist
-            version_override=os.getenv('TASK_VERSION'),
+            version_override=os.getenv('TASK_VERSION', 'v1.2.3'),
         )
         self.assertEqual(tw._get_task_command(), ['wsl', 'task'])
 
@@ -1229,21 +1229,21 @@ class DatetimeStringTest(TasklibTest):
         t = Task(self.tw, description='test task', due='eoy')
         now = local_zone.localize(datetime.datetime.now())
         eoy = local_zone.localize(datetime.datetime(
-            year=now.year+1,
-            month=1,
-            day=1,
-            hour=0,
-            minute=0,
-            second=0,
+            year=now.year,
+            month=12,
+            day=31,
+            hour=23,
+            minute=59,
+            second=59,
             ))
-        if self.tw.version < '2.5.2':
+        if self.tw.version >= '2.5.2' and self.tw.version < '2.6.0':
             eoy = local_zone.localize(datetime.datetime(
-                year=now.year,
-                month=12,
-                day=31,
-                hour=23,
-                minute=59,
-                second=59,
+                year=now.year+1,
+                month=1,
+                day=1,
+                hour=0,
+                minute=0,
+                second=0,
                 ))
         self.assertEqual(eoy, t['due'])
 
@@ -1260,23 +1260,23 @@ class DatetimeStringTest(TasklibTest):
         now = local_zone.localize(datetime.datetime.now())
         due_date = local_zone.localize(
             datetime.datetime(
-                year=now.year+1,
-                month=1,
-                day=1,
-                hour=0,
-                minute=0,
-                second=0,
+                year=now.year,
+                month=12,
+                day=31,
+                hour=23,
+                minute=59,
+                second=59,
             )
         ) - datetime.timedelta(0, 4 * 30 * 86400)
-        if self.tw.version < '2.5.2':
+        if self.tw.version >= '2.5.2' and self.tw.version < '2.6.0':
             due_date = local_zone.localize(
                 datetime.datetime(
-                    year=now.year,
-                    month=12,
-                    day=31,
-                    hour=23,
-                    minute=59,
-                    second=59,
+                    year=now.year+1,
+                    month=1,
+                    day=1,
+                    hour=0,
+                    minute=0,
+                    second=0,
                 )
             ) - datetime.timedelta(0, 4 * 30 * 86400)
         self.assertEqual(due_date, t['due'])

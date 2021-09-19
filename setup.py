@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 install_requirements = ['pytz', 'tzlocal']
 
-version = '2.3.0'
+version = '2.4.0'
 
 try:
     import importlib
@@ -31,6 +31,7 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         'License :: OSI Approved :: BSD License',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Intended Audience :: Developers',

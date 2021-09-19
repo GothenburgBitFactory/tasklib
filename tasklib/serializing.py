@@ -8,7 +8,7 @@ import tzlocal
 from .lazy import LazyUUIDTaskSet, LazyUUIDTask
 
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
-local_zone = tzlocal.get_localzone()
+local_zone = pytz.timezone(str(tzlocal.get_localzone()))
 
 
 class SerializingObject(object):
