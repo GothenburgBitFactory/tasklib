@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 install_requirements = ['pytz', 'tzlocal']
 
-version = '2.4.2'
+version = '2.4.3'
 
 try:
     import importlib
