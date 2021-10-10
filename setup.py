@@ -24,7 +24,7 @@ setup(
     test_suite='tasklib.tests',
     install_requires=install_requirements,
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 6 - Mature',
         'Programming Language :: Python',
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.5",
@@ -32,8 +32,12 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         'License :: OSI Approved :: BSD License',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Intended Audience :: Developers',
+        'Intended Audience :: Information Technology',
+        'Intended Audience :: System Administrators',
+        'Operating System :: OS Independent'
     ],
 )
