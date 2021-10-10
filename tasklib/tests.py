@@ -131,6 +131,16 @@ class TaskFilterTest(TasklibTest):
 
         self.assertEqual(len(self.tw.tasks.waiting()), 1)
 
+    def test_waiting_property(self):
+        t = Task(self.tw, description='test task')
+        t.save()
+        self.assertFalse(t.waiting)
+
+        t['wait'] = datetime.datetime.now() + datetime.timedelta(days=1)
+        t.save()
+
+        self.assertTrue(t.waiting)
+
     def test_recurring_empty(self):
         Task(self.tw, description='test task').save()
         self.assertEqual(len(self.tw.tasks.recurring()), 0)
