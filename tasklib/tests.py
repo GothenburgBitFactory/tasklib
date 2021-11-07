@@ -1245,7 +1245,7 @@ class DatetimeStringTest(TasklibTest):
             hour=23,
             minute=59,
             second=59,
-            ))
+        ))
         if self.tw.version >= '2.5.2' and self.tw.version < '2.6.0':
             eoy = local_zone.localize(datetime.datetime(
                 year=now.year+1,
@@ -1254,7 +1254,7 @@ class DatetimeStringTest(TasklibTest):
                 hour=0,
                 minute=0,
                 second=0,
-                ))
+            ))
         self.assertEqual(eoy, t['due'])
 
     def test_complex_eoy_conversion(self):
