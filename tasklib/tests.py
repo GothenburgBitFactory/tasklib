@@ -1656,6 +1656,70 @@ class LazyUUIDTaskSetTest(TasklibTest):
         lazyset &= taskset
         assert lazyset == set([self.task2])
 
+    def test_le(self):
+        lazyset = LazyUUIDTaskSet(
+            self.tw,
+            (self.task2['uuid'], self.task3['uuid'])
+        )
+        empty_lazyset = LazyUUIDTaskSet(
+            self.tw,
+            [],
+        )
+
+        assert lazyset <= set([self.task1, self.task2, self.task3])
+        assert self.lazy <= set([self.task1, self.task2, self.task3])
+        assert not lazyset <= set([self.task1, self.task2])
+        assert empty_lazyset <= set()
+        assert empty_lazyset <= set([self.task1])
+
+    def test_ge(self):
+        lazyset = LazyUUIDTaskSet(
+            self.tw,
+            (self.task2['uuid'], self.task3['uuid'])
+        )
+        empty_lazyset = LazyUUIDTaskSet(
+            self.tw,
+            [],
+        )
+
+        assert self.lazy >= set([self.task1, self.task2])
+        assert self.lazy >= set([self.task1, self.task2, self.task3])
+        assert not lazyset >= set([self.task1, self.task2])
+        assert empty_lazyset >= set()
+        assert not empty_lazyset >= set([self.task1])
+
+    def test_lt(self):
+        lazyset = LazyUUIDTaskSet(
+            self.tw,
+            (self.task2['uuid'], self.task3['uuid'])
+        )
+        empty_lazyset = LazyUUIDTaskSet(
+            self.tw,
+            [],
+        )
+
+        assert lazyset < set([self.task1, self.task2, self.task3])
+        assert not lazyset < set([self.task2, self.task3])
+        assert not lazyset < set([self.task1, self.task2])
+        assert empty_lazyset < set([self.task1])
+        assert not empty_lazyset < set()
+
+    def test_gt(self):
+        lazyset = LazyUUIDTaskSet(
+            self.tw,
+            (self.task2['uuid'], self.task3['uuid'])
+        )
+        empty_lazyset = LazyUUIDTaskSet(
+            self.tw,
+            [],
+        )
+
+        assert lazyset > set([self.task2])
+        assert not lazyset > set([self.task2, self.task3])
+        assert not lazyset > set([self.task1, self.task2])
+        assert not empty_lazyset > set([self.task1])
+        assert not empty_lazyset > set()
+
 
 class TaskWarriorBackendTest(TasklibTest):
 
