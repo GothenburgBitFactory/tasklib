@@ -172,10 +172,10 @@ class LazyUUIDTaskSet(object):
         return self._uuids > set(t['uuid'] for t in other)
 
     def issubset(self, other):
-        return all([task in other for task in self])
+        return self._uuids <= set(t['uuid'] for t in other)
 
     def issuperset(self, other):
-        return all([task in self for task in other])
+        return self._uuids >= set(t['uuid'] for t in other)
 
     def union(self, other):
         return LazyUUIDTaskSet(
