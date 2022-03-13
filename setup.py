@@ -4,11 +4,6 @@ install_requirements = ['pytz', 'tzlocal']
 
 version = '2.4.3'
 
-try:
-    import importlib
-except ImportError:
-    install_requirements.append('importlib')
-
 setup(
     name='tasklib',
     version=version,
