@@ -299,7 +299,7 @@ class Task(TaskResource):
         if not self['wait']:
             return False
 
-        return self['wait'] > local_zone.localize(datetime.datetime.now())
+        return self['wait'] > datetime.datetime.now().replace(tzinfo=local_zone)
 
     @property
     def pending(self):

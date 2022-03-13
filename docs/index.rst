@@ -305,15 +305,15 @@ Dealing with dates and time
 ---------------------------
 
 Any timestamp-like attributes of the tasks are converted to timezone-aware
-datetime objects. To achieve this, Tasklib leverages ``pytz`` Python module,
+datetime objects. To achieve this, Tasklib leverages ``zoneinfo`` Python module,
 which brings the Olsen timezone database to Python.
 
 This shields you from annoying details of Daylight Saving Time shifts
 or conversion between different timezones. For example, to list all the
 tasks which are due midnight if you're currently in Berlin:
 
-    >>> myzone = pytz.timezone('Europe/Berlin')
-    >>> midnight = myzone.localize(datetime(2015,2,2,0,0,0))
+    >>> myzone = zoneinfo.ZoneInfo('Europe/Berlin')
+    >>> midnight = datetime(2015,2,2,0,0,0,tzinfo=myzone)
     >>> tw.tasks.filter(due__before=midnight)
 
 However, this is still a little bit tedious. That's why TaskWarrior object
@@ -360,7 +360,7 @@ to localize the naive value first:
 
     >>> from datetime import datetime
     >>> from tasklib.task import local_zone
-    >>> now = local_zone.localize(datetime.now())
+    >>> now = datetime.now().replace(tzinfo=local_zone)
     >>> t['due'] = now
     >>> now
     datetime.datetime(2015, 2, 1, 19, 44, 4, 770001, tzinfo=<DstTzInfo 'Europe/Berlin' CET+1:00:00 STD>)
@@ -370,12 +370,12 @@ to localize the naive value first:
 Also, note that it does not matter whether the timezone aware datetime objects
 are set in the same timezone:
 
-    >>> import pytz
+    >>> import zoneinfo
     >>> t['due']
     datetime.datetime(2015, 2, 1, 19, 44, 4, 770001, tzinfo=<DstTzInfo 'Europe/Berlin' CET+1:00:00 STD>)
-    >>> now.astimezone(pytz.utc)
+    >>> now.astimezone(zoneinfo.ZoneInfo('UTC'))
     datetime.datetime(2015, 2, 1, 18, 44, 4, 770001, tzinfo=<UTC>)
-    >>> t['due'] == now.astimezone(pytz.utc)
+    >>> t['due'] == now.astimezone(zoneinfo.ZoneInfo('UTC'))
     True
 
 *Note*: Following behaviour is available only for TaskWarrior >= 2.4.0.

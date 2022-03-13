@@ -1,14 +1,13 @@
 import datetime
 import importlib
 import json
-import pytz
-import tzlocal
+from zoneinfo import ZoneInfo
 
 
 from .lazy import LazyUUIDTaskSet, LazyUUIDTask
 
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
-local_zone = pytz.timezone(str(tzlocal.get_localzone()))
+local_zone = ZoneInfo('localtime')
 
 
 class SerializingObject(object):
@@ -73,7 +72,7 @@ class SerializingObject(object):
 
         # Any serialized timestamp should be localized, we need to
         # convert to UTC before converting to string (DATE_FORMAT uses UTC)
-        date = date.astimezone(pytz.utc)
+        date = date.astimezone(ZoneInfo('UTC'))
 
         return date.strftime(DATE_FORMAT)
 
@@ -83,7 +82,7 @@ class SerializingObject(object):
 
         # Return timestamp localized in the local zone
         naive_timestamp = datetime.datetime.strptime(date_str, DATE_FORMAT)
-        localized_timestamp = pytz.utc.localize(naive_timestamp)
+        localized_timestamp = naive_timestamp.replace(tzinfo=ZoneInfo('UTC'))
         return localized_timestamp.astimezone(local_zone)
 
     def serialize_entry(self, value):
@@ -226,11 +225,11 @@ class SerializingObject(object):
         ):
             # Convert to local midnight
             value_full = datetime.datetime.combine(value, datetime.time.min)
-            localized = local_zone.localize(value_full)
+            localized = value_full.replace(tzinfo=local_zone)
         elif isinstance(value, datetime.datetime):
             if value.tzinfo is None:
                 # Convert to localized datetime object
-                localized = local_zone.localize(value)
+                localized = value.replace(tzinfo=local_zone)
             else:
                 # If the value is already localized, there is no need to change
                 # time zone at this point. Also None is a valid value too.

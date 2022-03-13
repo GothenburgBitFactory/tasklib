@@ -225,7 +225,7 @@ class TaskWarrior(Backend):
         args = value.split()
         result = self.execute_command(['calc'] + args)
         naive = datetime.datetime.strptime(result[0], DATE_FORMAT_CALC)
-        localized = local_zone.localize(naive)
+        localized = naive.replace(tzinfo=local_zone)
         return localized
 
     @property
