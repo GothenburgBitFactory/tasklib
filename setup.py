@@ -15,6 +15,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     test_suite='tasklib.tests',
+    install_requires=['backports.zoneinfo;python_version<"3.9"'],
     classifiers=[
         'Development Status :: 6 - Mature',
         'Programming Language :: Python',
