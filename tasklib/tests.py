@@ -10,7 +10,10 @@ import sys
 import tempfile
 import unittest
 from io import StringIO
-from zoneinfo import ZoneInfo
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
 
 from .backends import TaskWarrior
 from .task import Task, ReadOnlyDictView
