@@ -1,7 +1,10 @@
 import datetime
 import importlib
 import json
-from zoneinfo import ZoneInfo
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
 
 
 from .lazy import LazyUUIDTaskSet, LazyUUIDTask
