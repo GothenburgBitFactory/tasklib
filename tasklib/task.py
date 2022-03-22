@@ -7,7 +7,7 @@ import logging
 import os
 import sys
 
-from .serializing import SerializingObject, local_zone
+from .serializing import SerializingObject
 
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
 REPR_OUTPUT_SIZE = 10
@@ -299,7 +299,7 @@ class Task(TaskResource):
         if not self['wait']:
             return False
 
-        return self['wait'] > datetime.datetime.now().replace(tzinfo=local_zone)
+        return self['wait'] > datetime.datetime.now().astimezone()
 
     @property
     def pending(self):
