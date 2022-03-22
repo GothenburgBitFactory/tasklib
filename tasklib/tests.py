@@ -1267,7 +1267,7 @@ class DatetimeStringTest(TasklibTest):
             else:
                 return
 
-        t = Task(self.tw, description='test task', due='eoy - 2 months')
+        t = Task(self.tw, description='test task', due='eoy - 4 months')
         now = datetime.datetime.now().astimezone()
         due_date = datetime.datetime(
             year=now.year,
@@ -1276,7 +1276,7 @@ class DatetimeStringTest(TasklibTest):
             hour=23,
             minute=59,
             second=59,
-        ).astimezone() - datetime.timedelta(0, 2 * 30 * 86400)
+        ).astimezone() - datetime.timedelta(0, 4 * 30 * 86400)
         if self.tw.version >= '2.5.2' and self.tw.version < '2.6.0':
             due_date = datetime.datetime(
                 year=now.year+1,
@@ -1285,7 +1285,7 @@ class DatetimeStringTest(TasklibTest):
                 hour=0,
                 minute=0,
                 second=0,
-            ).astimezone() - datetime.timedelta(0, 2 * 30 * 86400)
+            ).astimezone() - datetime.timedelta(0, 4 * 30 * 86400)
         self.assertEqual(due_date, t['due'])
 
     def test_filtering_with_string_datetime(self):
