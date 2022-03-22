@@ -10,7 +10,6 @@ from functools import lru_cache
 
 from .task import Task, TaskQuerySet, ReadOnlyDictView
 from .filters import TaskWarriorFilter
-from .serializing import local_zone
 
 DATE_FORMAT_CALC = '%Y-%m-%dT%H:%M:%S'
 
@@ -225,7 +224,7 @@ class TaskWarrior(Backend):
         args = value.split()
         result = self.execute_command(['calc'] + args)
         naive = datetime.datetime.strptime(result[0], DATE_FORMAT_CALC)
-        localized = naive.replace(tzinfo=local_zone)
+        localized = naive.astimezone()
         return localized
 
     @property

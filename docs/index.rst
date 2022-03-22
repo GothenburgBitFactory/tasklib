@@ -359,8 +359,7 @@ If you want to compare datetime aware value with datetime naive value, you need
 to localize the naive value first:
 
     >>> from datetime import datetime
-    >>> from tasklib.task import local_zone
-    >>> now = datetime.now().replace(tzinfo=local_zone)
+    >>> now = datetime.now().astimezone()
     >>> t['due'] = now
     >>> now
     datetime.datetime(2015, 2, 1, 19, 44, 4, 770001, tzinfo=<DstTzInfo 'Europe/Berlin' CET+1:00:00 STD>)
