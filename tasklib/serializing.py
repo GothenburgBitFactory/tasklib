@@ -238,7 +238,10 @@ class SerializingObject(object):
                 # time zone at this point. Also None is a valid value too.
                 localized = value
         elif isinstance(value, str):
-            localized = self.backend.convert_datetime_string(value)
+            if value == '':
+                localized = value
+            else:
+                localized = self.backend.convert_datetime_string(value)
         else:
             raise ValueError("Provided value could not be converted to "
                              "datetime, its type is not supported: {}"
