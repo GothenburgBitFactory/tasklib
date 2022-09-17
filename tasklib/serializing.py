@@ -175,7 +175,13 @@ class SerializingObject(object):
         return [TaskAnnotation(self, d) for d in data] if data else []
 
     def serialize_tags(self, tags):
-        return ','.join(tags) if tags else ''
+        if isinstance(tags, list):
+            tags = set(tags)
+        if isinstance(tags, set):
+            return ','.join(tags) if tags else ''
+        if isinstance(tags, str):
+            return tags
+        raise ValueError("serialize_tags only supports list, set or string")
 
     def deserialize_tags(self, tags):
         if isinstance(tags, str):
