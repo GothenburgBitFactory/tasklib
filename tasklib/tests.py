@@ -5,12 +5,15 @@ import datetime
 import itertools
 import json
 import os
-import pytz
 import shutil
 import sys
 import tempfile
 import unittest
 from io import StringIO
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
 
 from .backends import TaskWarrior
 from .task import Task, ReadOnlyDictView
@@ -130,6 +133,16 @@ class TaskFilterTest(TasklibTest):
         t.save()
 
         self.assertEqual(len(self.tw.tasks.waiting()), 1)
+
+    def test_waiting_property(self):
+        t = Task(self.tw, description='test task')
+        t.save()
+        self.assertFalse(t.waiting)
+
+        t['wait'] = datetime.datetime.now() + datetime.timedelta(days=1)
+        t.save()
+
+        self.assertTrue(t.waiting)
 
     def test_recurring_empty(self):
         Task(self.tw, description='test task').save()
@@ -1100,8 +1113,7 @@ class TaskFromHookTest(TasklibTest):
             self.tw,
             description='test task',
             project='Home',
-            due=pytz.utc.localize(
-                datetime.datetime(2015, 1, 1, 23, 23, 23)),
+            due=datetime.datetime(2015, 1, 1, 23, 23, 23, tzinfo=ZoneInfo('UTC')),
         )
 
         # Check that the output is a permutation of:
@@ -1125,8 +1137,8 @@ class TimezoneAwareDatetimeTest(TasklibTest):
         self.zone = local_zone
         self.localdate_naive = datetime.datetime(2015, 2, 2)
         self.localtime_naive = datetime.datetime(2015, 2, 2, 0, 0, 0)
-        self.localtime_aware = self.zone.localize(self.localtime_naive)
-        self.utctime_aware = self.localtime_aware.astimezone(pytz.utc)
+        self.localtime_aware = self.localtime_naive.replace(tzinfo=self.zone)
+        self.utctime_aware = self.localtime_aware.astimezone(ZoneInfo('UTC'))
 
     def test_timezone_naive_datetime_setitem(self):
         t = Task(self.tw, description='test task')
@@ -1207,7 +1219,7 @@ class DatetimeStringTest(TasklibTest):
                 return
 
         t = Task(self.tw, description='test task', due='now')
-        now = local_zone.localize(datetime.datetime.now())
+        now = datetime.datetime.now().replace(tzinfo=local_zone)
 
         # Assert that both times are not more than 5 seconds apart
         if sys.version_info < (2, 7):
@@ -1227,24 +1239,26 @@ class DatetimeStringTest(TasklibTest):
                 return
 
         t = Task(self.tw, description='test task', due='eoy')
-        now = local_zone.localize(datetime.datetime.now())
-        eoy = local_zone.localize(datetime.datetime(
+        now = datetime.datetime.now().replace(tzinfo=local_zone)
+        eoy = datetime.datetime(
             year=now.year,
             month=12,
             day=31,
             hour=23,
             minute=59,
             second=59,
-            ))
+            tzinfo=local_zone
+        )
         if self.tw.version >= '2.5.2' and self.tw.version < '2.6.0':
-            eoy = local_zone.localize(datetime.datetime(
+            eoy = datetime.datetime(
                 year=now.year+1,
                 month=1,
                 day=1,
                 hour=0,
                 minute=0,
                 second=0,
-                ))
+                tzinfo=local_zone
+            )
         self.assertEqual(eoy, t['due'])
 
     def test_complex_eoy_conversion(self):
@@ -1256,29 +1270,27 @@ class DatetimeStringTest(TasklibTest):
             else:
                 return
 
-        t = Task(self.tw, description='test task', due='eoy - 4 months')
-        now = local_zone.localize(datetime.datetime.now())
-        due_date = local_zone.localize(
-            datetime.datetime(
-                year=now.year,
-                month=12,
-                day=31,
-                hour=23,
-                minute=59,
-                second=59,
-            )
-        ) - datetime.timedelta(0, 4 * 30 * 86400)
+        t = Task(self.tw, description='test task', due='eoy - 2 months')
+        now = datetime.datetime.now().replace(tzinfo=local_zone)
+        due_date = datetime.datetime(
+            year=now.year,
+            month=12,
+            day=31,
+            hour=23,
+            minute=59,
+            second=59,
+            tzinfo=local_zone
+        ) - datetime.timedelta(0, 2 * 30 * 86400)
         if self.tw.version >= '2.5.2' and self.tw.version < '2.6.0':
-            due_date = local_zone.localize(
-                datetime.datetime(
-                    year=now.year+1,
-                    month=1,
-                    day=1,
-                    hour=0,
-                    minute=0,
-                    second=0,
-                )
-            ) - datetime.timedelta(0, 4 * 30 * 86400)
+            due_date = datetime.datetime(
+                year=now.year+1,
+                month=1,
+                day=1,
+                hour=0,
+                minute=0,
+                second=0,
+                tzinfo=local_zone
+            ) - datetime.timedelta(0, 2 * 30 * 86400)
         self.assertEqual(due_date, t['due'])
 
     def test_filtering_with_string_datetime(self):
@@ -1645,6 +1657,70 @@ class LazyUUIDTaskSetTest(TasklibTest):
 
         lazyset &= taskset
         assert lazyset == set([self.task2])
+
+    def test_le(self):
+        lazyset = LazyUUIDTaskSet(
+            self.tw,
+            (self.task2['uuid'], self.task3['uuid'])
+        )
+        empty_lazyset = LazyUUIDTaskSet(
+            self.tw,
+            [],
+        )
+
+        assert lazyset <= set([self.task1, self.task2, self.task3])
+        assert self.lazy <= set([self.task1, self.task2, self.task3])
+        assert not lazyset <= set([self.task1, self.task2])
+        assert empty_lazyset <= set()
+        assert empty_lazyset <= set([self.task1])
+
+    def test_ge(self):
+        lazyset = LazyUUIDTaskSet(
+            self.tw,
+            (self.task2['uuid'], self.task3['uuid'])
+        )
+        empty_lazyset = LazyUUIDTaskSet(
+            self.tw,
+            [],
+        )
+
+        assert self.lazy >= set([self.task1, self.task2])
+        assert self.lazy >= set([self.task1, self.task2, self.task3])
+        assert not lazyset >= set([self.task1, self.task2])
+        assert empty_lazyset >= set()
+        assert not empty_lazyset >= set([self.task1])
+
+    def test_lt(self):
+        lazyset = LazyUUIDTaskSet(
+            self.tw,
+            (self.task2['uuid'], self.task3['uuid'])
+        )
+        empty_lazyset = LazyUUIDTaskSet(
+            self.tw,
+            [],
+        )
+
+        assert lazyset < set([self.task1, self.task2, self.task3])
+        assert not lazyset < set([self.task2, self.task3])
+        assert not lazyset < set([self.task1, self.task2])
+        assert empty_lazyset < set([self.task1])
+        assert not empty_lazyset < set()
+
+    def test_gt(self):
+        lazyset = LazyUUIDTaskSet(
+            self.tw,
+            (self.task2['uuid'], self.task3['uuid'])
+        )
+        empty_lazyset = LazyUUIDTaskSet(
+            self.tw,
+            [],
+        )
+
+        assert lazyset > set([self.task2])
+        assert not lazyset > set([self.task2, self.task3])
+        assert not lazyset > set([self.task1, self.task2])
+        assert not empty_lazyset > set([self.task1])
+        assert not empty_lazyset > set()
 
 
 class TaskWarriorBackendTest(TasklibTest):

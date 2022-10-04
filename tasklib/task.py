@@ -1,12 +1,13 @@
 from __future__ import print_function
 import copy
+import datetime
 import importlib
 import json
 import logging
 import os
 import sys
 
-from .serializing import SerializingObject
+from .serializing import SerializingObject, local_zone
 
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
 REPR_OUTPUT_SIZE = 10
@@ -295,7 +296,10 @@ class Task(TaskResource):
 
     @property
     def waiting(self):
-        return self['status'] == 'waiting'
+        if not self['wait']:
+            return False
+
+        return self['wait'] > datetime.datetime.now().replace(tzinfo=local_zone)
 
     @property
     def pending(self):
@@ -523,7 +527,7 @@ class TaskQuerySet(object):
         return self.filter(status=DELETED)
 
     def waiting(self):
-        return self.filter(status=WAITING)
+        return self.filter(wait__after='now')
 
     def recurring(self):
         return self.filter(status=RECURRING)

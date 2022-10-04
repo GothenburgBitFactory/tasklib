@@ -1,13 +1,6 @@
 from setuptools import setup, find_packages
 
-install_requirements = ['pytz', 'tzlocal']
-
-version = '2.4.2'
-
-try:
-    import importlib
-except ImportError:
-    install_requirements.append('importlib')
+version = '2.5.0'
 
 setup(
     name='tasklib',
@@ -22,7 +15,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     test_suite='tasklib.tests',
-    install_requires=install_requirements,
+    install_requires=['backports.zoneinfo;python_version<"3.9"'],
     classifiers=[
         'Development Status :: 6 - Mature',
         'Programming Language :: Python',
