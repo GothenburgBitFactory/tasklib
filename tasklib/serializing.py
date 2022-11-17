@@ -10,7 +10,6 @@ except ImportError:
 from .lazy import LazyUUIDTaskSet, LazyUUIDTask
 
 DATE_FORMAT = '%Y%m%dT%H%M%SZ'
-local_zone = ZoneInfo('localtime')
 
 
 class SerializingObject(object):
@@ -86,7 +85,7 @@ class SerializingObject(object):
         # Return timestamp localized in the local zone
         naive_timestamp = datetime.datetime.strptime(date_str, DATE_FORMAT)
         localized_timestamp = naive_timestamp.replace(tzinfo=ZoneInfo('UTC'))
-        return localized_timestamp.astimezone(local_zone)
+        return localized_timestamp.astimezone()
 
     def serialize_entry(self, value):
         return self.timestamp_serializer(value)
@@ -228,11 +227,11 @@ class SerializingObject(object):
         ):
             # Convert to local midnight
             value_full = datetime.datetime.combine(value, datetime.time.min)
-            localized = value_full.replace(tzinfo=local_zone)
+            localized = value_full.astimezone()
         elif isinstance(value, datetime.datetime):
             if value.tzinfo is None:
                 # Convert to localized datetime object
-                localized = value.replace(tzinfo=local_zone)
+                localized = value.astimezone()
             else:
                 # If the value is already localized, there is no need to change
                 # time zone at this point. Also None is a valid value too.

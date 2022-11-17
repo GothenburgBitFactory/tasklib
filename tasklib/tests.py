@@ -18,7 +18,7 @@ except ImportError:
 from .backends import TaskWarrior
 from .task import Task, ReadOnlyDictView
 from .lazy import LazyUUIDTask, LazyUUIDTaskSet
-from .serializing import DATE_FORMAT, local_zone
+from .serializing import DATE_FORMAT
 
 # http://taskwarrior.org/docs/design/task.html , Section: The Attributes
 TASK_STANDARD_ATTRS = (
@@ -1134,10 +1134,9 @@ class TimezoneAwareDatetimeTest(TasklibTest):
 
     def setUp(self):
         super(TimezoneAwareDatetimeTest, self).setUp()
-        self.zone = local_zone
         self.localdate_naive = datetime.datetime(2015, 2, 2)
         self.localtime_naive = datetime.datetime(2015, 2, 2, 0, 0, 0)
-        self.localtime_aware = self.localtime_naive.replace(tzinfo=self.zone)
+        self.localtime_aware = self.localtime_naive.astimezone()
         self.utctime_aware = self.localtime_aware.astimezone(ZoneInfo('UTC'))
 
     def test_timezone_naive_datetime_setitem(self):
@@ -1219,7 +1218,7 @@ class DatetimeStringTest(TasklibTest):
                 return
 
         t = Task(self.tw, description='test task', due='now')
-        now = datetime.datetime.now().replace(tzinfo=local_zone)
+        now = datetime.datetime.now().astimezone()
 
         # Assert that both times are not more than 5 seconds apart
         if sys.version_info < (2, 7):
@@ -1239,7 +1238,7 @@ class DatetimeStringTest(TasklibTest):
                 return
 
         t = Task(self.tw, description='test task', due='eoy')
-        now = datetime.datetime.now().replace(tzinfo=local_zone)
+        now = datetime.datetime.now().astimezone()
         eoy = datetime.datetime(
             year=now.year,
             month=12,
@@ -1247,8 +1246,7 @@ class DatetimeStringTest(TasklibTest):
             hour=23,
             minute=59,
             second=59,
-            tzinfo=local_zone
-        )
+        ).astimezone()
         if self.tw.version >= '2.5.2' and self.tw.version < '2.6.0':
             eoy = datetime.datetime(
                 year=now.year+1,
@@ -1257,8 +1255,7 @@ class DatetimeStringTest(TasklibTest):
                 hour=0,
                 minute=0,
                 second=0,
-                tzinfo=local_zone
-            )
+            ).astimezone()
         self.assertEqual(eoy, t['due'])
 
     def test_complex_eoy_conversion(self):
@@ -1270,8 +1267,8 @@ class DatetimeStringTest(TasklibTest):
             else:
                 return
 
-        t = Task(self.tw, description='test task', due='eoy - 2 months')
-        now = datetime.datetime.now().replace(tzinfo=local_zone)
+        t = Task(self.tw, description='test task', due='eoy - 4 months')
+        now = datetime.datetime.now().astimezone()
         due_date = datetime.datetime(
             year=now.year,
             month=12,
@@ -1279,8 +1276,7 @@ class DatetimeStringTest(TasklibTest):
             hour=23,
             minute=59,
             second=59,
-            tzinfo=local_zone
-        ) - datetime.timedelta(0, 2 * 30 * 86400)
+        ).astimezone() - datetime.timedelta(0, 4 * 30 * 86400)
         if self.tw.version >= '2.5.2' and self.tw.version < '2.6.0':
             due_date = datetime.datetime(
                 year=now.year+1,
@@ -1289,8 +1285,7 @@ class DatetimeStringTest(TasklibTest):
                 hour=0,
                 minute=0,
                 second=0,
-                tzinfo=local_zone
-            ) - datetime.timedelta(0, 2 * 30 * 86400)
+            ).astimezone() - datetime.timedelta(0, 4 * 30 * 86400)
         self.assertEqual(due_date, t['due'])
 
     def test_filtering_with_string_datetime(self):
