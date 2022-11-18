@@ -148,7 +148,7 @@ class TaskWarrior(Backend):
             self._get_task_command() + ['--version'],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
-        stdout, stderr = [x.decode('utf-8') for x in p.communicate()]
+        stdout, stderr = [x.decode('utf-8', errors='ignore') for x in p.communicate()]
         return stdout.strip('\n')
 
     def _get_modified_task_fields_as_args(self, task):
