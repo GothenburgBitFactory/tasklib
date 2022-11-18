@@ -174,11 +174,11 @@ class SerializingObject(object):
         return [TaskAnnotation(self, d) for d in data] if data else []
 
     def serialize_tags(self, tags):
-        return ','.join(tags) if tags else ''
+        return list(tags or [])
 
     def deserialize_tags(self, tags):
         if isinstance(tags, str):
-            return set(tags.split(',')) if tags else set()
+            return set(tags.split(','))
         return set(tags or [])
 
     def serialize_parent(self, parent):
