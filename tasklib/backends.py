@@ -95,7 +95,8 @@ class TaskWarrior(Backend):
                  version_override=None):
         self.taskrc_location = None
         if taskrc_location:
-            self.taskrc_location = os.path.expanduser(taskrc_location)
+            self.taskrc_location = os.path.expandvars(taskrc_location)
+            self.taskrc_location = os.path.expanduser(self.taskrc_location)
 
             # If taskrc does not exist, pass / to use defaults and avoid creating
             # dummy .taskrc file by TaskWarrior
@@ -121,6 +122,7 @@ class TaskWarrior(Backend):
 
         # Set data.location override if passed via kwarg
         if data_location is not None:
+            data_location = os.path.expandvars(data_location)
             data_location = os.path.expanduser(data_location)
             if create and not os.path.exists(data_location):
                 os.makedirs(data_location)
