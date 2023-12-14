@@ -130,7 +130,7 @@ Tasklib defines several properties upon ``Task`` object, for convenience::
 Operations on Tasks
 -------------------
 
-After modifying one or more attributes, simple call ``save()`` to write those
+After modifying one or more attributes, simply call ``save()`` to write those
 changes to the database::
 
     >>> task = tw.tasks.pending().get(tags__contain='work')
@@ -158,7 +158,7 @@ To update a task object with values from TaskWarrior database, use ``refresh()``
     >>> task['tags']
     []
 
-Now, suppose the we modify the task using the TaskWarrior interface in another terminal::
+Now, suppose that we modify the task using the TaskWarrior interface in another terminal::
 
     $ task 5 modify +someday
     Task 5 modified.
@@ -318,7 +318,7 @@ tasks which are due midnight if you're currently in Berlin:
 
 However, this is still a little bit tedious. That's why TaskWarrior object
 is capable of automatic timezone detection, using the ``tzlocal`` Python
-module. If your system timezone is set to 'Europe/Berlin', following example
+module. If your system timezone is set to 'Europe/Berlin', the following example
 will work the same way as the previous one:
 
     >>> tw.tasks.filter(due__before=datetime(2015,2,2,0,0,0))
@@ -329,7 +329,7 @@ You can also use simple dates when filtering:
 
 In such case, a 00:00:00 is used as the time component.
 
-Of course, you can use datetime naive objects when initializing Task object
+Of course, you can use datetime naive objects when initializing Task objects
 or assigning values to datetime attributes:
 
     >>> t = Task(tw, description="Buy new shoes", due=date(2015,2,5))
@@ -355,7 +355,7 @@ in Python, this can cause some unexpected behaviour:
       File "<stdin>", line 1, in <module>
       TypeError: can't compare offset-naive and offset-aware datetimes
 
-If you want to compare datetime aware value with datetime naive value, you need
+If you want to compare a datetime-aware value with a datetime-naive value, you need
 to localize the naive value first:
 
     >>> from datetime import datetime
@@ -366,7 +366,7 @@ to localize the naive value first:
     >>> t['due'] == now
     True
 
-Also, note that it does not matter whether the timezone aware datetime objects
+Also, note that it does not matter whether the timezone-aware datetime objects
 are set in the same timezone:
 
     >>> import zoneinfo
@@ -400,9 +400,9 @@ For the list of acceptable formats and keywords, please consult:
 * http://taskwarrior.org/docs/dates.html
 * http://taskwarrior.org/docs/named_dates.html
 
-However, as each such assignment involves call to 'task calc' for conversion,
+However, as each such assignment involves a call to 'task calc' for conversion,
 it might cause some performance issues when assigning strings to datetime
-attributes repeatedly, in a automated manner.
+attributes repeatedly, in an automated manner.
 
 Working with annotations
 ------------------------
@@ -422,7 +422,7 @@ Annotations have only defined ``entry`` and ``description`` values::
     >>> annotation['description']
     u'Yeah, I am annotated!'
 
-To add a annotation to a Task, use ``add_annotation()``::
+To add an annotation to a Task, use ``add_annotation()``::
 
     >>> task = Task(tw, description="new task")
     >>> task.add_annotation("we can annotate any task")
@@ -431,7 +431,7 @@ To add a annotation to a Task, use ``add_annotation()``::
         File "build/bdist.linux-x86_64/egg/tasklib/task.py", line 355, in add_annotation
     tasklib.task.NotSaved: Task needs to be saved to add annotation
 
-However, Task needs to be saved before you can add a annotation to it::
+However, Task needs to be saved before you can add an annotation to it::
 
     >>> task.save()
     >>> task.add_annotation("we can annotate saved tasks")
@@ -450,7 +450,7 @@ Alternatively, you can pass the ``TaskAnnotation`` object itself::
 Running custom commands
 -----------------------
 
-To run a custom commands, use ``execute_command()`` method of ``TaskWarrior`` object::
+To run a custom command, use ``execute_command()`` method of ``TaskWarrior`` object::
 
     >>> tw = TaskWarrior()
     >>> tw.execute_command(['log', 'Finish high school.'])
@@ -508,7 +508,7 @@ a breeze::
     # ... <custom logic>
     print task.export_data()
 
-For example, plugin which would assign the priority "H" to any task containing
+For example, a plugin which would assign the priority "H" to any task containing
 three exclamation marks in the description, would go like this::
 
     #!/usr/bin/python
@@ -526,7 +526,7 @@ which provides more input than ``on-add`` event and reads the data accordingly.
 
 This means the example above works both for ``on-add`` and ``on-modify`` events!
 
-Consenquently, you can create just one hook file for both ``on-add`` and
+Consequently, you can create just one hook file for both ``on-add`` and
 ``on-modify`` events, and you just need to create a symlink for the other one.
 This removes the need for maintaining two copies of the same code base and/or
 boilerplate code.
