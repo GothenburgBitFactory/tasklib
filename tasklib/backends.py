@@ -366,6 +366,7 @@ class TaskWarrior(Backend):
         """
         Permanently remove the task.  This causes data loss.
         """
+        self.execute_command([task['uuid'], 'delete'])
         self.execute_command([task['uuid'], 'purge'])
 
     def start_task(self, task):
