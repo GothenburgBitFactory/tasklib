@@ -36,7 +36,7 @@ tasklib has a similar API to that of Django's ORM::
     >>> tasks = tw.tasks.pending()
     >>> tasks
     ['Tidy the house', 'Learn German']
-    >>> tasks.filter(tags__contain='chores')
+    >>> tasks.filter(tags__contains='chores')
     ['Tidy the house']
     >>> type(tasks[0])
     <class 'tasklib.task.Task'>
